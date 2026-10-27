@@ -66,7 +66,7 @@ contano davvero e quali quasi mai.
 
 Li ho divisi in base a cosa serve per programmarli.
 
-### A. Si possono programmare subito, serve solo la regola esatta (9)
+### A. Si possono programmare subito, serve solo la regola esatta (10)
 
 | Carta | Testo | Regola proposta |
 |---|---|---|
@@ -79,6 +79,7 @@ Li ho divisi in base a cosa serve per programmarli.
 | Paradox (Nullarii, 9) | Interagisce con valori identici | Se due carte della presa hanno lo **stesso valore finale**, Paradox vale 99 |
 | Palimpsest (Reliquiae, 84) | Copia un effetto precedente | Copia il **potere programmato dell'ultima carta con potere** giocata nella presa |
 | Reversal (Custodes, 44) | Può annullare effetti di vittoria | Se è in presa, i poteri **"se vince la presa"** (Origin, Praetor, Vesper Null, Ravager…) non si attivano |
+| Vigil (Custodes, 76) | Controllo | Se **apre** la presa, chi segue deve giocare la sua carta **più alta** di quella fazione |
 
 ### B. Serve una scelta del giocatore: nuova finestra di gioco + logica della CPU (5)
 
@@ -125,7 +126,7 @@ Aegiron, Locke, Pax. Proposta per "protetta": **i poteri avversari non possono c
 | Locke (Custodes, 57) | Se prende, limita modifiche nella presa successiva | Nella presa successiva **nessun potere cambia i valori** (un Axiom ritardato) |
 | Pax (Concordia, 15) | Protegge dalle perdite di punti | Nella presa in cui la giochi, **i poteri avversari non ti tolgono punti** |
 
-### E. Informazione e pronostici: serve una finestra che mostri o chieda qualcosa (6)
+### E. Informazione e pronostici: serve una finestra che mostri o chieda qualcosa (5)
 
 | Carta | Testo | Regola proposta |
 |---|---|---|
@@ -134,7 +135,6 @@ Aegiron, Locke, Pax. Proposta per "protetta": **i poteri avversari non possono c
 | Foreseer (Custodes, 63) | Predizione | **Vedi la mano** del giocatore che gioca dopo di te, per questa presa |
 | Second Sight (Custodes, 29) | Informazione futura | Vedi **una carta a caso** della mano di ogni avversario |
 | The Witness (Custodes, 12) | Informazione se molto bassa | Se è la carta più bassa della presa, **vedi la mano del vincitore** |
-| Vigil (Custodes, 76) | Controllo | Se **apre** la presa, chi segue deve giocare la sua carta **più alta** di quella fazione |
 
 **Auguria** ha solo 2 poteri su 13, ed entrambi da definire. È la fazione del pronostico: si potrebbero dare
 pronostici simili a Sibyl e Decima anche ad altre sue carte, per esempio Omen (8) o Last Oracle (2), così le
