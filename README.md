@@ -3,6 +3,8 @@
 Gioco di carte trick-taking a Contratti. Questa è la web app che sostituisce il simulatore a file unico
 (`reference/Nexum_Simulatore_v0_9.html`, conservato come riferimento delle regole).
 
+**Gioca online: https://albisiot.github.io/nexum/** (si aggiorna da solo a ogni push su `main`).
+
 Oggi si gioca **contro la CPU** o **in più giocatori sullo stesso dispositivo** (pass-and-play).
 Il progetto è organizzato in modo da aggiungere il **multiplayer online** senza riscrivere né le regole né l'interfaccia.
 
