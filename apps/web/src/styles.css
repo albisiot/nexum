@@ -388,6 +388,225 @@ h3 {
   color: var(--muted);
 }
 
+.menu-item.editor-entry {
+  border-style: dashed;
+  border-color: #806b27;
+}
+
+/* ---------- editor ---------- */
+
+textarea {
+  width: 100%;
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  resize: vertical;
+}
+
+input[type='color'] {
+  padding: 4px;
+  cursor: pointer;
+}
+
+.editor-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.editor-head .controls {
+  margin-top: 0;
+  gap: 8px;
+}
+
+.editor-head .controls .btn {
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.editor-status {
+  margin: 10px 0 0;
+}
+
+.editor-status.ok {
+  color: var(--good);
+}
+
+.editor-status.error {
+  color: var(--bad);
+}
+
+.editor-errors {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid #6b3a3a;
+  background: #2b1717;
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.editor-errors ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: #ffd5d5;
+}
+
+.editor-tabs {
+  display: flex;
+  gap: 6px;
+  margin: 16px 0 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.editor-tabs button {
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: none;
+  color: var(--muted);
+  font-weight: 800;
+  padding: 10px 12px;
+  min-height: 44px;
+}
+
+.editor-tabs button[aria-selected='true'] {
+  color: #ffe28a;
+  border-color: var(--gold);
+}
+
+.editor-body {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.editor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.editor-item {
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--text);
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-weight: 700;
+  min-height: 40px;
+}
+
+.editor-item.selected {
+  border-color: var(--gold);
+  background: #2a271d;
+}
+
+.editor-item.add {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.editor-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.editor-form .step {
+  margin: 8px 0 0;
+}
+
+.editor-form .hint {
+  margin: 0;
+}
+
+.card-editor-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 10px;
+}
+
+.card-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--faction);
+  border-radius: 12px;
+  background: var(--inset);
+}
+
+.card-editor-row,
+.rule-row,
+.contract-edit-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.field.grow {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.field.value,
+.field.points {
+  flex: 0 0 96px;
+}
+
+.field.icon {
+  flex: 0 0 72px;
+}
+
+.rule-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--inset);
+}
+
+.rule-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.rule-text {
+  font-weight: 800;
+  color: var(--gold);
+  font-size: 14px;
+}
+
+.editor-footer {
+  margin-top: 18px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+@media (max-width: 760px) {
+  .editor-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .editor-list {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
 /* ---------- patch notes ---------- */
 
 .patch-notes {
@@ -988,21 +1207,21 @@ input {
   background: var(--faction);
 }
 
-.card[data-faction='Nullarii'] {
+.card.dark {
   --edge: #5b6372;
 }
 
-.card[data-faction='Axiomata'] {
+.card.light {
   color: #111;
   background: linear-gradient(160deg, #f1f2f5, #d7dce5);
 }
 
-.card[data-faction='Axiomata']::before {
+.card.light::before {
   background: #aab2bf;
 }
 
-.card[data-faction='Axiomata'] .card-effect,
-.card[data-faction='Axiomata'] .card-printed {
+.card.light .card-effect,
+.card.light .card-printed {
   color: #424b57;
 }
 
@@ -1034,7 +1253,7 @@ input {
   color: var(--gold);
 }
 
-.card[data-faction='Axiomata'] .card-value.changed {
+.card.light .card-value.changed {
   color: #8a6a12;
 }
 

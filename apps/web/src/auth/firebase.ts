@@ -2,8 +2,16 @@
 // così l'SDK di Firebase non rallenta l'apertura del gioco.
 import { initializeApp } from 'firebase/app';
 import { GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithPopup, signOut } from 'firebase/auth';
-import type { FirebaseOptions } from 'firebase/app';
+import type { FirebaseApp, FirebaseOptions } from 'firebase/app';
 import type { User } from 'firebase/auth';
+
+let app: FirebaseApp | null = null;
+
+/** Un'unica app Firebase condivisa da accesso e database. */
+export function firebaseApp(config: FirebaseOptions): FirebaseApp {
+  app ??= initializeApp(config);
+  return app;
+}
 
 export interface FirebaseAuthApi {
   signIn(): Promise<unknown>;
@@ -11,7 +19,7 @@ export interface FirebaseAuthApi {
 }
 
 export function connect(config: FirebaseOptions, onUser: (user: User | null) => void): FirebaseAuthApi {
-  const auth = getAuth(initializeApp(config));
+  const auth = getAuth(firebaseApp(config));
   auth.languageCode = 'it';
   onAuthStateChanged(auth, onUser);
 

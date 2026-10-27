@@ -1,16 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { randomSeed } from '@nexum/engine';
 import { useAuth } from './auth/auth';
+import { isEditor } from './auth/editor';
+import { catalogStore, useCatalogVersion } from './catalog/store';
+import { EditorScreen } from './components/EditorScreen';
 import { GameScreen } from './components/GameScreen';
 import { MenuScreen } from './components/MenuScreen';
 import { PatchNotesScreen } from './components/PatchNotesScreen';
 import { RulesPanel } from './components/RulesPanel';
-import { SetupScreen, defaultSetup } from './components/SetupScreen';
+import { SetupScreen, defaultSetup, sanitizeSetup } from './components/SetupScreen';
 import type { SetupValues } from './components/SetupScreen';
 import type { GameClient, GameMode, MatchSetup } from './game/GameClient';
 import { LocalGameClient } from './game/LocalGameClient';
 
-type Screen = 'menu' | 'setup' | 'patchNotes';
+type Screen = 'menu' | 'setup' | 'patchNotes' | 'editor';
+
+/** In sviluppo, `?editor` apre l'Editor anche senza accesso (salvare e pubblicare restano bloccati dal database). */
+const DEV_EDITOR = import.meta.env.DEV && new URLSearchParams(window.location.search).has('editor');
 
 export function App() {
   const [screen, setScreen] = useState<Screen>('menu');
@@ -18,6 +24,13 @@ export function App() {
   const [client, setClient] = useState<GameClient | null>(null);
   const [showRules, setShowRules] = useState(false);
   const auth = useAuth();
+  const catalogVersion = useCatalogVersion();
+  const canEdit = isEditor(auth) || DEV_EDITOR;
+
+  // Un nuovo catalogo può togliere fazioni o Contratti già scelti nella preparazione.
+  useEffect(() => setSetupValues((v) => sanitizeSetup(v)), [catalogVersion]);
+  // Il catalogo pubblicato non si cambia a metà partita.
+  useEffect(() => catalogStore.setGameRunning(client !== null), [client]);
 
   const go = (next: Screen) => {
     client?.dispose();
@@ -45,7 +58,7 @@ export function App() {
     window.scrollTo(0, 0);
   };
 
-  const onMenu = screen === 'menu' && !client;
+  const onMenu = (screen === 'menu' || (screen === 'editor' && !canEdit)) && !client;
 
   return (
     <div className="app">
@@ -75,8 +88,14 @@ export function App() {
         <SetupScreen values={setupValues} onChange={setSetupValues} onStart={start} onBack={() => go('menu')} />
       ) : screen === 'patchNotes' ? (
         <PatchNotesScreen onBack={() => go('menu')} />
+      ) : screen === 'editor' && canEdit ? (
+        <EditorScreen onBack={() => go('menu')} />
       ) : (
-        <MenuScreen onPlay={choose} onPatchNotes={() => go('patchNotes')} />
+        <MenuScreen
+          onPlay={choose}
+          onPatchNotes={() => go('patchNotes')}
+          onEditor={canEdit ? () => go('editor') : undefined}
+        />
       )}
     </div>
   );

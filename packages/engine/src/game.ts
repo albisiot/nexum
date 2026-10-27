@@ -1,13 +1,11 @@
-import { CONTRACTS, CONTRACT_IDS } from './data/contracts';
-import { FACTION_IDS, factionCards, getCard } from './data/factions';
+import { contractNeedsTarget, contracts, factionCards, factionIds, getCard } from './catalog';
+import { MAX_PLAYERS, MIN_PLAYERS, TRICKS_PER_HAND } from './constants';
 import { applyAfterTrickPowers, applyRevealPowers, isCardPlay, valueOnPlay } from './powers';
 import { createRng, shuffle } from './rng';
 import { contractDelta } from './scoring';
 import type { Action, CardId, GameConfig, GameState, PlayerState, TrickNote, TrickResult } from './types';
 
-export const TRICKS_PER_HAND = 13;
-export const MIN_PLAYERS = 2;
-export const MAX_PLAYERS = 8;
+export { MAX_PLAYERS, MIN_PLAYERS, TRICKS_PER_HAND };
 
 export class IllegalActionError extends Error {
   override name = 'IllegalActionError';
@@ -17,15 +15,17 @@ export class IllegalActionError extends Error {
 export function validateConfig(config: GameConfig): string[] {
   const errors: string[] = [];
   const n = config.playerNames.length;
+  const known = factionIds();
   if (n < MIN_PLAYERS || n > MAX_PLAYERS) errors.push(`Servono da ${MIN_PLAYERS} a ${MAX_PLAYERS} giocatori.`);
   if (config.factions.length !== n) errors.push(`Servono ${n} fazioni, ne sono state scelte ${config.factions.length}.`);
   if (new Set(config.factions).size !== config.factions.length) errors.push('Una fazione è stata scelta due volte.');
   for (const f of config.factions) {
-    if (!(FACTION_IDS as readonly string[]).includes(f)) errors.push(`Fazione sconosciuta: ${f}.`);
+    if (!known.includes(f)) errors.push(`Fazione sconosciuta: ${f}.`);
   }
-  if (!(CONTRACT_IDS as readonly string[]).includes(config.contract)) {
+  const contract = contracts().find((c) => c.id === config.contract);
+  if (!contract) {
     errors.push(`Contratto sconosciuto: ${config.contract}.`);
-  } else if (CONTRACTS[config.contract].needsTarget) {
+  } else if (contractNeedsTarget(contract)) {
     if (!config.targetFaction || !config.factions.includes(config.targetFaction)) {
       errors.push('Il Contratto richiede una fazione bersaglio presente nel mazzo.');
     }
@@ -33,12 +33,13 @@ export function validateConfig(config: GameConfig): string[] {
   return errors;
 }
 
-/** Ordina una mano per fazione (ordine canonico) e poi per valore decrescente. */
+/** Ordina una mano per fazione (nell'ordine del catalogo) e poi per valore decrescente. */
 export function sortHand(hand: readonly CardId[]): CardId[] {
+  const order = factionIds();
   return [...hand].sort((a, b) => {
     const ca = getCard(a);
     const cb = getCard(b);
-    return FACTION_IDS.indexOf(ca.faction) - FACTION_IDS.indexOf(cb.faction) || cb.value - ca.value;
+    return order.indexOf(ca.faction) - order.indexOf(cb.faction) || cb.value - ca.value;
   });
 }
 

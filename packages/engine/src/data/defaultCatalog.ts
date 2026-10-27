@@ -1,7 +1,6 @@
-import type { CardDef, FactionDef, FactionId } from '../types';
+import type { CardDef, Catalog, ContractDef, FactionDef } from '../types';
 
-/** Ordine canonico delle fazioni (usato anche per ordinare le mani). */
-export const FACTION_IDS = [
+const FACTION_IDS = [
   'Custodes',
   'Nullarii',
   'Auguria',
@@ -15,7 +14,7 @@ export const FACTION_IDS = [
 type RawCard = readonly [name: string, value: number, effect: string];
 
 /** Carte trascritte dal simulatore v0.9 (reference/Nexum_Simulatore_v0_9.html). */
-const RAW: Record<FactionId, { color: string; tagline: string; cards: readonly RawCard[] }> = {
+const RAW: Record<string, { color: string; tagline: string; cards: readonly RawCard[] }> = {
   Custodes: {
     color: '#2f80ed',
     tagline: 'Blu · controllo e protezione',
@@ -170,30 +169,122 @@ const RAW: Record<FactionId, { color: string; tagline: string; cards: readonly R
   },
 };
 
-export const FACTIONS: Record<FactionId, FactionDef> = Object.fromEntries(
-  FACTION_IDS.map((id) => [id, { id, name: id, color: RAW[id].color, tagline: RAW[id].tagline }]),
-) as Record<FactionId, FactionDef>;
+/** Carte del v0.9 il cui potere è programmato, con la chiave del potere (vedi POWERS in powers.ts). */
+const POWER_KEYS: Record<string, string> = {
+  Afterimage: 'afterimage',
+  Veritas: 'veritas',
+  Invariant: 'invariant',
+  Ascendant: 'ascendant',
+  Challenger: 'challenger',
+  Gravemind: 'gravemind',
+  Axiom: 'axiom',
+  Switch: 'switch',
+  Equalis: 'equalis',
+  Wildcard: 'wildcard',
+  Measure: 'measure',
+  Origin: 'origin',
+  Zero: 'zero',
+  Praetor: 'praetor',
+  Bloodmark: 'bloodmark',
+  'Vesper Null': 'vesper-null',
+  Maledict: 'maledict',
+  Rebel: 'rebel',
+  Ravager: 'ravager',
+};
 
-/** Tutte le 104 carte, indicizzate per id (es. "Custodes-0"). */
-export const CARDS: Readonly<Record<string, CardDef>> = Object.fromEntries(
-  FACTION_IDS.flatMap((faction) =>
-    RAW[faction].cards.map(([name, value, effect], i) => {
-      const card: CardDef = { id: `${faction}-${i}`, faction, name, value, effect };
-      return [card.id, card];
-    }),
-  ),
+const FACTIONS: FactionDef[] = FACTION_IDS.map((id) => ({
+  id,
+  name: id,
+  color: RAW[id]!.color,
+  tagline: RAW[id]!.tagline,
+}));
+
+const CARDS: CardDef[] = FACTION_IDS.flatMap((faction) =>
+  RAW[faction]!.cards.map(([name, value, effect], i) => {
+    const card: CardDef = { id: `${faction}-${i}`, faction, name, value, effect };
+    if (POWER_KEYS[name]) card.power = POWER_KEYS[name];
+    return card;
+  }),
 );
 
-export function factionCards(faction: FactionId): CardDef[] {
-  return RAW[faction].cards.map((_, i) => CARDS[`${faction}-${i}`]!);
-}
+/** I 10 Contratti del v0.9, scritti come mattoncini di punteggio. */
+const CONTRACTS: ContractDef[] = [
+  {
+    id: 'more',
+    icon: '🏆',
+    name: 'Più prese',
+    desc: 'Cerca di vincere più prese possibile.',
+    rules: [{ points: 1, per: 'trick' }],
+  },
+  {
+    id: 'less',
+    icon: '🪶',
+    name: 'Meno prese',
+    desc: 'Ogni presa vinta è una penalità. Liberati delle carte senza vincere.',
+    rules: [{ points: -1, per: 'trick' }],
+  },
+  {
+    id: 'avoidFaction',
+    icon: '🎨',
+    name: 'Non prendere una fazione',
+    desc: 'Le carte della fazione bersaglio raccolte nelle tue prese valgono penalità.',
+    rules: [{ points: -1, per: 'card', filter: { kind: 'faction', faction: 'target' } }],
+  },
+  {
+    id: 'avoidHigh',
+    icon: '⬆️',
+    name: 'Non prendere carte alte',
+    desc: 'Evita di catturare personaggi con valore stampato 80 o superiore.',
+    rules: [{ points: -1, per: 'card', filter: { kind: 'minValue', value: 80 } }],
+  },
+  {
+    id: 'avoidLow',
+    icon: '⬇️',
+    name: 'Non prendere carte basse',
+    desc: 'Evita di catturare personaggi con valore stampato 20 o inferiore.',
+    rules: [{ points: -1, per: 'card', filter: { kind: 'maxValue', value: 20 } }],
+  },
+  {
+    id: 'unmade',
+    icon: '☠️',
+    name: 'Evita The Unmade',
+    desc: 'La presa che contiene The Unmade è particolarmente pericolosa.',
+    rules: [{ points: -5, per: 'card', filter: { kind: 'card', cardId: 'Nullarii-0' } }],
+  },
+  {
+    id: 'last',
+    icon: '13️⃣',
+    name: 'Non prendere l’ultima',
+    desc: 'Le prime 12 prese sono neutre. Conta soltanto l’ultima.',
+    rules: [{ points: -5, per: 'trick', tricks: { from: 13, to: 13 } }],
+  },
+  {
+    id: 'last3',
+    icon: '3️⃣',
+    name: 'Evita le ultime tre',
+    desc: 'Le prese 11, 12 e 13 sono tutte penalità.',
+    rules: [{ points: -2, per: 'trick', tricks: { from: 11, to: 13 } }],
+  },
+  {
+    id: 'special',
+    icon: '⚡',
+    name: 'Non prendere carte con potere',
+    desc: 'Ogni personaggio con un potere scritto catturato vale penalità.',
+    rules: [{ points: -1, per: 'card', filter: { kind: 'hasPower' } }],
+  },
+  {
+    id: 'chaos',
+    icon: '🔥',
+    name: 'Tutto negativo',
+    desc: 'Prese, Nullarii, carte alte e ultima presa accumulano penalità.',
+    rules: [
+      { points: -1, per: 'trick' },
+      { points: -1, per: 'card', filter: { kind: 'faction', faction: 'Nullarii' } },
+      { points: -1, per: 'card', filter: { kind: 'minValue', value: 80 } },
+      { points: -3, per: 'trick', tricks: { from: 13, to: 13 } },
+    ],
+  },
+];
 
-export function getCard(id: string): CardDef {
-  const card = CARDS[id];
-  if (!card) throw new Error(`Carta sconosciuta: ${id}`);
-  return card;
-}
-
-export function hasPowerText(card: CardDef): boolean {
-  return card.effect.trim() !== '';
-}
+/** Dati predefiniti del gioco (simulatore v0.9), usati finché non ne viene pubblicata un'altra versione. */
+export const DEFAULT_CATALOG: Catalog = { version: 0, factions: FACTIONS, cards: CARDS, contracts: CONTRACTS };

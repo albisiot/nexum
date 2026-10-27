@@ -13,6 +13,31 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.14.0',
+    date: '2026-10-27',
+    title: 'Editor di carte e Contratti',
+    changes: [
+      {
+        type: 'new',
+        text: 'Editor per l’autore del gioco: modifica di fazioni, carte e Contratti, creazione di nuove fazioni da 13 carte e di nuovi Contratti.',
+      },
+      {
+        type: 'new',
+        text: 'Le modifiche restano in bozza finché non vengono pubblicate; da quel momento valgono per le nuove partite di tutti.',
+      },
+      {
+        type: 'change',
+        text: 'I Contratti sono fatti di regole di punteggio combinabili. I 10 Contratti esistenti assegnano esattamente gli stessi punti di prima.',
+      },
+      { type: 'change', text: 'La CPU legge le regole di ogni Contratto, quindi sa giocare anche quelli nuovi.' },
+      { type: 'change', text: 'Il testo dei punti di ogni Contratto viene scritto automaticamente dalle sue regole.' },
+      {
+        type: 'change',
+        text: 'Con la serie casuale, “Tutto negativo” resta disponibile anche senza Nullarii nel mazzo: le altre sue regole contano comunque.',
+      },
+    ],
+  },
+  {
     version: '0.13.0',
     date: '2026-10-27',
     title: 'Serie di Contratti',

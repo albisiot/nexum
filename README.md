@@ -39,6 +39,26 @@ reference/         Simulatore originale v0.9
 docs/              Questioni aperte sulle regole
 ```
 
+## Editor di carte e Contratti
+
+Fazioni, carte e Contratti sono un **catalogo** di dati (`packages/engine/src/catalog.ts`).
+Il gioco parte dai dati predefiniti (`data/defaultCatalog.ts`) e all'avvio carica da Firestore
+la versione pubblicata, se esiste.
+
+- La voce **Editor** del menu compare solo all'account in `apps/web/src/auth/editor.ts`.
+  A impedire davvero le modifiche agli altri sono le regole di `firebase/firestore.rules`.
+- Le modifiche si salvano in bozza (`catalog/draft`) e diventano visibili ai giocatori con **Pubblica**
+  (`catalog/published`). Il catalogo cambia solo tra una partita e l'altra.
+- I Contratti sono elenchi di **regole di punteggio** (`ScoringRule`): punti per presa vinta o per carta
+  catturata, con filtri (fazione, fazione bersaglio, valore minimo/massimo, carte con potere, carta precisa)
+  e intervalli di prese.
+- I poteri sono legati alla carta con una chiave (`CardDef.power`), non al nome. I poteri programmati sono in
+  `powers.ts` / `powerList.ts`; un potere nuovo va programmato lì e poi assegnato dall'Editor.
+- In sviluppo, `http://localhost:5173/?editor` apre l'Editor senza accesso (salvare resta bloccato dal database).
+
+Configurazione una tantum su Firebase: creare il database Firestore e incollare `firebase/firestore.rules`
+nella scheda **Regole**.
+
 ## Perché è pronta per l'online
 
 1. **Il motore è puro e deterministico.** `createGame(config)` + `applyAction(state, action)` → nuovo stato.

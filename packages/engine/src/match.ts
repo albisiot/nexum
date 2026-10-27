@@ -1,6 +1,6 @@
 // Una partita è una serie di mani: ogni mano ha il suo Contratto e si gioca per 13 prese.
 // Con un solo Contratto la serie ha una mano sola. Vince chi ha più punti in totale.
-import { CONTRACTS, CONTRACT_IDS } from './data/contracts';
+import { contractNeedsTarget, contractPlayableWith, contracts, getContract } from './catalog';
 import { IllegalActionError, applyAction, createGame, ranking, validateConfig } from './game';
 import { shuffle } from './rng';
 import type { Rng } from './rng';
@@ -52,7 +52,9 @@ export interface MatchView {
 
 /** Contratti giocabili con queste fazioni (esclude quelli che riguardano fazioni assenti). */
 export function playableContracts(factions: readonly FactionId[]): ContractId[] {
-  return CONTRACT_IDS.filter((id) => (CONTRACTS[id].requiresFactions ?? []).every((f) => factions.includes(f)));
+  return contracts()
+    .filter((c) => contractPlayableWith(c, factions))
+    .map((c) => c.id);
 }
 
 /** Estrae `count` Contratti diversi a caso; la fazione bersaglio, se serve, è estratta tra quelle del mazzo. */
@@ -60,7 +62,7 @@ export function randomHands(count: number, factions: readonly FactionId[], rng: 
   return shuffle(playableContracts(factions), rng)
     .slice(0, count)
     .map((contract) =>
-      CONTRACTS[contract].needsTarget
+      contractNeedsTarget(getContract(contract))
         ? { contract, targetFaction: factions[Math.floor(rng() * factions.length)]! }
         : { contract },
     );

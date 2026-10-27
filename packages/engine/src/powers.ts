@@ -1,41 +1,19 @@
 // Poteri delle carte, portati 1:1 dal simulatore v0.9.
+// Ogni potere ha una chiave fissa (CardDef.power), così rinominare una carta nell'Editor non lo rompe.
 // I poteri il cui testo non è ancora tradotto in regole sono elencati in docs/questioni-aperte.md.
-import { getCard } from './data/factions';
+import { getCard } from './catalog';
+import { POWERS } from './powerList';
 import type { CardDef, CardPlay, GameState, Play, TrickNote } from './types';
 
-/** Nomi delle carte il cui potere è effettivamente applicato dal motore. */
-export const IMPLEMENTED_POWERS: ReadonlySet<string> = new Set([
-  // al momento della giocata
-  'Afterimage',
-  'Veritas',
-  'Invariant',
-  'Ascendant',
-  'Challenger',
-  'Gravemind',
-  // alla rivelazione della presa
-  'Axiom',
-  'Switch',
-  'Equalis',
-  'Wildcard',
-  'Measure',
-  // dopo l'assegnazione della presa
-  'Origin',
-  'Zero',
-  'Praetor',
-  'Bloodmark',
-  'Vesper Null',
-  'Maledict',
-  'Rebel',
-  'Ravager',
-]);
-
 export function isPowerImplemented(card: CardDef): boolean {
-  return IMPLEMENTED_POWERS.has(card.name);
+  return card.power !== undefined && card.power in POWERS;
 }
 
 const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
 
 export const isCardPlay = (pl: Play): pl is CardPlay => !pl.skipped;
+
+const powerOf = (cardId: string) => getCard(cardId).power;
 
 /**
  * Valore finale di una carta nel momento in cui viene giocata.
@@ -46,16 +24,16 @@ export function valueOnPlay(state: GameState, player: number, card: CardDef): nu
   let final = card.value + p.nextModifier;
   const prevId = p.played.at(-1);
 
-  if (card.name === 'Afterimage' && prevId && getCard(prevId).value >= 70) final += 20;
-  if (card.name === 'Veritas') final = 80;
-  if (card.name === 'Invariant') final = 50;
-  if (card.name === 'Ascendant' && p.recentResults.length === 2 && p.recentResults.every((won) => !won)) {
+  if (card.power === 'afterimage' && prevId && getCard(prevId).value >= 70) final += 20;
+  if (card.power === 'veritas') final = 80;
+  if (card.power === 'invariant') final = 50;
+  if (card.power === 'ascendant' && p.recentResults.length === 2 && p.recentResults.every((won) => !won)) {
     final = 74;
   }
-  if (card.name === 'Challenger' && state.plays.some((pl) => isCardPlay(pl) && getCard(pl.cardId).value > 70)) {
+  if (card.power === 'challenger' && state.plays.some((pl) => isCardPlay(pl) && getCard(pl.cardId).value > 70)) {
     final = 68;
   }
-  if (card.name === 'Gravemind') final += Math.min(15, p.played.length * 3);
+  if (card.power === 'gravemind') final += Math.min(15, p.played.length * 3);
 
   return clamp(final, 0, 100);
 }
@@ -63,9 +41,8 @@ export function valueOnPlay(state: GameState, player: number, card: CardDef): nu
 /** Poteri che si attivano quando tutte le carte della presa sono scoperte. Modifica `plays`. */
 export function applyRevealPowers(plays: Play[], notes: TrickNote[]): void {
   const active = plays.filter(isCardPlay);
-  const named = (pl: CardPlay) => getCard(pl.cardId).name;
 
-  if (active.some((pl) => named(pl) === 'Axiom')) {
+  if (active.some((pl) => powerOf(pl.cardId) === 'axiom')) {
     active.forEach((pl) => (pl.final = getCard(pl.cardId).value));
     notes.push({ type: 'axiom' });
     return;
@@ -76,16 +53,16 @@ export function applyRevealPowers(plays: Play[], notes: TrickNote[]): void {
   const min = Math.min(...finals);
 
   for (const pl of active) {
-    const name = named(pl);
-    if (name === 'Switch' && max >= 80 && min <= 20) {
+    const power = powerOf(pl.cardId);
+    if (power === 'switch' && max >= 80 && min <= 20) {
       pl.final = 91;
       notes.push({ type: 'valueChanged', player: pl.player, cardId: pl.cardId, value: 91 });
     }
-    if (name === 'Equalis' && max - min <= 20) {
+    if (power === 'equalis' && max - min <= 20) {
       pl.final = 77;
       notes.push({ type: 'valueChanged', player: pl.player, cardId: pl.cardId, value: 77 });
     }
-    if (name === 'Wildcard') {
+    if (power === 'wildcard') {
       const opponents = active.filter((x) => x.player !== pl.player);
       if (opponents.length) {
         pl.final = Math.min(...opponents.map((x) => getCard(x.cardId).value)) + 1;
@@ -94,7 +71,7 @@ export function applyRevealPowers(plays: Play[], notes: TrickNote[]): void {
     }
   }
 
-  if (active.some((pl) => named(pl) === 'Measure')) {
+  if (active.some((pl) => powerOf(pl.cardId) === 'measure')) {
     active.forEach((pl) => (pl.final = clamp(pl.final, 10, 90)));
     notes.push({ type: 'measure' });
   }
@@ -112,7 +89,7 @@ function leadingOpponent(state: GameState, of: number): number | undefined {
 export function applyAfterTrickPowers(state: GameState, winning: CardPlay, notes: TrickNote[]): void {
   for (const pl of state.plays.filter(isCardPlay)) {
     const won = pl.player === winning.player;
-    const { name } = getCard(pl.cardId);
+    const power = powerOf(pl.cardId);
     const score = (target: number, points: number) => {
       state.players[target]!.score += points;
       notes.push({ type: 'scoreChanged', player: pl.player, cardId: pl.cardId, points, target });
@@ -122,17 +99,17 @@ export function applyAfterTrickPowers(state: GameState, winning: CardPlay, notes
       notes.push({ type: 'nextModifier', player: pl.player, cardId: pl.cardId, amount, target });
     };
 
-    if (name === 'Origin' && won) score(pl.player, 3);
-    if (name === 'Zero' && won) score(pl.player, 4);
-    if (name === 'Praetor' && won) modify(pl.player, 10);
-    if (name === 'Bloodmark' && !won && winning.final >= 75) modify(pl.player, 15);
-    if (name === 'Vesper Null' && won) {
+    if (power === 'origin' && won) score(pl.player, 3);
+    if (power === 'zero' && won) score(pl.player, 4);
+    if (power === 'praetor' && won) modify(pl.player, 10);
+    if (power === 'bloodmark' && !won && winning.final >= 75) modify(pl.player, 15);
+    if (power === 'vesper-null' && won) {
       const target = leadingOpponent(state, pl.player);
       if (target !== undefined) modify(target, -15);
     }
-    if (name === 'Maledict' && !won) score(winning.player, -1);
-    if (name === 'Rebel' && !won && winning.final >= 80) score(winning.player, -1);
-    if (name === 'Ravager' && won) {
+    if (power === 'maledict' && !won) score(winning.player, -1);
+    if (power === 'rebel' && !won && winning.final >= 80) score(winning.player, -1);
+    if (power === 'ravager' && won) {
       const target = leadingOpponent(state, pl.player);
       if (target !== undefined) score(target, -1);
     }

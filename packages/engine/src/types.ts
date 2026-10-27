@@ -1,9 +1,8 @@
-import type { FACTION_IDS } from './data/factions';
-import type { CONTRACT_IDS } from './data/contracts';
-
-export type FactionId = (typeof FACTION_IDS)[number];
-export type ContractId = (typeof CONTRACT_IDS)[number];
+export type FactionId = string;
+export type ContractId = string;
 export type CardId = string;
+/** Chiave di un potere programmato nel motore (vedi POWERS in powers.ts). */
+export type PowerId = string;
 
 export interface FactionDef {
   id: FactionId;
@@ -16,10 +15,34 @@ export interface CardDef {
   id: CardId;
   faction: FactionId;
   name: string;
-  /** Valore stampato (1–99). */
+  /** Valore stampato (1–99), unico all'interno della fazione. */
   value: number;
   /** Testo del potere; stringa vuota se la carta non ha poteri. */
   effect: string;
+  /** Potere programmato applicato dal motore; assente se il testo non è ancora tradotto in regole. */
+  power?: PowerId;
+}
+
+/** Quali carte catturate conta una regola di punteggio. */
+export type CardFilter =
+  | { kind: 'any' }
+  /** 'target' = la fazione bersaglio scelta per la mano. */
+  | { kind: 'faction'; faction: FactionId | 'target' }
+  | { kind: 'minValue'; value: number }
+  | { kind: 'maxValue'; value: number }
+  | { kind: 'hasPower' }
+  | { kind: 'card'; cardId: CardId };
+
+/**
+ * Un "mattoncino" di punteggio, assegnato a chi vince la presa:
+ * `points` per la presa stessa, oppure per ogni carta catturata che rispetta `filter`.
+ * Con `tricks` vale solo per le prese in quell'intervallo (es. 11–13).
+ */
+export interface ScoringRule {
+  points: number;
+  per: 'trick' | 'card';
+  filter?: CardFilter;
+  tricks?: { from: number; to: number };
 }
 
 export interface ContractDef {
@@ -27,11 +50,16 @@ export interface ContractDef {
   name: string;
   icon: string;
   desc: string;
-  score: string;
-  /** Il Contratto richiede di scegliere una fazione bersaglio. */
-  needsTarget?: boolean;
-  /** Fazioni senza le quali il Contratto perde senso. */
-  requiresFactions?: FactionId[];
+  rules: ScoringRule[];
+}
+
+/** Tutte le fazioni, carte e Contratti del gioco: i dati che l'Editor modifica. */
+export interface Catalog {
+  /** Numero della versione pubblicata (0 = dati predefiniti del gioco). */
+  version: number;
+  factions: FactionDef[];
+  cards: CardDef[];
+  contracts: ContractDef[];
 }
 
 /** Configurazione di una mano (= un Contratto giocato per 13 prese). */

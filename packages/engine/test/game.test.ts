@@ -1,35 +1,42 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CARDS,
-  FACTION_IDS,
-  IMPLEMENTED_POWERS,
+  DEFAULT_CATALOG,
   IllegalActionError,
+  POWERS,
   applyAction,
   createGame,
   factionCards,
+  factionIds,
   getCard,
   getView,
   hasPowerText,
+  isPowerImplemented,
   ranking,
+  validateCatalog,
 } from '../src';
 import { config, createRng, playOut, randomConfig, withHands } from './helpers';
 
 describe('carte', () => {
   it('8 fazioni da 13 carte con valori unici', () => {
-    expect(Object.keys(CARDS)).toHaveLength(104);
-    for (const f of FACTION_IDS) {
+    expect(DEFAULT_CATALOG.cards).toHaveLength(104);
+    expect(factionIds()).toHaveLength(8);
+    for (const f of factionIds()) {
       const values = factionCards(f).map((c) => c.value);
       expect(new Set(values).size).toBe(13);
     }
   });
 
   it('51 carte hanno un potere scritto, 19 sono implementati', () => {
-    const withText = Object.values(CARDS).filter(hasPowerText);
+    const withText = DEFAULT_CATALOG.cards.filter(hasPowerText);
     expect(withText).toHaveLength(51);
-    expect(IMPLEMENTED_POWERS.size).toBe(19);
-    for (const name of IMPLEMENTED_POWERS) {
-      expect(withText.some((c) => c.name === name), name).toBe(true);
-    }
+    const implemented = DEFAULT_CATALOG.cards.filter(isPowerImplemented);
+    expect(implemented).toHaveLength(19);
+    expect(new Set(implemented.map((c) => c.power))).toEqual(new Set(Object.keys(POWERS)));
+    expect(implemented.every(hasPowerText)).toBe(true);
+  });
+
+  it('il catalogo predefinito è valido', () => {
+    expect(validateCatalog(DEFAULT_CATALOG)).toEqual([]);
   });
 });
 

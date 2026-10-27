@@ -1,6 +1,6 @@
-import { CONTRACTS, FACTIONS, matchRanking } from '@nexum/engine';
-import type { HandPlan, MatchView } from '@nexum/engine';
-import { plural, signed } from '../game/text';
+import { getContract, matchRanking } from '@nexum/engine';
+import type { MatchView } from '@nexum/engine';
+import { describeScoring, handLabel as contractLabel, plural, signed } from '../game/text';
 
 interface ResultProps {
   match: MatchView;
@@ -8,9 +8,6 @@ interface ResultProps {
   /** Posto da evidenziare (il giocatore umano contro la CPU). */
   me: number | null;
 }
-
-const contractLabel = (h: HandPlan) =>
-  `${CONTRACTS[h.contract].icon} ${CONTRACTS[h.contract].name}${h.targetFaction ? ` (${FACTIONS[h.targetFaction].name})` : ''}`;
 
 /** Pausa tra due Contratti di una serie. */
 export function HandEndScreen({ match, names, me, onNext, onMenu }: ResultProps & { onNext(): void; onMenu(): void }) {
@@ -43,7 +40,7 @@ export function HandEndScreen({ match, names, me, onNext, onMenu }: ResultProps 
         ))}
       </div>
       <p className="hint">
-        Prossimo: <b>{contractLabel(next)}</b> · {CONTRACTS[next.contract].score}
+        Prossimo: <b>{contractLabel(next)}</b> · {describeScoring(getContract(next.contract))}
       </p>
       <div className="controls center">
         <button type="button" className="btn primary" onClick={onNext}>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  CONTRACT_IDS,
+  contracts,
   IllegalActionError,
   applyMatchAction,
   chooseCard,
@@ -88,7 +88,7 @@ describe('serie di Contratti', () => {
 describe('Contratti casuali', () => {
   it('senza Nullarii esclude Evita The Unmade', () => {
     expect(playableContracts(['Custodes', 'Auguria'])).not.toContain('unmade');
-    expect(playableContracts(['Custodes', 'Nullarii'])).toHaveLength(CONTRACT_IDS.length);
+    expect(playableContracts(['Custodes', 'Nullarii'])).toHaveLength(contracts().length);
   });
 
   it('estrae Contratti diversi, con bersaglio nel mazzo quando serve', () => {

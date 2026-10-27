@@ -5,9 +5,11 @@ import { AccountPanel } from './AccountPanel';
 interface Props {
   onPlay(mode: GameMode): void;
   onPatchNotes(): void;
+  /** Presente solo per l'account autorizzato a modificare carte e Contratti. */
+  onEditor?: () => void;
 }
 
-export function MenuScreen({ onPlay, onPatchNotes }: Props) {
+export function MenuScreen({ onPlay, onPatchNotes, onEditor }: Props) {
   return (
     <section className="menu">
       <div className="menu-hero">
@@ -48,6 +50,15 @@ export function MenuScreen({ onPlay, onPatchNotes }: Props) {
             <span className="menu-sub">Tutti gli aggiornamenti del gioco</span>
           </span>
         </button>
+        {onEditor && (
+          <button type="button" className="menu-item editor-entry" onClick={onEditor}>
+            <span className="menu-icon" aria-hidden="true">🛠️</span>
+            <span className="menu-text">
+              <span className="menu-title">Editor</span>
+              <span className="menu-sub">Modifica fazioni, carte e Contratti</span>
+            </span>
+          </button>
+        )}
       </nav>
 
       <p className="menu-footer">

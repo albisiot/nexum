@@ -1,10 +1,33 @@
 export * from './types';
-export { FACTION_IDS, FACTIONS, CARDS, factionCards, getCard, hasPowerText } from './data/factions';
-export { CONTRACT_IDS, CONTRACTS, CONTRACT_LIST } from './data/contracts';
 export {
   TRICKS_PER_HAND,
+  CARDS_PER_FACTION,
   MIN_PLAYERS,
   MAX_PLAYERS,
+  MIN_CARD_VALUE,
+  MAX_CARD_VALUE,
+} from './constants';
+export { DEFAULT_CATALOG } from './data/defaultCatalog';
+export {
+  setCatalog,
+  getCatalog,
+  validateCatalog,
+  factions,
+  factionIds,
+  getFaction,
+  factionCards,
+  getCard,
+  contracts,
+  getContract,
+  hasPowerText,
+  contractNeedsTarget,
+  contractRequiredFactions,
+  contractPlayableWith,
+  ruleRequiredFaction,
+  cardMatches,
+} from './catalog';
+export { POWERS } from './powerList';
+export {
   IllegalActionError,
   validateConfig,
   createGame,
@@ -14,8 +37,8 @@ export {
   ranking,
   sortHand,
 } from './game';
-export { IMPLEMENTED_POWERS, isPowerImplemented } from './powers';
-export { contractDelta } from './scoring';
+export { isPowerImplemented } from './powers';
+export { contractDelta, ruleApplies } from './scoring';
 export { getView } from './view';
 export {
   playableContracts,

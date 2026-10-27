@@ -1,17 +1,81 @@
-import { CONTRACTS, FACTIONS, getCard } from '@nexum/engine';
-import type { PlayerView, TrickNote, TrickResult } from '@nexum/engine';
+import { contractNeedsTarget, getCard, getCatalog, getContract, getFaction } from '@nexum/engine';
+import type {
+  CardFilter,
+  Catalog,
+  ContractDef,
+  HandPlan,
+  PlayerView,
+  ScoringRule,
+  TrickNote,
+  TrickResult,
+} from '@nexum/engine';
 
 export const plural = (n: number, one: string, many: string) => `${n} ${Math.abs(n) === 1 ? one : many}`;
 export const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
+/** Punti con il segno meno tipografico, per i testi delle regole. */
+const points = (n: number) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
 
 export function contractTitle(view: PlayerView): string {
-  const c = CONTRACTS[view.contract];
+  const c = getContract(view.contract);
   return `${c.icon} ${c.name}`;
 }
 
 export function contractDescription(view: PlayerView): string {
-  const c = CONTRACTS[view.contract];
-  return c.needsTarget && view.targetFaction ? `${c.desc} Fazione bersaglio: ${FACTIONS[view.targetFaction].name}.` : c.desc;
+  const c = getContract(view.contract);
+  return contractNeedsTarget(c) && view.targetFaction
+    ? `${c.desc} Fazione bersaglio: ${getFaction(view.targetFaction).name}.`
+    : c.desc;
+}
+
+export function handLabel(h: HandPlan): string {
+  const c = getContract(h.contract);
+  return `${c.icon} ${c.name}${h.targetFaction ? ` (${getFaction(h.targetFaction).name})` : ''}`;
+}
+
+const factionName = (catalog: Catalog, id: string) => catalog.factions.find((f) => f.id === id)?.name ?? 'eliminata';
+const cardName = (catalog: Catalog, id: string) => catalog.cards.find((c) => c.id === id)?.name ?? 'una carta eliminata';
+
+function filterText(filter: CardFilter, catalog: Catalog): string {
+  switch (filter.kind) {
+    case 'any':
+      return '';
+    case 'faction':
+      return filter.faction === 'target'
+        ? ' della fazione bersaglio'
+        : ` della fazione ${factionName(catalog, filter.faction)}`;
+    case 'minValue':
+      return ` di valore ${filter.value} o più`;
+    case 'maxValue':
+      return ` di valore ${filter.value} o meno`;
+    case 'hasPower':
+      return ' con un potere';
+    case 'card':
+      return '';
+  }
+}
+
+function tricksText(rule: ScoringRule): string {
+  if (!rule.tricks) return '';
+  const { from, to } = rule.tricks;
+  return from === to ? ` (solo presa ${from})` : ` (solo prese ${from}–${to})`;
+}
+
+/**
+ * Una regola di punteggio in parole, es. "−1 per ogni carta catturata di valore 80 o più".
+ * `catalog` serve all'Editor per descrivere regole che usano fazioni o carte non ancora pubblicate.
+ */
+export function describeRule(rule: ScoringRule, catalog: Catalog = getCatalog()): string {
+  if (rule.per === 'trick') {
+    if (rule.tricks && rule.tricks.from === rule.tricks.to) return `${points(rule.points)} a chi vince la presa ${rule.tricks.from}`;
+    return `${points(rule.points)} per ogni presa vinta${tricksText(rule)}`;
+  }
+  const filter = rule.filter ?? { kind: 'any' };
+  if (filter.kind === 'card') return `${points(rule.points)} a chi cattura ${cardName(catalog, filter.cardId)}${tricksText(rule)}`;
+  return `${points(rule.points)} per ogni carta catturata${filterText(filter, catalog)}${tricksText(rule)}`;
+}
+
+export function describeScoring(contract: ContractDef, catalog: Catalog = getCatalog()): string {
+  return contract.rules.map((r) => describeRule(r, catalog)).join(' · ');
 }
 
 export function describeNote(note: TrickNote, names: readonly string[]): string {
@@ -37,5 +101,5 @@ export function describeNote(note: TrickNote, names: readonly string[]): string 
 
 export function describeTrick(trick: TrickResult, names: readonly string[]): string {
   const card = getCard(trick.winningCardId);
-  return `${names[trick.winner]} prende la presa ${trick.trickNo} con ${card.name} (${trick.winningValue}) · fazione d’apertura ${FACTIONS[trick.leadFaction].name}.`;
+  return `${names[trick.winner]} prende la presa ${trick.trickNo} con ${card.name} (${trick.winningValue}) · fazione d’apertura ${getFaction(trick.leadFaction).name}.`;
 }

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import {
-  CONTRACTS,
-  CONTRACT_LIST,
-  FACTIONS,
-  FACTION_IDS,
   MAX_PLAYERS,
   MIN_PLAYERS,
+  contractNeedsTarget,
+  contractRequiredFactions,
+  contracts,
   createRng,
+  factionIds,
+  getContract,
+  getFaction,
   randomHands,
   randomSeed,
   shuffle,
@@ -14,6 +16,7 @@ import {
 import type { ContractId, FactionId, HandPlan } from '@nexum/engine';
 import type { CSSProperties } from 'react';
 import type { GameMode, MatchSetup, Seat } from '../game/GameClient';
+import { describeScoring } from '../game/text';
 
 export type ContractFormat = 'randomSeries' | 'chosenSeries' | 'randomSingle' | 'chosenSingle';
 
@@ -53,10 +56,24 @@ const SERIES_LENGTHS = [
 const STEPS = ['Giocatori', 'Contratti', 'Fazioni'];
 
 const randomFactions = (n: number, keep: FactionId[] = []): FactionId[] => {
-  const kept = keep.slice(0, n);
-  const extra = shuffle(FACTION_IDS.filter((f) => !kept.includes(f)), Math.random).slice(0, n - kept.length);
-  return FACTION_IDS.filter((f) => kept.includes(f) || extra.includes(f));
+  const all = factionIds();
+  const kept = keep.filter((f) => all.includes(f)).slice(0, n);
+  const extra = shuffle(all.filter((f) => !kept.includes(f)), Math.random).slice(0, n - kept.length);
+  return all.filter((f) => kept.includes(f) || extra.includes(f));
 };
+
+/** Toglie dalle scelte fazioni e Contratti che non esistono più nel catalogo (dopo una pubblicazione). */
+export function sanitizeSetup(v: SetupValues): SetupValues {
+  const knownFactions = factionIds();
+  const knownContracts = contracts().map((c) => c.id);
+  return {
+    ...v,
+    factions: v.factions.filter((f) => knownFactions.includes(f)),
+    targetFaction: v.targetFaction && knownFactions.includes(v.targetFaction) ? v.targetFaction : null,
+    seriesContracts: v.seriesContracts.filter((c) => knownContracts.includes(c)),
+    singleContract: knownContracts.includes(v.singleContract) ? v.singleContract : knownContracts[0]!,
+  };
+}
 
 export function defaultSetup(): SetupValues {
   return {
@@ -88,7 +105,7 @@ export function describeFormat(v: SetupValues): string {
     case 'randomSingle':
       return 'Un Contratto casuale';
     case 'chosenSingle':
-      return `Un Contratto: ${CONTRACTS[v.singleContract].name}`;
+      return `Un Contratto: ${getContract(v.singleContract).name}`;
   }
 }
 
@@ -104,7 +121,7 @@ export function toMatchSetup(v: SetupValues): MatchSetup {
       : { name: i === 0 ? 'Tu' : `Avversario ${i}`, kind: i === 0 ? 'human' : 'cpu' },
   );
   const plan = (contract: ContractId): HandPlan => {
-    if (!CONTRACTS[contract].needsTarget) return { contract };
+    if (!contractNeedsTarget(getContract(contract))) return { contract };
     const chosen = v.targetFaction && factions.includes(v.targetFaction) ? v.targetFaction : null;
     return { contract, targetFaction: chosen ?? factions[Math.floor(rng() * factions.length)]! };
   };
@@ -308,7 +325,7 @@ function ContractGrid({
 }) {
   return (
     <div className="contract-picker">
-      {CONTRACT_LIST.map((c) => {
+      {contracts().map((c) => {
         const index = selected.indexOf(c.id);
         return (
           <button
@@ -324,7 +341,7 @@ function ContractGrid({
               {c.icon} {c.name}
             </span>
             <span className="contract-desc">{c.desc}</span>
-            <span className="contract-score">{c.score}</span>
+            <span className="contract-score">{describeScoring(c)}</span>
           </button>
         );
       })}
@@ -335,14 +352,14 @@ function ContractGrid({
 function FactionsStep({ v, set }: StepProps) {
   const n = v.playerCount;
   const chosen = chosenContracts(v);
-  const needsTarget = chosen.some((c) => CONTRACTS[c].needsTarget);
-  const missing = [...new Set(chosen.flatMap((c) => CONTRACTS[c].requiresFactions ?? []))].filter(
+  const needsTarget = chosen.some((c) => contractNeedsTarget(getContract(c)));
+  const missing = [...new Set(chosen.flatMap((c) => contractRequiredFactions(getContract(c))))].filter(
     (f) => !v.factions.includes(f),
   );
 
   const toggleFaction = (f: FactionId) => {
     if (v.factions.includes(f)) set({ factions: v.factions.filter((x) => x !== f) });
-    else if (v.factions.length < n) set({ factions: FACTION_IDS.filter((x) => x === f || v.factions.includes(x)) });
+    else if (v.factions.length < n) set({ factions: factionIds().filter((x) => x === f || v.factions.includes(x)) });
   };
 
   return (
@@ -353,7 +370,7 @@ function FactionsStep({ v, set }: StepProps) {
         Contratto: nessuno “possiede” una fazione.
       </p>
       <div className="faction-picker">
-        {FACTION_IDS.map((f) => {
+        {factionIds().map((f) => {
           const selected = v.factions.includes(f);
           return (
             <button
@@ -362,14 +379,14 @@ function FactionsStep({ v, set }: StepProps) {
               aria-pressed={selected}
               disabled={!selected && v.factions.length >= n}
               className={`faction-option${selected ? ' selected' : ''}`}
-              style={{ '--faction': FACTIONS[f].color } as CSSProperties}
+              style={{ '--faction': getFaction(f).color } as CSSProperties}
               onClick={() => toggleFaction(f)}
             >
               <b>
                 <span className="dot" />
-                {FACTIONS[f].name}
+                {getFaction(f).name}
               </b>
-              <span className="hint">{FACTIONS[f].tagline}</span>
+              <span className="hint">{getFaction(f).tagline}</span>
             </button>
           );
         })}
@@ -395,7 +412,7 @@ function FactionsStep({ v, set }: StepProps) {
             <option value="">Casuale</option>
             {v.factions.map((f) => (
               <option key={f} value={f}>
-                {FACTIONS[f].name}
+                {getFaction(f).name}
               </option>
             ))}
           </select>
@@ -403,7 +420,7 @@ function FactionsStep({ v, set }: StepProps) {
       )}
       {missing.length > 0 && (
         <p className="status warn">
-          Attenzione: un Contratto scelto riguarda {missing.map((f) => FACTIONS[f].name).join(', ')}, che non è nel
+          Attenzione: un Contratto scelto riguarda {missing.map((f) => getFaction(f).name).join(', ')}, che non è nel
           mazzo.
         </p>
       )}

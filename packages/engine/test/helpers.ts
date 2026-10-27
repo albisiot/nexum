@@ -1,4 +1,4 @@
-import { FACTION_IDS, applyAction, chooseCard, createGame, createRng, getView, shuffle } from '../src';
+import { applyAction, chooseCard, createGame, createRng, factionIds, getView, shuffle } from '../src';
 import type { CardId, ContractId, FactionId, GameConfig, GameState } from '../src';
 
 export function config(overrides: Partial<GameConfig> = {}): GameConfig {
@@ -14,7 +14,7 @@ export function config(overrides: Partial<GameConfig> = {}): GameConfig {
 /** Crea una partita e sostituisce le mani con quelle indicate (per testare situazioni precise). */
 export function withHands(hands: CardId[][], leader = 0, overrides: Partial<GameConfig> = {}): GameState {
   const factions = [...new Set(hands.flat().map((id) => id.split('-')[0] as FactionId))];
-  while (factions.length < hands.length) factions.push(FACTION_IDS.find((f) => !factions.includes(f))!);
+  while (factions.length < hands.length) factions.push(factionIds().find((f) => !factions.includes(f))!);
   const state = createGame(
     config({ playerNames: hands.map((_, i) => `P${i}`), factions: factions.slice(0, hands.length), ...overrides }),
   );
@@ -30,7 +30,7 @@ export function play(state: GameState, ...cards: CardId[]): GameState {
 
 export function randomConfig(rng: () => number, contract?: ContractId): GameConfig {
   const n = 2 + Math.floor(rng() * 7);
-  const factions = shuffle(FACTION_IDS, rng).slice(0, n);
+  const factions = shuffle(factionIds(), rng).slice(0, n);
   return {
     playerNames: Array.from({ length: n }, (_, i) => `P${i}`),
     factions,

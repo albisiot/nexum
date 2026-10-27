@@ -1,6 +1,6 @@
-import { CONTRACTS, FACTIONS, getCard, matchRanking, sortHand } from '@nexum/engine';
+import { getCard, getContract, getFaction, matchRanking, sortHand } from '@nexum/engine';
 import type { GameClient } from '../game/GameClient';
-import { contractDescription, contractTitle, describeNote, describeTrick, plural, signed } from '../game/text';
+import { contractDescription, contractTitle, describeNote, describeScoring, describeTrick, plural, signed } from '../game/text';
 import { useGame } from '../game/useGame';
 import { CardView } from './CardView';
 import { EndScreen, HandEndScreen } from './EndScreen';
@@ -45,7 +45,7 @@ export function GameScreen({ client, onReplay, onExit, onMenu }: Props) {
           <span className="hint">{series ? `Contratto ${match.handIndex + 1} di ${match.hands.length}` : 'Contratto'}</span>
           <h2>{contractTitle(view)}</h2>
           <p>{contractDescription(view)}</p>
-          <span className="pill">{CONTRACTS[view.contract].score}</span>
+          <span className="pill">{describeScoring(getContract(view.contract))}</span>
         </div>
         <div className="phase">
           <span className="hint">Presa</span>
@@ -122,7 +122,7 @@ export function GameScreen({ client, onReplay, onExit, onMenu }: Props) {
           <p>
             {view.plays.length === 0
               ? `${current} è primo di mano e può aprire con qualsiasi fazione.`
-              : `Carte già sul tavolo: ${view.plays.length}. Fazione d’apertura: ${FACTIONS[view.leadFaction!].name}.`}{' '}
+              : `Carte già sul tavolo: ${view.plays.length}. Fazione d’apertura: ${getFaction(view.leadFaction!).name}.`}{' '}
             Mostra la mano solo quando {current} ha il dispositivo.
           </p>
           <button type="button" className="btn primary" onClick={() => client.revealHand()}>
@@ -217,7 +217,7 @@ export function GameScreen({ client, onReplay, onExit, onMenu }: Props) {
     if (snap.handHidden) return 'Mano coperta per la privacy.';
     if (!snap.canPlay) return `Attendi: tocca a ${current}.`;
     if (!view.leadFaction) return 'Sei primo di mano: puoi aprire con qualsiasi fazione.';
-    const lead = FACTIONS[view.leadFaction].name;
+    const lead = getFaction(view.leadFaction).name;
     return view.hand.some((id) => getCard(id).faction === view.leadFaction)
       ? `Fazione d’apertura: ${lead}. Devi seguirla.`
       : `Fazione d’apertura: ${lead}. Non ce l’hai: puoi giocare qualsiasi carta.`;
