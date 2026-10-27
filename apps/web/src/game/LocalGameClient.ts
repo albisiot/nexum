@@ -1,12 +1,12 @@
-import { applyAction, chooseCard, createGame, createRng, getView } from '@nexum/engine';
-import type { Action, CardId, GameState, Rng } from '@nexum/engine';
+import { applyMatchAction, chooseCard, createMatch, createRng, getMatchView, getView } from '@nexum/engine';
+import type { CardId, MatchAction, MatchState, Rng } from '@nexum/engine';
 import type { ClientSnapshot, GameClient, MatchSetup } from './GameClient';
 
 const CPU_DELAY_MS = 550;
 
 /** Partita interamente nel browser: contro la CPU o pass-and-play sullo stesso dispositivo. */
 export class LocalGameClient implements GameClient {
-  private state: GameState;
+  private state: MatchState;
   private snapshot: ClientSnapshot;
   private revealedFor: number | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -15,11 +15,10 @@ export class LocalGameClient implements GameClient {
   private readonly cpuRng: Rng;
 
   constructor(readonly setup: MatchSetup) {
-    this.state = createGame({
+    this.state = createMatch({
       playerNames: setup.seats.map((s) => s.name),
       factions: setup.factions,
-      contract: setup.contract,
-      targetFaction: setup.targetFaction,
+      hands: setup.hands,
       seed: setup.seed,
     });
     this.cpuRng = createRng(setup.seed ^ 0x9e3779b9);
@@ -46,9 +45,15 @@ export class LocalGameClient implements GameClient {
     this.apply({ type: 'nextTrick' });
   }
 
+  nextHand(): void {
+    if (this.state.phase !== 'handEnd') return;
+    this.revealedFor = null;
+    this.apply({ type: 'nextHand' });
+  }
+
   revealHand(): void {
     if (!this.snapshot.handHidden) return;
-    this.revealedFor = this.state.turn;
+    this.revealedFor = this.state.game.turn;
     this.update();
   }
 
@@ -59,8 +64,8 @@ export class LocalGameClient implements GameClient {
     this.listeners.clear();
   }
 
-  private apply(action: Action): void {
-    this.state = applyAction(this.state, action);
+  private apply(action: MatchAction): void {
+    this.state = applyMatchAction(this.state, action);
     this.update();
   }
 
@@ -72,35 +77,39 @@ export class LocalGameClient implements GameClient {
   }
 
   private scheduleCpu(): void {
-    if (this.disposed || this.timer || this.state.phase !== 'playing') return;
-    const seat = this.state.turn;
+    const g = this.state.game;
+    if (this.disposed || this.timer || this.state.phase !== 'playing' || g.phase !== 'playing') return;
+    const seat = g.turn;
     if (this.setup.seats[seat]?.kind !== 'cpu') return;
     this.timer = setTimeout(() => {
       this.timer = null;
-      if (this.disposed || this.state.phase !== 'playing' || this.state.turn !== seat) return;
-      this.apply({ type: 'play', player: seat, cardId: chooseCard(getView(this.state, seat), this.cpuRng) });
+      const now = this.state.game;
+      if (this.disposed || now.phase !== 'playing' || now.turn !== seat) return;
+      this.apply({ type: 'play', player: seat, cardId: chooseCard(getView(now, seat), this.cpuRng) });
     }, CPU_DELAY_MS);
   }
 
   private buildSnapshot(): ClientSnapshot {
-    const s = this.state;
+    const g = this.state.game;
     const { mode, seats } = this.setup;
-    const humanTurn = s.phase === 'playing' && seats[s.turn]?.kind === 'human';
+    const humanTurn = this.state.phase === 'playing' && g.phase === 'playing' && seats[g.turn]?.kind === 'human';
 
     let perspective: number | null;
     if (mode === 'solo') perspective = seats.findIndex((seat) => seat.kind === 'human');
-    else perspective = humanTurn ? s.turn : null;
+    else perspective = humanTurn ? g.turn : null;
 
-    const handHidden = mode === 'local' && humanTurn && this.revealedFor !== s.turn;
+    const handHidden = mode === 'local' && humanTurn && this.revealedFor !== g.turn;
     if (handHidden) perspective = null;
 
+    const match = getMatchView(this.state, perspective);
     return {
-      view: getView(s, perspective),
+      match,
+      view: match.game,
       seats,
       perspective,
       handHidden,
-      canPlay: humanTurn && perspective === s.turn,
-      canContinue: s.phase === 'trickEnd',
+      canPlay: humanTurn && perspective === g.turn,
+      canContinue: g.phase === 'trickEnd',
     };
   }
 }

@@ -3,11 +3,11 @@
 Decisioni di design da prendere prima di implementare il resto. Finché non sono decise,
 il motore si comporta esattamente come il simulatore v0.9.
 
-## 1. Struttura della partita
+## 1. Struttura della partita — decisa (v0.13.0)
 
-Oggi una partita è **una sola mano**: un Contratto per 13 prese.
-Da decidere se una partita completa è una serie di mani (es. ogni giocatore sceglie un Contratto a turno)
-con un punteggio totale. In quel caso va affrontato anche il punto 4.
+Una partita è un solo Contratto (casuale o a scelta) oppure una **serie** (casuale da 3, 5 o tutti i Contratti,
+oppure a scelta e in ordine). A ogni Contratto si rimescola e si ridistribuisce; i punti si sommano.
+Resta aperto il punto 4 sulle scale di punteggio molto diverse tra i Contratti, che in una serie pesa di più.
 
 ## 2. Poteri non ancora implementati (32 su 51)
 

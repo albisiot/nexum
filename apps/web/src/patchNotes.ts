@@ -13,6 +13,34 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.13.0',
+    date: '2026-10-27',
+    title: 'Serie di Contratti',
+    changes: [
+      {
+        type: 'new',
+        text: 'Nuova preparazione in tre passi: prima quanti giocatori, poi come giocare i Contratti, infine le fazioni.',
+      },
+      {
+        type: 'new',
+        text: 'Serie di Contratti: casuale (3, 5 o tutti) oppure a scelta, nell’ordine che preferisci. I punti si sommano e vince chi ha il totale più alto.',
+      },
+      { type: 'new', text: 'Si può giocare anche un solo Contratto, estratto a caso o scelto.' },
+      {
+        type: 'new',
+        text: 'Tra un Contratto e l’altro: classifica della serie e anteprima del prossimo Contratto. A fine serie: tabella con i punti di ogni Contratto.',
+      },
+      {
+        type: 'change',
+        text: 'I Contratti casuali escludono quelli che riguardano fazioni assenti dal mazzo (es. Evita The Unmade senza Nullarii).',
+      },
+      {
+        type: 'change',
+        text: 'In “Non prendere una fazione” la fazione bersaglio può essere scelta o estratta a caso.',
+      },
+    ],
+  },
+  {
     version: '0.12.0',
     date: '2026-10-27',
     title: 'Accesso con Google',

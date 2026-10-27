@@ -13,8 +13,9 @@ export function RulesPanel() {
       </p>
       <p>
         Una <strong>mano</strong> dura 13 prese con lo stesso <strong>Contratto</strong>, che stabilisce cosa conviene
-        fare: prendere più prese, meno prese, evitare una fazione, le carte alte, The Unmade e così via. Vince chi chiude
-        con il punteggio più alto.
+        fare: prendere più prese, meno prese, evitare una fazione, le carte alte, The Unmade e così via. Si può giocare un
+        solo Contratto oppure una <strong>serie</strong>: a ogni Contratto le carte si rimescolano e si ridistribuiscono,
+        e i punti si sommano. Vince chi chiude con il punteggio più alto.
       </p>
       <p className="hint">
         Le carte con la scritta “potere non ancora attivo” hanno un potere previsto dal design ma non ancora applicato

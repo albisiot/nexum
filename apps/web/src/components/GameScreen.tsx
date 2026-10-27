@@ -1,9 +1,9 @@
-import { CONTRACTS, FACTIONS, getCard, ranking, sortHand } from '@nexum/engine';
+import { CONTRACTS, FACTIONS, getCard, matchRanking, sortHand } from '@nexum/engine';
 import type { GameClient } from '../game/GameClient';
 import { contractDescription, contractTitle, describeNote, describeTrick, plural, signed } from '../game/text';
 import { useGame } from '../game/useGame';
 import { CardView } from './CardView';
-import { EndScreen } from './EndScreen';
+import { EndScreen, HandEndScreen } from './EndScreen';
 
 interface Props {
   client: GameClient;
@@ -14,19 +14,16 @@ interface Props {
 
 export function GameScreen({ client, onReplay, onExit, onMenu }: Props) {
   const snap = useGame(client);
-  const { view, perspective } = snap;
+  const { match, view, perspective } = snap;
   const names = view.players.map((p) => p.name);
+  const me = client.setup.mode === 'solo' ? 0 : null;
+  const series = match.hands.length > 1;
 
-  if (view.phase === 'handEnd') {
-    return (
-      <EndScreen
-        view={view}
-        me={client.setup.mode === 'solo' ? 0 : null}
-        onReplay={onReplay}
-        onExit={onExit}
-        onMenu={onMenu}
-      />
-    );
+  if (match.phase === 'matchEnd') {
+    return <EndScreen match={match} names={names} me={me} onReplay={onReplay} onExit={onExit} onMenu={onMenu} />;
+  }
+  if (match.phase === 'handEnd') {
+    return <HandEndScreen match={match} names={names} me={me} onNext={() => client.nextHand()} onMenu={onMenu} />;
   }
 
   const n = view.players.length;
@@ -38,14 +35,14 @@ export function GameScreen({ client, onReplay, onExit, onMenu }: Props) {
   const legal = new Set(view.legal);
 
   const exit = () => {
-    if (window.confirm('Abbandonare la mano in corso e tornare alla preparazione?')) onExit();
+    if (window.confirm('Abbandonare la partita in corso e tornare alla preparazione?')) onExit();
   };
 
   return (
     <main className="game">
       <section className="panel contract-head">
         <div>
-          <span className="hint">Contratto</span>
+          <span className="hint">{series ? `Contratto ${match.handIndex + 1} di ${match.hands.length}` : 'Contratto'}</span>
           <h2>{contractTitle(view)}</h2>
           <p>{contractDescription(view)}</p>
           <span className="pill">{CONTRACTS[view.contract].score}</span>
@@ -170,8 +167,8 @@ export function GameScreen({ client, onReplay, onExit, onMenu }: Props) {
 
         <aside className="sidebar">
           <section className="panel">
-            <h3>Classifica</h3>
-            {ranking(view).map((pi, i) => {
+            <h3>{series ? 'Classifica della serie' : 'Classifica'}</h3>
+            {matchRanking(match.totals).map((pi, i) => {
               const p = view.players[pi]!;
               return (
                 <div key={pi} className={`score-row${pi === perspective ? ' me' : ''}`}>
@@ -181,10 +178,11 @@ export function GameScreen({ client, onReplay, onExit, onMenu }: Props) {
                     </b>
                     <div className="hint">
                       {plural(p.tricks, 'presa', 'prese')} · {p.handCount} in mano
+                      {series && ` · questa mano ${signed(p.score)}`}
                       {p.nextModifier !== 0 && ` · prossima carta ${signed(p.nextModifier)}`}
                     </div>
                   </div>
-                  <b>{p.score} pt</b>
+                  <b>{match.totals[pi]} pt</b>
                 </div>
               );
             })}

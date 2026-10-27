@@ -17,5 +17,22 @@ export {
 export { IMPLEMENTED_POWERS, isPowerImplemented } from './powers';
 export { contractDelta } from './scoring';
 export { getView } from './view';
+export {
+  playableContracts,
+  randomHands,
+  validateMatchConfig,
+  createMatch,
+  applyMatchAction,
+  matchTotals,
+  matchRanking,
+  getMatchView,
+  type HandPlan,
+  type MatchConfig,
+  type HandSummary,
+  type MatchPhase,
+  type MatchState,
+  type MatchAction,
+  type MatchView,
+} from './match';
 export { chooseCard } from './bot';
 export { createRng, shuffle, randomSeed, type Rng } from './rng';

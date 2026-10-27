@@ -474,6 +474,215 @@ h3 {
   margin: 0 0 14px;
 }
 
+.steps {
+  list-style: none;
+  display: flex;
+  gap: 6px;
+  margin: 4px 0 18px;
+  padding: 0;
+}
+
+.steps li {
+  flex: 1;
+  min-width: 0;
+}
+
+.steps button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 6px 10px;
+  border: 0;
+  border-bottom: 3px solid var(--line);
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.steps button:disabled {
+  cursor: default;
+}
+
+.steps li.done button {
+  border-color: #806b27;
+  color: var(--text);
+}
+
+.steps li.current button {
+  border-color: var(--gold);
+  color: #ffe28a;
+}
+
+.step-no {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  font-size: 12px;
+}
+
+.count-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(96px, 100%), 1fr));
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.count-option,
+.format-option,
+.chip-option {
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--text);
+  border-radius: 14px;
+}
+
+.count-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 6px;
+}
+
+.count-option b {
+  font-size: 30px;
+  line-height: 1.1;
+}
+
+.count-option span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.format-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.format-option {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  column-gap: 12px;
+  row-gap: 4px;
+  align-items: start;
+  padding: 14px;
+  text-align: left;
+}
+
+.format-icon {
+  grid-row: span 2;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.length-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0;
+}
+
+.chip-option {
+  min-height: 44px;
+  padding: 8px 16px;
+  font-weight: 800;
+  border-radius: 999px;
+}
+
+.count-option.selected,
+.format-option.selected,
+.chip-option.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold-soft);
+  background: #2a271d;
+}
+
+.contract-option {
+  position: relative;
+}
+
+.order-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gold);
+  color: #101216;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.step-note {
+  margin-top: 14px;
+}
+
+.step-controls {
+  justify-content: flex-end;
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.summary {
+  margin: 16px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.summary b {
+  color: var(--text);
+}
+
+.breakdown-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 0 auto 6px;
+}
+
+.breakdown {
+  margin: 0 auto;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: right;
+}
+
+.breakdown th,
+.breakdown td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+
+.breakdown th:first-child,
+.breakdown td:first-child {
+  text-align: left;
+}
+
+.breakdown thead th {
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.breakdown tfoot td {
+  font-weight: 900;
+  border-bottom: 0;
+}
+
 .field {
   display: flex;
   flex-direction: column;
@@ -985,6 +1194,12 @@ input {
   .note li {
     flex-direction: column;
     gap: 3px;
+  }
+  .steps li:not(.current) {
+    flex: none;
+  }
+  .steps li:not(.current) .step-label {
+    display: none;
   }
   .grid2 {
     grid-template-columns: 1fr;
