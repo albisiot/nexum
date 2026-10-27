@@ -33,7 +33,8 @@ packages/engine/   Motore delle regole: TypeScript puro, nessuna dipendenza dal 
   test/            Test, incluso il confronto mossa per mossa con il simulatore v0.9
 apps/web/          Interfaccia React + Vite
   src/game/        GameClient (confine UI ↔ partita) e LocalGameClient
-  src/components/  Schermate: preparazione, tavolo, fine mano
+  src/components/  Schermate: menu, preparazione, tavolo, fine mano, patch notes
+  src/patchNotes.ts  Storia degli aggiornamenti (aggiungere una voce in cima a ogni versione)
 reference/         Simulatore originale v0.9
 docs/              Questioni aperte sulle regole
 ```

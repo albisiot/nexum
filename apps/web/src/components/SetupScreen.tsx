@@ -61,9 +61,10 @@ interface Props {
   values: SetupValues;
   onChange(values: SetupValues): void;
   onStart(setup: MatchSetup): void;
+  onBack(): void;
 }
 
-export function SetupScreen({ values: v, onChange, onStart }: Props) {
+export function SetupScreen({ values: v, onChange, onStart, onBack }: Props) {
   const set = (patch: Partial<SetupValues>) => onChange({ ...v, ...patch });
   const n = v.playerCount;
   const contract = CONTRACTS[v.contract];
@@ -76,23 +77,19 @@ export function SetupScreen({ values: v, onChange, onStart }: Props) {
 
   return (
     <section className="panel setup">
-      <h2>Prepara una mano di Nexum</h2>
+      <button type="button" className="back" onClick={onBack}>
+        ← Menu principale
+      </button>
+      <h2>{v.mode === 'solo' ? 'Partita contro la CPU' : 'Multiplayer sullo stesso dispositivo'}</h2>
+      <p className="hint">
+        {v.mode === 'solo'
+          ? 'Tu controlli il primo posto; gli altri sono gestiti dalla CPU.'
+          : 'Ci si passa il dispositivo: tra un turno e l’altro la mano viene coperta.'}
+      </p>
 
       <div className="grid2">
         <label className="field">
-          <span className="label">Modalità</span>
-          <select value={v.mode} onChange={(e) => set({ mode: e.target.value as GameMode })}>
-            <option value="solo">Contro la CPU</option>
-            <option value="local">Più giocatori sullo stesso dispositivo</option>
-          </select>
-          <span className="hint">
-            {v.mode === 'solo'
-              ? 'Tu controlli il primo posto; gli altri sono gestiti dalla CPU.'
-              : 'Ci si passa il dispositivo: tra un turno e l’altro la mano viene coperta.'}
-          </span>
-        </label>
-        <label className="field">
-          <span className="label">Giocatori</span>
+          <span className="label">{v.mode === 'solo' ? 'Giocatori (te compreso)' : 'Giocatori'}</span>
           <select
             value={n}
             onChange={(e) => {

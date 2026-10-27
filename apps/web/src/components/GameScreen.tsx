@@ -9,15 +9,24 @@ interface Props {
   client: GameClient;
   onReplay(): void;
   onExit(): void;
+  onMenu(): void;
 }
 
-export function GameScreen({ client, onReplay, onExit }: Props) {
+export function GameScreen({ client, onReplay, onExit, onMenu }: Props) {
   const snap = useGame(client);
   const { view, perspective } = snap;
   const names = view.players.map((p) => p.name);
 
   if (view.phase === 'handEnd') {
-    return <EndScreen view={view} me={client.setup.mode === 'solo' ? 0 : null} onReplay={onReplay} onExit={onExit} />;
+    return (
+      <EndScreen
+        view={view}
+        me={client.setup.mode === 'solo' ? 0 : null}
+        onReplay={onReplay}
+        onExit={onExit}
+        onMenu={onMenu}
+      />
+    );
   }
 
   const n = view.players.length;

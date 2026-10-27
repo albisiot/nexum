@@ -8,9 +8,10 @@ interface Props {
   me: number | null;
   onReplay(): void;
   onExit(): void;
+  onMenu(): void;
 }
 
-export function EndScreen({ view, me, onReplay, onExit }: Props) {
+export function EndScreen({ view, me, onReplay, onExit, onMenu }: Props) {
   const order = ranking(view);
   const best = view.players[order[0]!]!.score;
   const winners = order.filter((pi) => view.players[pi]!.score === best);
@@ -50,6 +51,9 @@ export function EndScreen({ view, me, onReplay, onExit }: Props) {
         </button>
         <button type="button" className="btn" onClick={onExit}>
           Cambia impostazioni
+        </button>
+        <button type="button" className="btn" onClick={onMenu}>
+          Menu principale
         </button>
       </div>
     </section>
