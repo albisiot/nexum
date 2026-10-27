@@ -13,6 +13,16 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.12.0',
+    date: '2026-10-27',
+    title: 'Accesso con Google',
+    changes: [
+      { type: 'new', text: 'Dal menu principale si può accedere con il proprio account Google. È facoltativo: si gioca anche senza.' },
+      { type: 'new', text: 'Chi ha fatto l’accesso gioca con il proprio nome, contro la CPU e in multiplayer.' },
+      { type: 'new', text: 'L’accesso resta attivo anche alla riapertura del sito, finché non si preme “Esci”.' },
+    ],
+  },
+  {
     version: '0.11.0',
     date: '2026-10-27',
     title: 'Menu principale',

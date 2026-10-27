@@ -1,5 +1,6 @@
 import type { GameMode } from '../game/GameClient';
 import { PATCH_NOTES } from '../patchNotes';
+import { AccountPanel } from './AccountPanel';
 
 interface Props {
   onPlay(mode: GameMode): void;
@@ -13,6 +14,8 @@ export function MenuScreen({ onPlay, onPatchNotes }: Props) {
         <h1 className="menu-logo">NEXUM</h1>
         <p>Gioco di carte trick-taking a Contratti</p>
       </div>
+
+      <AccountPanel />
 
       <nav className="menu-list" aria-label="Menu principale">
         <button type="button" className="menu-item featured" onClick={() => onPlay('solo')}>

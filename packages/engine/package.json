@@ -1,7 +1,7 @@
 {
   "name": "@nexum/engine",
   "private": true,
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Motore delle regole di NEXUM: puro TypeScript, nessuna dipendenza dal browser",
   "type": "module",
   "exports": {

@@ -1,7 +1,7 @@
 {
   "name": "nexum",
   "private": true,
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "NEXUM — gioco di carte trick-taking a Contratti",
   "type": "module",
   "workspaces": [
@@ -17,5 +17,8 @@
   },
   "devDependencies": {
     "typescript": "^7.0.2"
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.6"
   }
 }

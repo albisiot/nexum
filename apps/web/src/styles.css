@@ -217,6 +217,84 @@ h3 {
   color: var(--muted);
 }
 
+.account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+
+.account.muted {
+  justify-content: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.account.signed-out {
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+}
+
+.account-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.account-text .hint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  font-weight: 900;
+}
+
+.btn.small {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 13px;
+}
+
+.google-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1px solid #dadce0;
+  border-radius: 999px;
+  background: #fff;
+  color: #1f1f1f;
+  font-weight: 700;
+}
+
+.google-btn:hover,
+.google-btn:focus-visible {
+  background: #f1f3f4;
+}
+
+.account-error {
+  color: var(--bad);
+  font-size: 13px;
+}
+
 .menu-list {
   display: flex;
   flex-direction: column;

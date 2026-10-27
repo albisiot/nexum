@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { randomSeed } from '@nexum/engine';
+import { useAuth } from './auth/auth';
 import { GameScreen } from './components/GameScreen';
 import { MenuScreen } from './components/MenuScreen';
 import { PatchNotesScreen } from './components/PatchNotesScreen';
@@ -16,6 +17,7 @@ export function App() {
   const [setupValues, setSetupValues] = useState<SetupValues>(defaultSetup);
   const [client, setClient] = useState<GameClient | null>(null);
   const [showRules, setShowRules] = useState(false);
+  const auth = useAuth();
 
   const go = (next: Screen) => {
     client?.dispose();
@@ -23,12 +25,21 @@ export function App() {
     setScreen(next);
     window.scrollTo(0, 0);
   };
+  const myName = auth.status === 'signedIn' ? auth.account.firstName : null;
+
   const choose = (mode: GameMode) => {
-    setSetupValues((v) => ({ ...v, mode }));
+    setSetupValues((v) => {
+      // Chi ha fatto l'accesso occupa il primo posto con il proprio nome.
+      const names = myName && v.names[0] === 'Giocatore 1' ? [myName, ...v.names.slice(1)] : v.names;
+      return { ...v, mode, names };
+    });
     go('setup');
   };
   const start = (setup: MatchSetup) => {
     client?.dispose();
+    if (setup.mode === 'solo' && myName) {
+      setup = { ...setup, seats: setup.seats.map((s, i) => (i === 0 ? { ...s, name: myName } : s)) };
+    }
     setClient(new LocalGameClient(setup));
     setShowRules(false);
     window.scrollTo(0, 0);
