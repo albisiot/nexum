@@ -1,0 +1,21 @@
+{
+  "name": "nexum",
+  "private": true,
+  "version": "0.10.0",
+  "description": "NEXUM — gioco di carte trick-taking a Contratti",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w @nexum/web",
+    "build": "npm run build -w @nexum/web",
+    "preview": "npm run preview -w @nexum/web",
+    "test": "npm run test -w @nexum/engine",
+    "typecheck": "tsc -p packages/engine && tsc -p packages/engine/test && tsc -p apps/web"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}

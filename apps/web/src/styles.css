@@ -1,0 +1,694 @@
+:root {
+  --bg: #0e1015;
+  --panel: rgba(23, 27, 34, 0.96);
+  --panel2: #202631;
+  --inset: #12161c;
+  --text: #f5f7fa;
+  --muted: #a3adba;
+  --line: #343d4b;
+  --gold: #d4af37;
+  --gold-soft: rgba(212, 175, 55, 0.2);
+  --good: #5dc782;
+  --bad: #ec7676;
+  --warn: #f1c36a;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1b2029 0, #0f1218 45%, #0a0c10 100%) fixed var(--bg);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+button,
+select,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+h2,
+h3 {
+  margin: 0 0 8px;
+}
+
+.app {
+  max-width: 1220px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.hint {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.good {
+  color: var(--good);
+}
+
+.bad {
+  color: var(--bad);
+}
+
+.warn {
+  color: var(--warn);
+}
+
+/* ---------- strutture ---------- */
+
+.top {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.brand h1 {
+  margin: 0;
+  font-size: 28px;
+  letter-spacing: 0.14em;
+}
+
+.brand p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.controls.center {
+  justify-content: center;
+}
+
+.btn {
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--text);
+  border-radius: 12px;
+  padding: 11px 15px;
+  font-weight: 800;
+  min-height: 44px;
+}
+
+.btn.primary {
+  background: linear-gradient(180deg, #e3c650, #ad891f);
+  color: #101216;
+  border-color: #d0aa31;
+}
+
+.btn.danger {
+  border-color: #6b3a3a;
+}
+
+.btn.wide {
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: -1px;
+  background: var(--faction);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+}
+
+.pill {
+  display: inline-flex;
+  margin-top: 9px;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+/* ---------- preparazione ---------- */
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+select,
+input {
+  width: 100%;
+  background: var(--panel2);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 12px;
+  min-height: 44px;
+}
+
+.names {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(160px, 100%), 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.step {
+  margin-top: 20px;
+  margin-bottom: 2px;
+  font-size: 18px;
+}
+
+.contract-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.contract-option,
+.faction-option {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--panel2);
+  color: var(--text);
+  border-radius: 14px;
+  padding: 12px;
+}
+
+.contract-option.selected,
+.faction-option.selected {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold-soft);
+  background: #2a271d;
+}
+
+.contract-title {
+  font-weight: 900;
+}
+
+.contract-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.contract-score {
+  font-size: 11px;
+  color: var(--gold);
+  font-weight: 800;
+  margin-top: 3px;
+}
+
+.target {
+  margin-top: 12px;
+  max-width: 360px;
+}
+
+.faction-picker {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.faction-option {
+  min-height: 72px;
+}
+
+.faction-option:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.status {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.status.good {
+  color: var(--good);
+}
+
+.status.warn {
+  color: var(--warn);
+}
+
+.rules p {
+  line-height: 1.55;
+  margin: 0 0 10px;
+}
+
+/* ---------- tavolo ---------- */
+
+.game {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.contract-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+}
+
+.contract-head h2 {
+  margin: 3px 0 4px;
+  font-size: 23px;
+}
+
+.contract-head p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.phase {
+  min-width: 170px;
+  text-align: center;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  padding: 10px 14px;
+  border-radius: 12px;
+}
+
+.phase strong {
+  display: block;
+  margin: 4px 0;
+  font-size: 20px;
+}
+
+.order {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  background: #171c24;
+  border-radius: 999px;
+  padding: 7px 10px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.chip.current {
+  border-color: var(--gold);
+  color: #ffe28a;
+}
+
+.trick {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(150px, 100%), 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.slot {
+  min-height: 200px;
+  border: 1px dashed #495365;
+  border-radius: 14px;
+  padding: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.slot.won {
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 0 2px var(--gold-soft);
+}
+
+.slot-head {
+  font-size: 12px;
+  font-weight: 900;
+  color: #d8dee8;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.tag {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 2px 6px;
+  color: var(--muted);
+}
+
+.tag.gold {
+  border-color: var(--gold);
+  color: #ffe28a;
+}
+
+.slot-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.result {
+  margin-top: 14px;
+  background: var(--inset);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 13px;
+  font-size: 14px;
+}
+
+.result p {
+  margin: 0 0 6px;
+}
+
+.result ul {
+  margin: 6px 0 12px;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.pass-panel {
+  border: 1px solid var(--gold);
+  background: linear-gradient(145deg, #292717, #1d1c16);
+  border-radius: 16px;
+  padding: 18px;
+  text-align: center;
+}
+
+.pass-panel p {
+  margin: 0 auto 14px;
+  max-width: 680px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ---------- carte ---------- */
+
+.card {
+  --edge: var(--faction);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 180px;
+  border: 2px solid var(--edge);
+  border-radius: 14px;
+  padding: 11px 11px 11px 16px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--faction) 16%, #202631), #171b22 70%);
+  color: var(--text);
+  text-align: left;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  background: var(--faction);
+}
+
+.card[data-faction='Nullarii'] {
+  --edge: #5b6372;
+}
+
+.card[data-faction='Axiomata'] {
+  color: #111;
+  background: linear-gradient(160deg, #f1f2f5, #d7dce5);
+}
+
+.card[data-faction='Axiomata']::before {
+  background: #aab2bf;
+}
+
+.card[data-faction='Axiomata'] .card-effect,
+.card[data-faction='Axiomata'] .card-printed {
+  color: #424b57;
+}
+
+.card.compact {
+  min-height: 160px;
+  flex: 1;
+}
+
+.card-suit {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.card-name {
+  font-weight: 900;
+  line-height: 1.1;
+  margin-top: 3px;
+}
+
+.card-value {
+  font-size: 36px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.card-value.changed {
+  color: var(--gold);
+}
+
+.card[data-faction='Axiomata'] .card-value.changed {
+  color: #8a6a12;
+}
+
+.card-printed {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.card-effect {
+  font-size: 11px;
+  color: #c0c8d3;
+  line-height: 1.3;
+  margin-top: 6px;
+}
+
+.card-pending {
+  display: block;
+  margin-top: 4px;
+  font-style: italic;
+  opacity: 0.75;
+}
+
+/* ---------- mano e colonna laterale ---------- */
+
+.gamegrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 310px;
+  gap: 14px;
+  align-items: start;
+}
+
+.hand-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+
+.hand-head h2 {
+  margin: 0;
+}
+
+.hand-head strong {
+  white-space: nowrap;
+}
+
+.hand {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr));
+  gap: 9px;
+}
+
+.cardbtn {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  display: flex;
+}
+
+.cardbtn:disabled {
+  cursor: default;
+}
+
+.cardbtn .card {
+  transition: transform 0.14s, opacity 0.14s, box-shadow 0.14s;
+}
+
+.cardbtn.valid .card {
+  box-shadow: 0 0 0 2px rgba(93, 199, 130, 0.3);
+}
+
+.cardbtn.valid:hover .card,
+.cardbtn.valid:focus-visible .card {
+  transform: translateY(-3px);
+  box-shadow: 0 0 0 3px rgba(93, 199, 130, 0.55);
+}
+
+.cardbtn.invalid {
+  opacity: 0.35;
+}
+
+.hand-hidden {
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1px dashed var(--line);
+  border-radius: 14px;
+  color: var(--muted);
+  padding: 20px;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.score-row,
+.logitem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 9px 10px;
+  margin-bottom: 7px;
+}
+
+.score-row.me {
+  border-color: #806b27;
+}
+
+.logitem {
+  display: block;
+  font-size: 13px;
+}
+
+.log {
+  max-height: 260px;
+  overflow: auto;
+}
+
+.end {
+  text-align: center;
+}
+
+.final-score {
+  max-width: 540px;
+  margin: 14px auto;
+  text-align: left;
+}
+
+/* ---------- schermi stretti ---------- */
+
+@media (max-width: 940px) {
+  .faction-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gamegrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 580px) {
+  .app {
+    padding: 16px;
+  }
+  .brand h1 {
+    font-size: 23px;
+  }
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+  .contract-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .trick {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .hand {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .card {
+    min-height: 165px;
+  }
+}

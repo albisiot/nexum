@@ -1,0 +1,481 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>Nexum — Simulatore Trick-Taking v0.4</title>
+<style>
+:root{--bg:#0e1015;--panel:#171b22;--panel2:#202631;--text:#f5f7fa;--muted:#a3adba;--line:#343d4b;--gold:#d4af37;--good:#5dc782;--bad:#ec7676}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#1b2029 0,#0f1218 45%,#0a0c10 100%);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button,select{font:inherit}button{cursor:pointer}.app{max-width:1220px;margin:0 auto;padding:16px}.hidden{display:none!important}
+.top{display:flex;gap:12px;align-items:flex-start;justify-content:space-between;margin-bottom:14px}.brand h1{margin:0;font-size:28px;letter-spacing:.14em}.brand p{margin:4px 0 0;color:var(--muted);font-size:13px}
+.panel{background:rgba(23,27,34,.96);border:1px solid var(--line);border-radius:18px;padding:16px}.subpanel{background:#12161c;border:1px solid var(--line);border-radius:14px;padding:13px}
+.btn{border:1px solid var(--line);background:var(--panel2);color:var(--text);border-radius:12px;padding:11px 15px;font-weight:800;min-height:44px}.btn.primary{background:linear-gradient(180deg,#e3c650,#ad891f);color:#101216;border-color:#d0aa31}.btn.danger{border-color:#6b3a3a}.btn:disabled{opacity:.4;cursor:not-allowed}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.controls{display:flex;flex-wrap:wrap;gap:10px}.label{display:block;color:var(--muted);font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}select{width:100%;margin-top:6px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:12px;padding:12px;min-height:44px}
+.faction-picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:8px}.faction-option{position:relative}.faction-option input{position:absolute;opacity:0;pointer-events:none}.faction-option label{display:block;border:2px solid var(--line);background:var(--panel2);border-radius:13px;padding:10px;min-height:72px;cursor:pointer}.faction-option input:checked+label{border-color:var(--gold);box-shadow:0 0 0 2px rgba(212,175,55,.15)}.faction-dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:-1px;border:1px solid rgba(255,255,255,.35)}
+.statusline{margin-top:10px;font-size:13px;color:var(--muted)}.warn{color:#f1c36a}.error{color:var(--bad)}
+.contract-head{display:flex;justify-content:space-between;gap:12px;align-items:center}.contract-head h2{margin:3px 0 4px;font-size:23px}.contract-head p{margin:0;color:var(--muted);line-height:1.45}.phase{min-width:160px;text-align:center;background:var(--panel2);border:1px solid var(--line);padding:10px 14px;border-radius:12px}.phase strong{display:block;margin-top:4px}
+.seats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}.seat{border:1px solid var(--line);background:var(--panel2);border-radius:13px;padding:10px}.seat.active{border-color:var(--gold);box-shadow:0 0 0 1px rgba(212,175,55,.25)}.seat .row{display:flex;justify-content:space-between;gap:8px;margin-top:6px}.small{font-size:12px;color:var(--muted)}
+.order-panel{margin-bottom:13px;padding:12px;border:1px solid var(--line);background:var(--panel2);border-radius:13px}.order-title{font-weight:900;margin-bottom:8px}.order-row{display:flex;flex-wrap:wrap;align-items:center;gap:7px}.order-chip{border:1px solid var(--line);background:#171c24;border-radius:999px;padding:7px 10px;font-size:12px;font-weight:800}.order-chip.current{border-color:var(--gold);color:#ffe28a;box-shadow:0 0 0 1px rgba(212,175,55,.2)}.order-arrow{color:var(--muted);font-weight:900}.trick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:14px}.slot{min-height:190px;border:1px dashed #495365;border-radius:14px;padding:9px;display:flex;flex-direction:column;gap:7px;align-items:stretch}.slot.empty{color:var(--muted);font-size:13px}.slot-head{font-size:12px;font-weight:900;color:#d8dee8;min-height:30px}.slot.empty .slot-body{flex:1;display:flex;align-items:center;justify-content:center;text-align:center}
+.card{border:2px solid var(--faction);background:linear-gradient(160deg,color-mix(in srgb,var(--faction) 16%,#202631),#171b22 70%);border-radius:14px;padding:11px;display:flex;flex-direction:column;justify-content:space-between;width:100%;min-width:0;position:relative;overflow:hidden}.card::before{content:"";position:absolute;left:0;top:0;bottom:0;width:7px;background:var(--faction)}.card.white{color:#111;background:linear-gradient(160deg,#f1f2f5,#d7dce5);border-color:#f2f2f2}.card.white .small,.card.white .effect{color:#424b57}.card .name{font-weight:900;line-height:1.08;padding-left:5px}.card .num{font-size:36px;font-weight:950;line-height:1}.card .effect{font-size:11px;color:#c0c8d3;line-height:1.28;margin-top:7px}.card .suit{font-size:11px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;padding-left:5px}.covered{background:repeating-linear-gradient(45deg,#252b35,#252b35 9px,#1a1f27 9px,#1a1f27 18px);border-color:#465163;align-items:center;justify-content:center;text-align:center}.covered::before{display:none}
+.gamegrid{display:grid;grid-template-columns:1fr 310px;gap:14px}.hand{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}.cardbtn{border:0;background:transparent;padding:0;color:inherit;text-align:left}.cardbtn .card{min-height:180px;transition:.14s transform,.14s opacity,.14s box-shadow}.cardbtn:not(:disabled):hover .card{transform:translateY(-2px)}.cardbtn.valid .card{box-shadow:0 0 0 2px rgba(93,199,130,.15)}.cardbtn.invalid{opacity:.35}.cardbtn.selected .card{box-shadow:0 0 0 3px rgba(212,175,55,.28);border-color:var(--gold)}
+.sidebar h3{margin:0 0 8px}.score-row{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px 10px;margin-bottom:7px}.score-row.me{border-color:#806b27}.log{max-height:250px;overflow:auto}.logitem{background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:9px 10px;margin-bottom:7px;font-size:13px;line-height:1.35}.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--panel2);border-radius:999px;padding:5px 9px;font-size:12px;font-weight:800}.good{color:var(--good)}.bad{color:var(--bad)}
+@media(max-width:940px){.faction-picker{grid-template-columns:repeat(2,1fr)}.seats,.trick{grid-template-columns:repeat(2,1fr)}.gamegrid{grid-template-columns:1fr}.hand{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:580px){.app{padding:11px}.top{align-items:flex-start}.brand h1{font-size:23px}.grid2,.grid3{grid-template-columns:1fr}.faction-picker{grid-template-columns:1fr 1fr}.hand{grid-template-columns:repeat(2,1fr)}.contract-head{flex-direction:column;align-items:stretch}.phase{width:100%}.cardbtn .card{min-height:170px}}
+
+.contract-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:10px}
+.contract-option{position:relative}
+.contract-option input{position:absolute;opacity:0;pointer-events:none}
+.contract-option label{display:block;height:100%;border:1px solid var(--line);background:var(--card);border-radius:14px;padding:12px;cursor:pointer;color:var(--text)}
+.contract-option input:checked+label{border-color:var(--accent);box-shadow:0 0 0 2px rgba(212,175,55,.18);background:#2a271d}
+.contract-option .contract-title{font-weight:900;color:var(--text)}
+.contract-option .contract-desc{font-size:12px;color:var(--muted);line-height:1.35;margin-top:5px}
+.contract-option .contract-score{font-size:11px;color:var(--accent);margin-top:8px;font-weight:800}
+@media(max-width:560px){.contract-picker{grid-template-columns:1fr}}
+
+
+.mode-note{margin-top:6px;font-size:12px;color:var(--muted);line-height:1.4}
+.pass-panel{border:1px solid var(--accent);background:linear-gradient(145deg,#292717,#1d1c16);border-radius:16px;padding:18px;text-align:center;margin-top:14px}
+.pass-panel h2{margin:0 0 6px;font-size:22px}
+.pass-panel p{margin:0 auto 14px;max-width:680px;color:var(--muted);line-height:1.5}
+.private-hand-hidden{min-height:150px;display:flex;align-items:center;justify-content:center;text-align:center;border:1px dashed var(--line);border-radius:14px;color:var(--muted);padding:20px}
+
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top"><div class="brand"><h1>NEXUM</h1><p>Simulatore trick-taking · mazzo comune · 13 carte a giocatore</p></div><button type="button" id="rulesBtn" class="btn">Regole</button></div>
+
+  <section id="setup" class="panel">
+    <div id="jsStatus" style="margin-bottom:12px;padding:10px 12px;border:1px solid #8a3d3d;background:#2b1717;border-radius:12px;color:#ffd5d5;font-weight:800">
+      ⚠️ Motore del gioco non ancora attivo. Se questo messaggio resta visibile, l'anteprima sta bloccando JavaScript: apri il file in un browser.
+    </div>
+    <div id="setupError" class="hidden" style="margin-bottom:12px;padding:10px 12px;border:1px solid #8a3d3d;background:#2b1717;border-radius:12px;color:#ffd5d5"></div>
+    <h2 style="margin-top:0">Prepara una mano di Nexum</h2>
+    <div class="grid2">
+      <label><span class="label">Modalità</span>
+        <select id="gameMode">
+          <option value="solo">Contro la CPU</option>
+          <option value="local">Multiplayer locale — stesso dispositivo</option>
+        </select>
+        <div id="modeNote" class="mode-note">Tu controlli il Giocatore 1; gli altri sono gestiti dal simulatore.</div>
+      </label>
+      <label><span class="label">Giocatori</span><select id="playerCount"><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
+    </div>
+    <div style="margin-top:12px">
+      <label><span class="label">Contratto selezionato</span>
+        <select id="contractSelect">
+          <option value="more">Più prese</option>
+          <option value="less">Meno prese</option>
+          <option value="avoidFaction">Non prendere una fazione</option>
+          <option value="avoidHigh">Non prendere carte alte</option>
+          <option value="avoidLow">Non prendere carte basse</option>
+          <option value="unmade">Evita The Unmade</option>
+          <option value="last">Non prendere l’ultima</option>
+          <option value="last3">Evita le ultime tre</option>
+          <option value="special">Non prendere carte con potere</option>
+          <option value="chaos">Tutto negativo</option>
+        </select>
+      </label>
+    </div>
+
+    <div style="margin-top:16px">
+      <div style="font-size:18px;font-weight:900;margin-bottom:4px">1. Scegli il Contratto della partita</div>
+      <div class="small">Il Contratto resta attivo per tutte le 13 prese. Tocca direttamente una modalità.</div>
+      <div id="contractPicker" class="contract-picker">
+        <div class="contract-option"><input type="radio" name="contractPick" id="cp-more" value="more" checked><label for="cp-more"><div class="contract-title">🏆 Più prese</div><div class="contract-desc">Cerca di vincere più prese possibile.</div><div class="contract-score">+1 per ogni presa vinta</div></label></div>
+        <div class="contract-option"><input type="radio" name="contractPick" id="cp-less" value="less"><label for="cp-less"><div class="contract-title">🪶 Meno prese</div><div class="contract-desc">Devi evitare di vincere le prese.</div><div class="contract-score">−1 per ogni presa vinta</div></label></div>
+        <div class="contract-option"><input type="radio" name="contractPick" id="cp-avoidFaction" value="avoidFaction"><label for="cp-avoidFaction"><div class="contract-title">🎨 Non prendere una fazione</div><div class="contract-desc">Scegli un colore da evitare: ogni sua carta catturata penalizza.</div><div class="contract-score">−1 per ogni carta bersaglio</div></label></div>
+        <div class="contract-option"><input type="radio" name="contractPick" id="cp-avoidHigh" value="avoidHigh"><label for="cp-avoidHigh"><div class="contract-title">⬆️ Non prendere carte alte</div><div class="contract-desc">Evita di catturare personaggi con valore 80 o superiore.</div><div class="contract-score">−1 per ogni carta 80+</div></label></div>
+        <div class="contract-option"><input type="radio" name="contractPick" id="cp-avoidLow" value="avoidLow"><label for="cp-avoidLow"><div class="contract-title">⬇️ Non prendere carte basse</div><div class="contract-desc">Evita di catturare personaggi con valore 20 o inferiore.</div><div class="contract-score">−1 per ogni carta ≤20</div></label></div>
+        <div class="contract-option"><input type="radio" name="contractPick" id="cp-unmade" value="unmade"><label for="cp-unmade"><div class="contract-title">☠️ Evita The Unmade</div><div class="contract-desc">La presa che contiene The Unmade è particolarmente pericolosa.</div><div class="contract-score">−5 a chi lo cattura</div></label></div>
+        <div class="contract-option"><input type="radio" name="contractPick" id="cp-last" value="last"><label for="cp-last"><div class="contract-title">13️⃣ Non prendere l’ultima</div><div class="contract-desc">Le prime 12 prese sono neutre. Conta soltanto l’ultima.</div><div class="contract-score">−5 al vincitore della 13ª</div></label></div>
+        <div class="contract-option"><input type="radio" name="contractPick" id="cp-last3" value="last3"><label for="cp-last3"><div class="contract-title">3️⃣ Evita le ultime tre</div><div class="contract-desc">Le prese 11, 12 e 13 sono tutte penalità.</div><div class="contract-score">−2 per ciascuna</div></label></div>
+        <div class="contract-option"><input type="radio" name="contractPick" id="cp-special" value="special"><label for="cp-special"><div class="contract-title">⚡ Non prendere poteri</div><div class="contract-desc">Le carte con un effetto speciale catturate valgono penalità.</div><div class="contract-score">−1 per carta con potere</div></label></div>
+        <div class="contract-option"><input type="radio" name="contractPick" id="cp-chaos" value="chaos"><label for="cp-chaos"><div class="contract-title">🔥 Tutto negativo</div><div class="contract-desc">Prese, Nullarii, carte alte e ultima presa accumulano penalità.</div><div class="contract-score">Modalità difficile</div></label></div>
+      </div>
+    </div>
+
+    <div id="targetWrap" class="grid2 hidden" style="margin-top:12px"><label><span class="label">Fazione da evitare</span><select id="targetFaction"></select></label></div>
+    <div style="margin-top:14px"><div style="font-size:18px;font-weight:900;margin-bottom:4px">2. Scegli le fazioni/semi del mazzo</div><span class="label">Fazioni da mettere nel mazzo</span><div class="small" style="margin-top:4px">Devi selezionare tante fazioni quanti sono i giocatori. Le loro carte vengono mescolate tutte insieme e ridistribuite: nessun giocatore “possiede” una fazione.</div>
+<div id="factionPicker" class="faction-picker">
+  <div class="faction-option"><input id="f-Custodes" type="checkbox" value="Custodes"><label for="f-Custodes"><b><span class="faction-dot" style="background:#2E75B6"></span>Custodes</b><div class="small" style="margin-top:6px">Blu · controllo e protezione · 13 carte</div></label></div>
+  <div class="faction-option"><input id="f-Nullarii" type="checkbox" value="Nullarii"><label for="f-Nullarii"><b><span class="faction-dot" style="background:#202020"></span>Nullarii</b><div class="small" style="margin-top:6px">Nero · caos e sacrificio · 13 carte</div></label></div>
+  <div class="faction-option"><input id="f-Auguria" type="checkbox" value="Auguria"><label for="f-Auguria"><b><span class="faction-dot" style="background:#D6B64C"></span>Auguria</b><div class="small" style="margin-top:6px">Oro · predizione · 13 carte</div></label></div>
+  <div class="faction-option"><input id="f-Reliquiae" type="checkbox" value="Reliquiae"><label for="f-Reliquiae"><b><span class="faction-dot" style="background:#7F58AF"></span>Reliquiae</b><div class="small" style="margin-top:6px">Viola · recupero e memoria · 13 carte</div></label></div>
+  <div class="faction-option"><input id="f-Dominari" type="checkbox" value="Dominari"><label for="f-Dominari"><b><span class="faction-dot" style="background:#C84A4A"></span>Dominari</b><div class="small" style="margin-top:6px">Rosso · pressione e vittorie · 13 carte</div></label></div>
+  <div class="faction-option"><input id="f-Concordia" type="checkbox" value="Concordia"><label for="f-Concordia"><b><span class="faction-dot" style="background:#5C9C62"></span>Concordia</b><div class="small" style="margin-top:6px">Verde · equilibrio e rimonta · 13 carte</div></label></div>
+  <div class="faction-option"><input id="f-Axiomata" type="checkbox" value="Axiomata"><label for="f-Axiomata"><b><span class="faction-dot" style="background:#E8EDF4"></span>Axiomata</b><div class="small" style="margin-top:6px">Bianco · regole e annullamenti · 13 carte</div></label></div>
+  <div class="faction-option"><input id="f-Conflux" type="checkbox" value="Conflux"><label for="f-Conflux"><b><span class="faction-dot" style="background:#ED8A3A"></span>Conflux</b><div class="small" style="margin-top:6px">Arancio · trasformazione · 13 carte</div></label></div>
+</div><div id="pickStatus" class="statusline"></div></div>
+    <div class="controls" style="margin-top:14px"><button id="randomFactions" type="button" class="btn">Scegli fazioni casuali</button><button id="startBtn" type="button" class="btn primary" onclick="if(window.NexumStart){window.NexumStart()}">Mescola e distribuisci</button></div>
+  </section>
+
+  <section id="rules" class="panel hidden" style="margin-top:14px">
+    <h2 style="margin-top:0">Regole base del simulatore</h2>
+    <p>Le fazioni sono i <strong>semi</strong> di Nexum. Con 4 giocatori, per esempio, scegli 4 fazioni: 52 carte totali. Si mescolano e ogni giocatore riceve 13 carte. Il simulatore indica chiaramente il primo di mano e l’ordine di gioco. In multiplayer locale tutti giocano sullo stesso dispositivo: tra un turno e il successivo la mano privata viene nascosta e compare un passaggio di consegna. Ogni carta viene giocata scoperta appena viene scelta; gli altri devono seguire la stessa fazione se ne hanno almeno una. Se non ne hanno, possono giocare qualsiasi carta. Salvo effetti speciali, vince la carta di valore finale più alto della fazione d'apertura. Chi vince apre la presa successiva.</p>
+    <p>Una <strong>mano/Contratto</strong> dura 13 prese. Il Contratto stabilisce cosa conviene fare: prendere più prese, meno prese, evitare una fazione, evitare carte alte, evitare una carta specifica, ecc.</p>
+  </section>
+
+  <main id="game" class="hidden">
+    <section class="panel contract-head" style="margin-top:14px"><div><div class="small">Contratto selezionato</div><h2 id="contractName"></h2><p id="contractDesc"></p><div id="contractScoring" class="pill" style="margin-top:9px"></div></div><div class="phase"><span class="small">Presa</span><strong><span id="trickNo">1</span> / 13</strong><span class="small" id="turnText"></span></div></section>
+
+    <section class="panel" style="margin-top:14px">
+      <div class="order-panel">
+        <div id="leaderInfo" class="order-title">Primo di mano: —</div>
+        <div id="orderDisplay" class="order-row"></div>
+      </div>
+      <div id="seats" class="seats"></div>
+      <div id="trick" class="trick"></div>
+      <div class="controls" style="justify-content:center;margin-top:13px"><button type="button" id="continueBtn" class="btn primary hidden">Presa successiva</button></div>
+    </section>
+
+    <section id="passPanel" class="pass-panel hidden">
+      <div class="small">MULTIPLAYER LOCALE · MANO PRIVATA</div>
+      <h2>Passa il dispositivo a <span id="passPlayerName">—</span></h2>
+      <p id="passMessage">Quando il giocatore è pronto può mostrare la propria mano. Le carte già giocate nella presa restano visibili sul tavolo.</p>
+      <button type="button" id="showHandBtn" class="btn primary">Mostra la mia mano</button>
+    </section>
+
+    <section class="gamegrid" style="margin-top:14px">
+      <div class="panel"><div style="display:flex;justify-content:space-between;gap:10px;align-items:end;margin-bottom:10px"><div><h2 id="handTitle" style="margin:0">Le tue carte</h2><div id="followHint" class="small"></div></div><strong id="cardsLeft"></strong></div><div id="hand" class="hand"></div></div>
+      <aside class="sidebar">
+        <section class="panel"><h3>Classifica Contratto</h3><div id="score"></div></section>
+        <section class="panel" style="margin-top:14px"><h3>Ultimo esito</h3><div id="result" class="small">La prima presa deve ancora iniziare.</div></section>
+        <section class="panel" style="margin-top:14px"><h3>Cronologia</h3><div id="history" class="log"></div></section>
+        <button type="button" id="restartBtn" class="btn danger" style="width:100%;margin-top:14px">Torna alla preparazione</button>
+      </aside>
+    </section>
+  </main>
+
+  <section id="end" class="panel hidden" style="margin-top:14px;text-align:center"><div class="small">Contratto terminato</div><h2 id="endTitle"></h2><p id="endSubtitle" class="small"></p><div id="finalScore" style="max-width:540px;margin:14px auto"></div><div class="controls" style="justify-content:center"><button type="button" id="sameAgain" class="btn primary">Rigioca questo Contratto</button><button type="button" id="backSetup" class="btn">Cambia impostazioni</button></div></section>
+</div>
+<script>
+const COLORS={Custodes:'#2f80ed',Nullarii:'#20242c',Auguria:'#d7b33d',Reliquiae:'#8f5bd6',Dominari:'#d84a4a',Concordia:'#4da46a',Axiomata:'#e7e9ee',Conflux:'#ee8b36'};
+const LABELS={Custodes:'Custodes',Nullarii:'Nullarii',Auguria:'Auguria',Reliquiae:'Reliquiae',Dominari:'Dominari',Concordia:'Concordia',Axiomata:'Axiomata',Conflux:'Conflux'};
+const FACTIONS={
+Custodes:[['Meridian',91,''],['Aegiron',84,'Se prende la presa, la tua prossima carta è protetta.'],['Vigil',76,'Controllo.'],['Caelia Vorn',69,''],['Foreseer',63,'Predizione.'],['Locke',57,'Se prende la presa, limita modifiche nella presa successiva.'],['Sentry-7',51,''],['Reversal',44,'Può annullare effetti di vittoria.'],['Greyline',37,''],['Second Sight',29,'Informazione futura.'],['Anchor',21,'Blocca recuperi.'],['The Witness',12,'Informazione se molto bassa.'],['Origin',3,'Se prende la presa: +3 punti bonus Contratto.']],
+Nullarii:[['The Unmade',98,''],['Vesper Null',88,'Se prende la presa: -15 alla prossima carta di un avversario.'],['Oblivion',81,'Se prende la presa, tutti scartano una carta non giocata.'],['Maledict',73,'Se non prende la presa, il vincitore perde 1 punto Contratto.'],['Black Echo',65,'La prima volta che perde può tornare in mano.'],['Ruinborn',58,''],['Nullchild',49,'Se prende la presa, un avversario salta la prossima.'],['Gravemind',41,'Cresce con le carte già giocate.'],['Hollow',33,''],['Morrowshade',25,'Bonus se è la più bassa.'],['Ashen',17,'Può aumentare pagando punti.'],['Paradox',9,'Interagisce con valori identici.'],['Zero',1,'Se prende la presa: +4 punti bonus Contratto.']],
+Auguria:[['Fortuna',94,''],['Praevis',86,''],['Sibyl',78,'Predizione.'],['Decima',70,'Predizione sopra/sotto 50.'],['Kairon',62,''],['Lucent',55,''],['Morrow',47,''],['Threadseer',39,''],['Auspice',31,''],['Chanceborn',23,''],['Tertia',16,''],['Omen',8,''],['Last Oracle',2,'']],
+Reliquiae:[['Relicta',92,''],['Palimpsest',84,'Copia un effetto precedente.'],['Echo Prime',77,'Può tornare in mano una volta.'],['Mnemos',69,'Può recuperare una carta bassa.'],['Violet Wraith',61,''],['Archivist',54,'Può usare un valore dagli scarti.'],['Afterimage',46,'Se la carta precedente era 70+, +20.'],['Lost Saint',38,''],['Remnant',30,''],['Remainder',22,''],['Unwritten',15,'Bonus se scartata da un effetto.'],['Faded One',9,'Resiste agli scarti.'],['Vestige',4,'']],
+Dominari:[['Imperator',99,''],['Vexor',90,''],['Praetor',82,'Se prende la presa, la prossima carta +10.'],['Ravager',74,'Se prende la presa, un avversario perde 1 punto Contratto.'],['Crimson Crown',66,''],['Duelist',59,''],['Warhound',51,''],['Usurper',43,'Bonus se batte carte molto alte.'],['Bloodmark',35,'Se perde contro 75+, prossima carta +15.'],['Challenger',28,'Se affronta un 70+, diventa 68.'],['Fury',20,'Può aumentare pagando punti.'],['Rebel',12,'Punisce un vincitore 80+.'],['Ascendant',4,'Dopo due prese perse può diventare 74.']],
+Concordia:[['Equilibrium',96,''],['Harmonia',87,''],['Mediator',79,''],['Balancer',71,'Se sei unico ultimo in classifica, +15.'],['Concord',63,''],['Bridge',55,''],['Evenhand',47,'Se sei a pari merito ultimo, +15.'],['Symmetra',39,'Se il range è 40+, diventa 69.'],['Kin',31,''],['Medius',23,''],['Pax',15,'Protegge dalle perdite di punti carta.'],['Equalis',7,'Se il range è ≤20, diventa 77.'],['Union',2,'']],
+Axiomata:[['Lex Prime',97,''],['Canon',88,''],['Veritas',80,'Il valore resta sempre 80.'],['Edict',72,''],['Constant',64,''],['Axiom',55,'Annulla gli altri effetti nella presa.'],['Clause',47,''],['Measure',39,'Limita i valori tra 10 e 90.'],['Notary',31,''],['Seal',23,''],['Proof',15,''],['Invariant',8,'Per il confronto vale sempre 50.'],['Exception',1,'']],
+Conflux:[['Flux Regent',97,''],['Mosaic',89,''],['Janus',83,'Può valere 83 oppure 17.'],['Shift',75,'Può applicare +15 o -15.'],['Chimera',67,''],['Crossfade',59,''],['Switch',51,'Se ci sono un 80+ e un ≤20, diventa 91.'],['Mirror Twin',43,''],['Flicker',35,''],['Metamorph',27,'Dipende dalla carta precedente.'],['Split',19,'Può valere 19 oppure 79.'],['Wildcard',11,'Diventa il valore avversario più basso +1.'],['Convergence',3,'']]
+};
+const CONTRACTS=[
+ {id:'more',name:'Più prese',desc:'Vuoi vincere più prese possibile.',score:'+1 punto per ogni presa vinta'},
+ {id:'less',name:'Meno prese',desc:'Ogni presa vinta è una penalità. Cerca di liberarti delle carte senza vincere.',score:'-1 punto per ogni presa vinta'},
+ {id:'avoidFaction',name:'Non prendere una fazione',desc:'Le carte della fazione bersaglio raccolte nelle tue prese valgono penalità.',score:'-1 per ogni carta della fazione bersaglio catturata',target:true},
+ {id:'avoidHigh',name:'Non prendere carte alte',desc:'Le carte con valore stampato 80 o superiore raccolte nelle tue prese sono penalità.',score:'-1 per ogni carta 80+ catturata'},
+ {id:'avoidLow',name:'Non prendere carte basse',desc:'Le carte con valore stampato 20 o inferiore raccolte nelle tue prese sono penalità.',score:'-1 per ogni carta ≤20 catturata'},
+ {id:'unmade',name:'Evita The Unmade',desc:'Prendere The Unmade è molto pericoloso.',score:'-5 a chi cattura The Unmade'},
+ {id:'last',name:'Non prendere l’ultima',desc:'Le prime 12 prese non danno punti. Conta solo l’ultima.',score:'-5 a chi vince la 13ª presa'},
+ {id:'last3',name:'Evita le ultime tre',desc:'Le ultime tre prese sono penalità.',score:'-2 per ciascuna delle prese 11, 12 e 13'},
+ {id:'special',name:'Non prendere carte con potere',desc:'Ogni personaggio con un effetto scritto catturato vale penalità.',score:'-1 per ogni carta con potere catturata'},
+ {id:'chaos',name:'Tutto negativo',desc:'Un Contratto duro: prese, Nullarii, carte alte e ultima presa sommano penalità.',score:'-1 per presa; -1 per Nullarii; -1 per 80+; -3 ultima presa'}
+];
+const $=id=>document.getElementById(id);let state=null,lastSetup=null;
+function shuffle(a){a=[...a];for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function buildCard(f,arr,i){return{id:f+'-'+i,faction:f,name:arr[0],value:arr[1],effect:arr[2],final:arr[1],used:false,discarded:false}}
+function makeDeck(selected){return shuffle(selected.flatMap(f=>FACTIONS[f].map((c,i)=>buildCard(f,c,i))))}
+function playerName(i,mode='solo'){return mode==='local'?`Giocatore ${i+1}`:(i===0?'Tu':'Avversario '+i)}
+function selectedFactions(){return [...document.querySelectorAll('#factionPicker input:checked')].map(x=>x.value)}
+function contractObj(){return CONTRACTS.find(c=>c.id===$('contractSelect').value)}
+function updatePickStatus(){const need=+$('playerCount').value,got=selectedFactions().length;$('pickStatus').innerHTML=got===need?`<span class="good">${got}/${need} fazioni selezionate. Mazzo: ${got*13} carte → 13 carte a giocatore.</span>`:`Servono <b>${need}</b> fazioni. Ora: <b>${got}</b>. Se premi “Mescola e distribuisci”, il simulatore completerà automaticamente la selezione.`;$('startBtn').disabled=false;updateTargetOptions()}
+function normalizeFactionSelection(){
+  const need=+$('playerCount').value;
+  let picked=selectedFactions();
+  if(picked.length>need){
+    const keep=new Set(picked.slice(0,need));
+    document.querySelectorAll('#factionPicker input').forEach(x=>x.checked=keep.has(x.value));
+  }else if(picked.length<need){
+    const missing=need-picked.length;
+    const available=shuffle(Object.keys(FACTIONS).filter(f=>!picked.includes(f))).slice(0,missing);
+    const add=new Set(available);
+    document.querySelectorAll('#factionPicker input').forEach(x=>{if(add.has(x.value))x.checked=true});
+  }
+  updatePickStatus();
+}
+function updateTargetOptions(){const opts=selectedFactions();const sel=$('targetFaction');const cur=sel.value;sel.innerHTML='';opts.forEach(f=>{let o=document.createElement('option');o.value=f;o.textContent=LABELS[f];sel.appendChild(o)});if(opts.includes(cur))sel.value=cur}
+function setupUI(){
+  $('gameMode').addEventListener('change',()=>{
+    $('modeNote').textContent=$('gameMode').value==='local'
+      ? 'Tutti i partecipanti giocano sullo stesso dispositivo. Tra un turno e il successivo la mano privata viene nascosta.'
+      : 'Tu controlli il Giocatore 1; gli altri sono gestiti dal simulatore.';
+  });
+  $('showHandBtn').onclick=()=>{
+    if(!state||state.mode!=='local'||state.waiting)return;
+    state.handVisible=true;
+    render();
+  };
+  document.querySelectorAll('#contractPicker input[name="contractPick"]').forEach(input=>{
+    input.addEventListener('change',()=>{
+      if(!input.checked) return;
+      $('contractSelect').value=input.value;
+      $('targetWrap').classList.toggle('hidden', !contractObj().target);
+      updateTargetOptions();
+    });
+  });
+  $('contractSelect').addEventListener('change',()=>{
+    const radio=document.querySelector('#contractPicker input[value="'+$('contractSelect').value+'"]');
+    if(radio) radio.checked=true;
+    $('targetWrap').classList.toggle('hidden', !contractObj().target);
+    updateTargetOptions();
+  });
+
+  document.querySelectorAll('#factionPicker input').forEach(input=>{
+    input.addEventListener('change',()=>{
+      const need=+$('playerCount').value;
+      const checked=selectedFactions();
+      if(checked.length>need) input.checked=false;
+      updatePickStatus();
+    });
+  });
+
+  $('playerCount').addEventListener('change',()=>{
+    const need=+$('playerCount').value;
+    const pick=shuffle(Object.keys(FACTIONS)).slice(0,need);
+    document.querySelectorAll('#factionPicker input').forEach(x=>x.checked=pick.includes(x.value));
+    updatePickStatus();
+  });
+  $('randomFactions').onclick=()=>{
+    const need=+$('playerCount').value;
+    const pick=shuffle(Object.keys(FACTIONS)).slice(0,need);
+    document.querySelectorAll('#factionPicker input').forEach(x=>x.checked=pick.includes(x.value));
+    updatePickStatus();
+  };
+  $('rulesBtn').onclick=()=>$('rules').classList.toggle('hidden');
+  $('restartBtn').onclick=backToSetup;
+  $('backSetup').onclick=backToSetup;
+  $('sameAgain').onclick=()=>{if(lastSetup)startGame(lastSetup)};
+  $('continueBtn').onclick=nextTrick;
+  $('randomFactions').click();
+  $('targetWrap').classList.toggle('hidden',!contractObj().target);
+}
+function startGame(forced=null){
+  try{
+    $('setupError').classList.add('hidden');
+    if(!forced) normalizeFactionSelection();
+    const mode=forced&&forced.mode?forced.mode:$('gameMode').value;
+    const n=forced?forced.n:+$('playerCount').value;
+    const factions=forced?forced.factions:selectedFactions();
+    const contract=forced?forced.contract:contractObj().id;
+    const target=forced?forced.target:$('targetFaction').value;
+    if(factions.length!==n) throw new Error(`Servono ${n} fazioni, ma ne risultano selezionate ${factions.length}.`);
+    const deck=makeDeck(factions);
+    if(deck.length!==n*13) throw new Error(`Mazzo non valido: ${deck.length} carte invece di ${n*13}.`);
+    lastSetup={mode,n,factions:[...factions],contract,target};
+    $('contractSelect').value=contract;
+    const players=Array.from({length:n},(_,i)=>({name:playerName(i,mode),hand:[],score:0,captured:[],tricks:0,nextBoost:0,nextPenalty:0,prev:null,skip:false}));
+    for(let r=0;r<13;r++){
+      for(let p=0;p<n;p++){
+        const card=deck[r*n+p];
+        if(!card) throw new Error('Errore durante la distribuzione delle carte.');
+        players[p].hand.push(card);
+      }
+    }
+    players.forEach(p=>p.hand.sort((a,b)=>a.faction.localeCompare(b.faction)||b.value-a.value));
+    const firstLeader=Math.floor(Math.random()*n);state={mode,n,selected:factions,contract:CONTRACTS.find(x=>x.id===contract),target,players,trickNo:1,leader:firstLeader,nextLeader:firstLeader,turn:firstLeader,leadFaction:null,plays:[],history:[],waiting:false,botTimer:null,handVisible:mode==='solo'};
+    $('setup').classList.add('hidden');
+    $('rules').classList.add('hidden');
+    $('end').classList.add('hidden');
+    $('game').classList.remove('hidden');
+    $('contractName').textContent=state.contract.name;
+    $('contractDesc').textContent=state.contract.desc+(state.contract.id==='avoidFaction'?` Fazione bersaglio: ${LABELS[state.target]}.`:'');
+    $('contractScoring').textContent=state.contract.score;
+    beginTrick();
+  }catch(err){
+    console.error(err);
+    $('setupError').textContent='Errore di avvio: '+(err&&err.message?err.message:String(err));
+    $('setupError').classList.remove('hidden');
+  }
+}
+window.NexumStart=()=>startGame();
+function backToSetup(){$('game').classList.add('hidden');$('end').classList.add('hidden');$('setup').classList.remove('hidden')}
+function beginTrick(){
+  if(state.botTimer)clearTimeout(state.botTimer);
+  state.plays=[];
+  state.leadFaction=null;
+  state.turn=state.leader;
+  state.waiting=false;
+  state.handVisible=state.mode==='solo';
+  $('continueBtn').classList.add('hidden');
+  $('result').textContent='Presa in corso…';
+  render();
+  advanceBots();
+}
+function activeOrder(){return Array.from({length:state.n},(_,k)=>(state.leader+k)%state.n)}
+function validCards(pi){const p=state.players[pi],cards=p.hand.filter(c=>!c.used&&!c.discarded);if(!state.leadFaction)return cards;const same=cards.filter(c=>c.faction===state.leadFaction);return same.length?same:cards}
+function chooseBotCard(pi){const p=state.players[pi],valid=validCards(pi),c=state.contract.id;let scored=valid.map(card=>{let s=Math.random()*18;const follows=state.leadFaction?card.faction===state.leadFaction:true;if(c==='more')s+=card.value*.7;else if(c==='less')s+=(100-card.value)*.7;else if(c==='avoidFaction')s+=(card.faction===state.target?-30:10)+(100-card.value)*.2;else if(c==='avoidHigh')s+=(card.value>=80?-35:15)+(100-card.value)*.15;else if(c==='avoidLow')s+=(card.value<=20?-25:10)+card.value*.15;else if(c==='unmade')s+=(card.name==='The Unmade'?-80:5)+(100-card.value)*.15;else if(c==='last'||c==='last3')s+=(state.trickNo>=11?(100-card.value)*.5:card.value*.1);else if(c==='special')s+=(card.effect?-20:10)+(100-card.value)*.15;else if(c==='chaos')s+=(100-card.value)*.5+(card.faction==='Nullarii'?-15:0)+(card.value>=80?-15:0);if(!follows&&state.leadFaction)s+=10;return{card,s}});scored.sort((a,b)=>b.s-a.s);return scored[0].card}
+function advanceBots(){
+  if(state.waiting)return;
+  if(state.plays.length>=state.n){
+    state.botTimer=setTimeout(resolveTrick,500);
+    return;
+  }
+
+  const pi=state.turn;
+  const p=state.players[pi];
+
+  if(p.skip){
+    p.skip=false;
+    state.plays.push({pi,skipped:true});
+    state.turn=(state.turn+1)%state.n;
+    state.handVisible=false;
+    render();
+    advanceBots();
+    return;
+  }
+
+  if(state.mode==='local'){
+    state.handVisible=false;
+    render();
+    return;
+  }
+
+  if(pi===0){
+    state.handVisible=true;
+    render();
+    return;
+  }
+
+  state.botTimer=setTimeout(()=>{
+    if(state.waiting||state.turn!==pi)return;
+    const c=chooseBotCard(pi);
+    playCard(pi,c);
+    if(state.plays.length>=state.n)state.botTimer=setTimeout(resolveTrick,500);
+    else advanceBots();
+  },520);
+}
+function playCard(pi,card){if(card.used||card.discarded)return;if(!validCards(pi).some(c=>c.id===card.id))return;card.used=true;let final=card.value;if(state.players[pi].nextBoost){final+=state.players[pi].nextBoost;state.players[pi].nextBoost=0}if(state.players[pi].nextPenalty){final+=state.players[pi].nextPenalty;state.players[pi].nextPenalty=0}if(card.name==='Afterimage'&&state.players[pi].prev&&state.players[pi].prev.value>=70)final+=20;if(card.name==='Veritas')final=80;if(card.name==='Invariant')final=50;if(card.name==='Ascendant'){const rec=state.players[pi]._lastTwo||[];if(rec.length===2&&rec.every(x=>!x))final=74}if(card.name==='Challenger'&&state.plays.some(pl=>!pl.skipped&&pl.card.value>70))final=68;if(card.name==='Gravemind'){const used=state.players[pi].hand.filter(x=>x.used).length-1;final+=Math.min(15,used*3)}if(!state.leadFaction)state.leadFaction=card.faction;state.plays.push({pi,card,final:Math.max(0,Math.min(100,final))});state.players[pi].prev=card;state.turn=(state.turn+1)%state.n;render()}
+function humanPlay(pi,cardId){
+  if(state.waiting||state.turn!==pi)return;
+  if(state.mode==='solo'&&pi!==0)return;
+  if(state.mode==='local'&&!state.handVisible)return;
+  const c=state.players[pi].hand.find(x=>x.id===cardId);
+  if(!c||!validCards(pi).some(x=>x.id===c.id))return;
+  state.handVisible=false;
+  playCard(pi,c);
+  if(state.plays.length>=state.n)state.botTimer=setTimeout(resolveTrick,500);
+  else advanceBots();
+}
+function postRevealValueAdjustments(){if(state.plays.some(pl=>!pl.skipped&&pl.card.name==='Axiom')){state.plays.forEach(pl=>{if(!pl.skipped)pl.final=pl.card.value});return['Axiom annulla gli altri effetti di valore della presa.']}let logs=[];let active=state.plays.filter(x=>!x.skipped),vals=active.map(x=>x.final),mx=Math.max(...vals),mn=Math.min(...vals);active.forEach(pl=>{if(pl.card.name==='Switch'&&mx>=80&&mn<=20){pl.final=91;logs.push(`${state.players[pl.pi].name}: Switch diventa 91.`)}if(pl.card.name==='Equalis'&&mx-mn<=20){pl.final=77;logs.push(`${state.players[pl.pi].name}: Equalis diventa 77.`)}if(pl.card.name==='Wildcard'){const opp=active.filter(x=>x.pi!==pl.pi);if(opp.length){pl.final=Math.min(...opp.map(x=>x.card.value))+1;logs.push(`${state.players[pl.pi].name}: Wildcard diventa ${pl.final}.`)}}});if(active.some(pl=>pl.card.name==='Measure')){active.forEach(pl=>pl.final=Math.max(10,Math.min(90,pl.final)));logs.push('Measure limita i valori finali tra 10 e 90.')}return logs}
+function resolveTrick(){state.waiting=true;let logs=postRevealValueAdjustments();const active=state.plays.filter(x=>!x.skipped);const eligible=active.filter(x=>x.card.faction===state.leadFaction);const max=Math.max(...eligible.map(x=>x.final));let winners=eligible.filter(x=>x.final===max);let winner;if(winners.length===1)winner=winners[0];else{winner=winners.sort((a,b)=>a.card.value-b.card.value)[0];logs.push('Pareggio di valore finale: il prototipo assegna la presa alla carta con valore stampato più basso tra le pari.')}const wp=state.players[winner.pi];wp.tricks++;const captured=active.map(x=>x.card);wp.captured.push(...captured);let delta=scoreContract(winner.pi,captured);wp.score+=delta;active.forEach(pl=>{const p=state.players[pl.pi];p._lastTwo=(p._lastTwo||[]).slice(-1);p._lastTwo.push(pl.pi===winner.pi)});applyAfterEffects(winner,logs);state.history.unshift({n:state.trickNo,winner:wp.name,card:winner.card.name,val:winner.final,delta});state.nextLeader=winner.pi;$('result').innerHTML=`<b>${wp.name}</b> prende la presa con <b>${winner.card.name}</b> (${winner.final}) della fazione ${LABELS[state.leadFaction]}.<br><span class="${delta>=0?'good':'bad'}">Punteggio Contratto: ${delta>=0?'+':''}${delta}</span>${logs.length?'<br><br>'+logs.map(x=>'• '+x).join('<br>'):''}`;$('continueBtn').classList.remove('hidden');render();if(state.trickNo>=13){$('continueBtn').textContent='Vedi risultato finale'}else $('continueBtn').textContent='Presa successiva'}
+function scoreContract(winnerPi,captured){const id=state.contract.id;let d=0;if(id==='more')d=1;else if(id==='less')d=-1;else if(id==='avoidFaction')d=-captured.filter(c=>c.faction===state.target).length;else if(id==='avoidHigh')d=-captured.filter(c=>c.value>=80).length;else if(id==='avoidLow')d=-captured.filter(c=>c.value<=20).length;else if(id==='unmade')d=captured.some(c=>c.name==='The Unmade')?-5:0;else if(id==='last')d=state.trickNo===13?-5:0;else if(id==='last3')d=state.trickNo>=11?-2:0;else if(id==='special')d=-captured.filter(c=>c.effect&&c.effect.trim()).length;else if(id==='chaos'){d=-1-captured.filter(c=>c.faction==='Nullarii').length-captured.filter(c=>c.value>=80).length-(state.trickNo===13?3:0)}return d}
+function applyAfterEffects(winner,logs){const active=state.plays.filter(x=>!x.skipped);active.forEach(pl=>{const p=state.players[pl.pi],won=pl.pi===winner.pi;if(pl.card.name==='Origin'&&won){p.score+=3;logs.push(`${p.name}: Origin +3 punti Contratto.`)}if(pl.card.name==='Zero'&&won){p.score+=4;logs.push(`${p.name}: Zero +4 punti Contratto.`)}if(pl.card.name==='Praetor'&&won){p.nextBoost+=10;logs.push(`${p.name}: Praetor prepara +10 alla prossima carta.`)}if(pl.card.name==='Bloodmark'&&!won&&winner.final>=75){p.nextBoost+=15;logs.push(`${p.name}: Bloodmark prepara +15.`)}if(pl.card.name==='Vesper Null'&&won){const targets=state.players.map((p,i)=>({p,i})).filter(x=>x.i!==pl.pi).sort((a,b)=>b.p.score-a.p.score);if(targets[0]){targets[0].p.nextPenalty-=15;logs.push(`Vesper Null: -15 alla prossima carta di ${targets[0].p.name}.`)}}if(pl.card.name==='Maledict'&&!won){state.players[winner.pi].score-=1;logs.push('Maledict: il vincitore perde 1 punto Contratto.')}if(pl.card.name==='Rebel'&&!won&&winner.final>=80){state.players[winner.pi].score-=1;logs.push('Rebel: il vincitore perde 1 punto Contratto.')}if(pl.card.name==='Ravager'&&won){const t=state.players.map((p,i)=>({p,i})).filter(x=>x.i!==pl.pi).sort((a,b)=>b.p.score-a.p.score)[0];if(t){t.p.score-=1;logs.push(`Ravager: ${t.p.name} perde 1 punto Contratto.`)}}})}
+function nextTrick(){if(state.trickNo>=13){finishContract();return}state.trickNo++;state.leader=state.nextLeader;beginTrick()}
+function finishContract(){$('game').classList.add('hidden');$('end').classList.remove('hidden');const rank=[...state.players].sort((a,b)=>b.score-a.score);const best=rank[0].score,ws=rank.filter(p=>p.score===best);$('endTitle').textContent=ws.length===1?`${ws[0].name} vince il Contratto`:`Pareggio: ${ws.map(p=>p.name).join(' e ')}`;$('endSubtitle').textContent=`${state.contract.name} · vince chi chiude con il punteggio più alto.`;$('finalScore').innerHTML=rank.map((p,i)=>`<div class="score-row ${p.name==='Tu'?'me':''}"><div><b>${i+1}. ${p.name}</b><div class="small">${p.tricks} prese vinte · ${p.captured.length} carte catturate</div></div><b>${p.score} pt</b></div>`).join('')}
+function render(){
+  renderOrder();
+  renderSeats();
+  renderTrick();
+  renderPassPanel();
+  renderHand();
+  renderScore();
+  renderHistory();
+  $('trickNo').textContent=state.trickNo;
+  $('turnText').textContent=state.waiting
+    ? `Presa conclusa · prossimo: ${state.players[state.nextLeader].name}`
+    : `Tocca a ${state.players[state.turn].name}`;
+}
+function renderPassPanel(){
+  const panel=$('passPanel');
+  if(state.mode!=='local'||state.waiting||state.handVisible){
+    panel.classList.add('hidden');
+    return;
+  }
+  panel.classList.remove('hidden');
+  const p=state.players[state.turn];
+  $('passPlayerName').textContent=p.name;
+  const already=state.plays.filter(x=>!x.skipped).length;
+  if(already===0){
+    $('passMessage').textContent=`${p.name} è il primo di mano. Quando è pronto può mostrare le proprie 13 carte e scegliere con quale fazione aprire.`;
+  }else{
+    const lead=state.leadFaction?LABELS[state.leadFaction]:'—';
+    $('passMessage').textContent=`Sono già state giocate ${already} carte scoperte. La fazione d'apertura è ${lead}. Mostra la mano solo quando ${p.name} ha il dispositivo.`;
+  }
+}
+function renderOrder(){
+  const order=activeOrder();
+  $('leaderInfo').textContent=state.waiting?`Presa conclusa · prossimo primo di mano: ${state.players[state.nextLeader].name}`:`Primo di mano: ${state.players[state.leader].name}`;
+  $('orderDisplay').innerHTML=order.map((pi,idx)=>{
+    const current=!state.waiting&&state.turn===pi;
+    const done=state.plays.some(pl=>pl.pi===pi);
+    return `<span class="order-chip${current?' current':''}">${idx+1}° ${state.players[pi].name}${current?' · ORA':done?' · giocato':''}</span>${idx<order.length-1?'<span class="order-arrow">→</span>':''}`;
+  }).join('');
+}
+function renderSeats(){$('seats').innerHTML='';state.players.forEach((p,i)=>{const d=document.createElement('div');d.className='seat'+(!state.waiting&&state.turn===i?' active':'');d.innerHTML=`<b>${p.name}</b><div class="small">${p.hand.filter(c=>!c.used&&!c.discarded).length} carte in mano</div><div class="row"><span>${p.tricks} prese</span><b>${p.score} pt</b></div>`;$('seats').appendChild(d)})}
+function cardHTML(c,final=null){const white=c.faction==='Axiomata'?' white':'';return `<div class="card${white}" style="--faction:${COLORS[c.faction]}"><div><div class="suit"><span class="faction-dot" style="background:${COLORS[c.faction]}"></span>${LABELS[c.faction]}</div><div class="name">${c.name}</div></div><div><div class="num">${final??c.value}</div>${final!==null&&final!==c.value?`<div class="small">stampato ${c.value}</div>`:''}<div class="effect">${c.effect||'Nessun effetto speciale.'}</div></div></div>`}
+function renderTrick(){
+  $('trick').innerHTML='';
+  const order=activeOrder();
+  order.forEach((pi,idx)=>{
+    const pl=state.plays.find(x=>x.pi===pi);
+    const slot=document.createElement('div');
+    slot.className='slot'+(!pl?' empty':'');
+    const head=`<div class="slot-head">${idx+1}° · ${state.players[pi].name}${pi===state.leader?' · PRIMO DI MANO':''}</div>`;
+    if(!pl)slot.innerHTML=head+`<div class="slot-body"><span>Deve ancora giocare</span></div>`;
+    else if(pl.skipped)slot.innerHTML=head+`<div class="slot-body"><span>Salta la presa</span></div>`;
+    else slot.innerHTML=head+cardHTML(pl.card,pl.final);
+    $('trick').appendChild(slot);
+  });
+}
+function renderHand(){
+  const pi=state.mode==='local'?state.turn:0;
+  const p=state.players[pi];
+  const handEl=$('hand');
+  handEl.innerHTML='';
+
+  $('handTitle').textContent=state.mode==='local'?`${p.name} — le tue carte`:'Le tue carte';
+
+  const remaining=p.hand.filter(c=>!c.used&&!c.discarded);
+  $('cardsLeft').textContent=`${remaining.length} carte`;
+
+  if(state.mode==='local'&&!state.handVisible&&!state.waiting){
+    $('followHint').textContent='Mano nascosta per la privacy. Usa il riquadro “Passa il dispositivo” qui sopra.';
+    handEl.innerHTML='<div class="private-hand-hidden" style="grid-column:1/-1">La mano privata è nascosta finché il giocatore di turno non preme “Mostra la mia mano”.</div>';
+    return;
+  }
+
+  if(state.waiting){
+    $('followHint').textContent='Presa conclusa.';
+    handEl.innerHTML='<div class="private-hand-hidden" style="grid-column:1/-1">La presa è conclusa. Premi “Presa successiva”.</div>';
+    return;
+  }
+
+  const humanTurn=state.mode==='local'||state.turn===0;
+  if(state.mode==='solo'&&state.turn!==0){
+    $('followHint').textContent=`Attendi: tocca a ${state.players[state.turn].name}. Le carte già giocate restano scoperte sul tavolo.`;
+  }else if(state.leadFaction){
+    $('followHint').textContent=`Tocca a ${p.name}. Fazione d’apertura: ${LABELS[state.leadFaction]}. ${remaining.some(c=>c.faction===state.leadFaction)?'Devi seguirla.':'Non ce l’hai: puoi giocare qualsiasi carta.'}`;
+  }else{
+    $('followHint').textContent=`${p.name} è il primo di mano: può aprire con qualsiasi fazione.`;
+  }
+
+  const valid=new Set(validCards(pi).map(c=>c.id));
+  remaining.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='cardbtn '+(valid.has(c.id)?'valid':'invalid');
+    b.disabled=!humanTurn||state.turn!==pi||!valid.has(c.id);
+    b.innerHTML=cardHTML(c);
+    b.onclick=()=>humanPlay(pi,c.id);
+    handEl.appendChild(b);
+  });
+}
+function renderScore(){$('score').innerHTML='';[...state.players].sort((a,b)=>b.score-a.score).forEach((p,i)=>{const d=document.createElement('div');d.className='score-row'+(p.name==='Tu'?' me':'');d.innerHTML=`<div><b>${i+1}. ${p.name}</b><div class="small">${p.tricks} prese vinte</div></div><b>${p.score} pt</b>`;$('score').appendChild(d)})}
+function renderHistory(){$('history').innerHTML=state.history.length?state.history.slice(0,13).map(h=>`<div class="logitem"><b>Presa ${h.n}</b> · ${h.winner}<div class="small">${h.card} (${h.val}) · ${h.delta>=0?'+':''}${h.delta} pt</div></div>`).join(''):'<div class="small">Nessuna presa completata.</div>'}
+try{
+  setupUI();
+  const js=$('jsStatus');
+  js.textContent='✓ Motore Nexum attivo. Ora puoi scegliere anche tra CPU e multiplayer locale pass-and-play.';
+  js.style.borderColor='#316a43';
+  js.style.background='#14271b';
+  js.style.color='#c9f4d5';
+}catch(err){
+  console.error(err);
+  const e=document.getElementById('setupError');
+  if(e){e.textContent='Errore di inizializzazione: '+(err&&err.message?err.message:String(err));e.classList.remove('hidden')}
+}
+</script>
+</body></html>

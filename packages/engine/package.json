@@ -1,0 +1,18 @@
+{
+  "name": "@nexum/engine",
+  "private": true,
+  "version": "0.10.0",
+  "description": "Motore delle regole di NEXUM: puro TypeScript, nessuna dipendenza dal browser",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "vitest": "^5.0.5"
+  }
+}
