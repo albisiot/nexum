@@ -607,6 +607,55 @@ input[type='color'] {
   }
 }
 
+/* ---------- prossimamente ---------- */
+
+.roadmap-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.roadmap-item p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.roadmap-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  font-size: 22px;
+  border-radius: 12px;
+  background: var(--panel2);
+  border: 1px solid var(--line);
+}
+
+.roadmap-status {
+  font-size: 10px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+
+.roadmap-status.inProgress {
+  color: var(--good);
+}
+
+.roadmap-status.planned {
+  color: var(--gold);
+}
+
+.roadmap-status.idea {
+  color: #7fb2f0;
+}
+
 /* ---------- patch notes ---------- */
 
 .patch-notes {

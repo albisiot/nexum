@@ -13,6 +13,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.15.0',
+    date: '2026-10-27',
+    title: 'Prossimamente',
+    changes: [
+      {
+        type: 'new',
+        text: 'Nuova voce “Prossimamente” nel menu principale: le novità in arrivo, come deckbuilding, pacchetti da aprire, collezione e gioco online.',
+      },
+    ],
+  },
+  {
     version: '0.14.0',
     date: '2026-10-27',
     title: 'Editor di carte e Contratti',

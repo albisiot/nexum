@@ -7,13 +7,14 @@ import { EditorScreen } from './components/EditorScreen';
 import { GameScreen } from './components/GameScreen';
 import { MenuScreen } from './components/MenuScreen';
 import { PatchNotesScreen } from './components/PatchNotesScreen';
+import { RoadmapScreen } from './components/RoadmapScreen';
 import { RulesPanel } from './components/RulesPanel';
 import { SetupScreen, defaultSetup, sanitizeSetup } from './components/SetupScreen';
 import type { SetupValues } from './components/SetupScreen';
 import type { GameClient, GameMode, MatchSetup } from './game/GameClient';
 import { LocalGameClient } from './game/LocalGameClient';
 
-type Screen = 'menu' | 'setup' | 'patchNotes' | 'editor';
+type Screen = 'menu' | 'setup' | 'patchNotes' | 'roadmap' | 'editor';
 
 /** In sviluppo, `?editor` apre l'Editor anche senza accesso (salvare e pubblicare restano bloccati dal database). */
 const DEV_EDITOR = import.meta.env.DEV && new URLSearchParams(window.location.search).has('editor');
@@ -88,11 +89,14 @@ export function App() {
         <SetupScreen values={setupValues} onChange={setSetupValues} onStart={start} onBack={() => go('menu')} />
       ) : screen === 'patchNotes' ? (
         <PatchNotesScreen onBack={() => go('menu')} />
+      ) : screen === 'roadmap' ? (
+        <RoadmapScreen onBack={() => go('menu')} />
       ) : screen === 'editor' && canEdit ? (
         <EditorScreen onBack={() => go('menu')} />
       ) : (
         <MenuScreen
           onPlay={choose}
+          onRoadmap={() => go('roadmap')}
           onPatchNotes={() => go('patchNotes')}
           onEditor={canEdit ? () => go('editor') : undefined}
         />

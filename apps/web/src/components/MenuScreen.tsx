@@ -4,12 +4,13 @@ import { AccountPanel } from './AccountPanel';
 
 interface Props {
   onPlay(mode: GameMode): void;
+  onRoadmap(): void;
   onPatchNotes(): void;
   /** Presente solo per l'account autorizzato a modificare carte e Contratti. */
   onEditor?: () => void;
 }
 
-export function MenuScreen({ onPlay, onPatchNotes, onEditor }: Props) {
+export function MenuScreen({ onPlay, onRoadmap, onPatchNotes, onEditor }: Props) {
   return (
     <section className="menu">
       <div className="menu-hero">
@@ -41,6 +42,13 @@ export function MenuScreen({ onPlay, onPatchNotes, onEditor }: Props) {
               Gioca online <span className="soon">Prossimamente</span>
             </span>
             <span className="menu-sub">Partite con gli amici, ognuno dal proprio dispositivo</span>
+          </span>
+        </button>
+        <button type="button" className="menu-item" onClick={onRoadmap}>
+          <span className="menu-icon" aria-hidden="true">🔭</span>
+          <span className="menu-text">
+            <span className="menu-title">Prossimamente</span>
+            <span className="menu-sub">Deckbuilding, pacchetti da aprire e le altre novità in arrivo</span>
           </span>
         </button>
         <button type="button" className="menu-item" onClick={onPatchNotes}>
