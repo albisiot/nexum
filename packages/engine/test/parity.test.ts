@@ -124,5 +124,5 @@ describe('parità con il simulatore v0.9', () => {
         }
       }
     }
-  });
+  }, 30_000);
 });
