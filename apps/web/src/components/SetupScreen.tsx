@@ -17,6 +17,8 @@ import type { ContractId, FactionId, HandPlan } from '@nexum/engine';
 import type { CSSProperties } from 'react';
 import type { GameMode, MatchSetup, Seat } from '../game/GameClient';
 import { describeScoring } from '../game/text';
+import { ContractIcon, Icon } from './Icon';
+import type { IconName } from './Icon';
 
 export type ContractFormat = 'randomSeries' | 'chosenSeries' | 'randomSingle' | 'chosenSingle';
 
@@ -35,16 +37,16 @@ export interface SetupValues {
   factions: FactionId[];
 }
 
-const FORMATS: { id: ContractFormat; icon: string; title: string; desc: string }[] = [
+const FORMATS: { id: ContractFormat; icon: IconName; title: string; desc: string }[] = [
   {
     id: 'randomSeries',
-    icon: '🎲',
+    icon: 'serie-casuale',
     title: 'Serie casuale',
     desc: 'Più Contratti estratti a caso, uno dopo l’altro. Vince chi ha più punti in totale.',
   },
-  { id: 'chosenSeries', icon: '📋', title: 'Serie a scelta', desc: 'Scegli tu quali Contratti giocare e in che ordine.' },
-  { id: 'randomSingle', icon: '🎯', title: 'Un Contratto casuale', desc: 'Una sola mano di 13 prese con un Contratto a sorpresa.' },
-  { id: 'chosenSingle', icon: '✋', title: 'Un Contratto a scelta', desc: 'Una sola mano di 13 prese con il Contratto che preferisci.' },
+  { id: 'chosenSeries', icon: 'serie-scelta', title: 'Serie a scelta', desc: 'Scegli tu quali Contratti giocare e in che ordine.' },
+  { id: 'randomSingle', icon: 'singolo-casuale', title: 'Un Contratto casuale', desc: 'Una sola mano di 13 prese con un Contratto a sorpresa.' },
+  { id: 'chosenSingle', icon: 'singolo-scelta', title: 'Un Contratto a scelta', desc: 'Una sola mano di 13 prese con il Contratto che preferisci.' },
 ];
 
 const SERIES_LENGTHS = [
@@ -260,8 +262,8 @@ function ContractsStep({ v, set }: StepProps) {
             className={`format-option${v.format === f.id ? ' selected' : ''}`}
             onClick={() => set({ format: f.id })}
           >
-            <span className="format-icon" aria-hidden="true">
-              {f.icon}
+            <span className="format-icon">
+              <Icon name={f.icon} size={26} />
             </span>
             <span className="contract-title">{f.title}</span>
             <span className="contract-desc">{f.desc}</span>
@@ -338,7 +340,7 @@ function ContractGrid({
           >
             {ordered && index >= 0 && <span className="order-badge">{index + 1}</span>}
             <span className="contract-title">
-              {c.icon} {c.name}
+              <ContractIcon contract={c} size={20} /> {c.name}
             </span>
             <span className="contract-desc">{c.desc}</span>
             <span className="contract-score">{describeScoring(c)}</span>

@@ -13,6 +13,29 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.17.0',
+    date: '2026-10-28',
+    title: 'Icone disegnate e nuova fine mano',
+    changes: [
+      {
+        type: 'new',
+        text: 'Nuova schermata tra due Contratti: vedi a che punto è la serie, chi sale e chi scende in classifica, le prese che hai vinto con le carte che hanno contato e il prossimo Contratto con le sue regole.',
+      },
+      {
+        type: 'change',
+        text: 'Menu, Contratti e formati della serie hanno icone disegnate per NEXUM al posto delle emoji.',
+      },
+      {
+        type: 'change',
+        text: 'I formati della serie si riconoscono a colpo d’occhio: il dado vuol dire casuale e la spunta a scelta; due elementi indicano una serie, uno solo un Contratto.',
+      },
+      {
+        type: 'change',
+        text: 'Editor: i Contratti predefiniti mostrano la loro icona disegnata, quelli nuovi continuano a usare un’emoji.',
+      },
+    ],
+  },
+  {
     version: '0.16.0',
     date: '2026-10-28',
     title: 'Tavolo 3D',

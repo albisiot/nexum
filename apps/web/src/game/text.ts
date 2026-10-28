@@ -15,9 +15,9 @@ export const signed = (n: number) => (n > 0 ? `+${n}` : `${n}`);
 /** Punti con il segno meno tipografico, per i testi delle regole. */
 const points = (n: number) => (n > 0 ? `+${n}` : `−${Math.abs(n)}`);
 
+/** Nome del Contratto in gioco; l'icona la disegna ContractIcon. */
 export function contractTitle(view: PlayerView): string {
-  const c = getContract(view.contract);
-  return `${c.icon} ${c.name}`;
+  return getContract(view.contract).name;
 }
 
 export function contractDescription(view: PlayerView): string {
@@ -27,9 +27,10 @@ export function contractDescription(view: PlayerView): string {
     : c.desc;
 }
 
+/** Nome del Contratto di una mano, con la fazione bersaglio; l'icona la disegna ContractIcon. */
 export function handLabel(h: HandPlan): string {
   const c = getContract(h.contract);
-  return `${c.icon} ${c.name}${h.targetFaction ? ` (${getFaction(h.targetFaction).name})` : ''}`;
+  return `${c.name}${h.targetFaction ? ` (${getFaction(h.targetFaction).name})` : ''}`;
 }
 
 const factionName = (catalog: Catalog, id: string) => catalog.factions.find((f) => f.id === id)?.name ?? 'eliminata';

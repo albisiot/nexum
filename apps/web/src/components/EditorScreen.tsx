@@ -14,6 +14,7 @@ import type { CSSProperties } from 'react';
 import { useAuth } from '../auth/auth';
 import { catalogStore } from '../catalog/store';
 import { describeRule, describeScoring } from '../game/text';
+import { ContractIcon, Icon, drawnContractIcon } from './Icon';
 
 type Tab = 'factions' | 'contracts';
 type Status = { kind: 'busy' | 'ok' | 'error' | 'info'; text: string };
@@ -382,7 +383,7 @@ function ContractsTab({ draft, update, selected, select }: TabProps) {
             className={`editor-item${c.id === contract?.id ? ' selected' : ''}`}
             onClick={() => select(c.id)}
           >
-            {c.icon} {c.name || '(senza nome)'}
+            <ContractIcon contract={c} size={18} /> {c.name || '(senza nome)'}
           </button>
         ))}
         <button type="button" className="editor-item add" onClick={addContract}>
@@ -417,13 +418,25 @@ function ContractForm({
     onDeleted();
   };
 
+  const drawn = drawnContractIcon(contract.id);
+
   return (
     <div className="editor-form">
       <div className="contract-edit-head">
-        <label className="field icon">
-          <span className="label">Icona</span>
-          <input value={contract.icon} maxLength={4} onChange={(e) => edit((c) => (c.icon = e.target.value))} />
-        </label>
+        {drawn ? (
+          // I Contratti predefiniti hanno un'icona disegnata: l'emoji del catalogo non si vede.
+          <div className="field icon">
+            <span className="label">Icona</span>
+            <span className="icon-drawn" title="Icona disegnata, uguale per tutti i giocatori">
+              <Icon name={drawn} />
+            </span>
+          </div>
+        ) : (
+          <label className="field icon">
+            <span className="label">Icona</span>
+            <input value={contract.icon} maxLength={4} onChange={(e) => edit((c) => (c.icon = e.target.value))} />
+          </label>
+        )}
         <label className="field grow">
           <span className="label">Nome</span>
           <input value={contract.name} maxLength={40} onChange={(e) => edit((c) => (c.name = e.target.value))} />

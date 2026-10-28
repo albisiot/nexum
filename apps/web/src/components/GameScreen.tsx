@@ -7,6 +7,7 @@ import { contractDescription, contractTitle, describeNote, describeScoring, desc
 import { useGame } from '../game/useGame';
 import { EndScreen, HandEndScreen } from './EndScreen';
 import { HandFan } from './HandFan';
+import { ContractIcon } from './Icon';
 import { TableView, initials } from './TableView';
 
 interface Props {
@@ -69,7 +70,8 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
         <div>
           <span className="hint">{series ? `Contratto ${match.handIndex + 1} di ${match.hands.length}` : 'Contratto'}</span>
           <h2>
-            {contractTitle(view)} <span className="pill">{describeScoring(getContract(view.contract))}</span>
+            <ContractIcon contract={getContract(view.contract)} /> {contractTitle(view)}{' '}
+            <span className="pill">{describeScoring(getContract(view.contract))}</span>
           </h2>
           <p>{contractDescription(view)}</p>
         </div>
