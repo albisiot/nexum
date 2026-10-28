@@ -63,6 +63,7 @@ export function App() {
 
   return (
     <div className="app">
+      {/* Durante le prese la testata è nascosta dal CSS: "Regole" passa nel riquadro del Contratto. */}
       <header className={`top${onMenu ? ' top-menu' : ''}`}>
         {!onMenu && (
           <div className="brand">
@@ -81,6 +82,8 @@ export function App() {
         <GameScreen
           key={client.setup.seed}
           client={client}
+          rulesOpen={showRules}
+          onRules={() => setShowRules((s) => !s)}
           onReplay={() => start({ ...client.setup, seed: randomSeed() })}
           onExit={() => go('setup')}
           onMenu={() => go('menu')}

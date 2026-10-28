@@ -13,6 +13,37 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.16.0',
+    date: '2026-10-28',
+    title: 'Tavolo 3D',
+    changes: [
+      {
+        type: 'new',
+        text: 'La partita si gioca su un tavolo in prospettiva: gli avversari siedono attorno con il ventaglio delle loro carte coperte, e ogni carta giocata finisce sul panno davanti a chi l’ha giocata.',
+      },
+      {
+        type: 'new',
+        text: 'La tua mano è un ventaglio. Scegli una carta per leggerne il potere, poi sceglila di nuovo (o premi “Gioca”) per giocarla; Esc la rimette giù.',
+      },
+      {
+        type: 'new',
+        text: 'Nel multiplayer sullo stesso dispositivo il tavolo gira: in basso siede sempre chi ha il dispositivo, e la sua mano resta coperta finché non la mostra.',
+      },
+      {
+        type: 'change',
+        text: 'La carta che prende la presa si illumina d’oro e accanto al giocatore compare “prende”; l’avatar di chi sta giocando è evidenziato.',
+      },
+      {
+        type: 'change',
+        text: 'In partita il pulsante “Regole” è nel riquadro del Contratto, per lasciare più spazio al tavolo.',
+      },
+      {
+        type: 'fix',
+        text: 'L’esito della presa dice “Prendi tu la presa…” invece di “Tu prende la presa…”.',
+      },
+    ],
+  },
+  {
     version: '0.15.0',
     date: '2026-10-27',
     title: 'Prossimamente',

@@ -101,5 +101,8 @@ export function describeNote(note: TrickNote, names: readonly string[]): string 
 
 export function describeTrick(trick: TrickResult, names: readonly string[]): string {
   const card = getCard(trick.winningCardId);
-  return `${names[trick.winner]} prende la presa ${trick.trickNo} con ${card.name} (${trick.winningValue}) · fazione d’apertura ${getFaction(trick.leadFaction).name}.`;
+  const name = names[trick.winner];
+  // "Tu" è il nome di chi gioca senza account: la frase va alla seconda persona.
+  const who = name === 'Tu' ? 'Prendi tu' : `${name} prende`;
+  return `${who} la presa ${trick.trickNo} con ${card.name} (${trick.winningValue}) · fazione d’apertura ${getFaction(trick.leadFaction).name}.`;
 }
