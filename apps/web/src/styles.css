@@ -489,6 +489,25 @@ input[type='color'] {
   color: #ffd5d5;
 }
 
+.editor-updates {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--gold-deep);
+  background: var(--felt-rim);
+  border-radius: 12px;
+  font-size: 13px;
+}
+
+.editor-updates .hint {
+  margin: 4px 0 0;
+}
+
+.editor-updates ul {
+  margin: 8px 0 12px;
+  padding-left: 18px;
+  line-height: 1.5;
+}
+
 .editor-tabs {
   display: flex;
   gap: 6px;
@@ -1640,6 +1659,12 @@ input {
 }
 
 .card-detail em {
+  color: var(--muted);
+}
+
+.card-detail p.card-rule {
+  margin-top: -4px;
+  font-size: 12px;
   color: var(--muted);
 }
 

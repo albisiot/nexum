@@ -60,6 +60,8 @@ export interface Catalog {
   factions: FactionDef[];
   cards: CardDef[];
   contracts: ContractDef[];
+  /** Aggiornamenti delle carte già applicati (vedi CATALOG_UPDATES), così l'Editor non li ripropone. */
+  appliedUpdates?: string[];
 }
 
 /** Configurazione di una mano (= un Contratto giocato per 13 prese). */
@@ -73,7 +75,8 @@ export interface GameConfig {
 }
 
 export type Play =
-  | { player: number; skipped: false; cardId: CardId; final: number }
+  /** `copied`: il potere che Palimpsest ha copiato giocando. */
+  | { player: number; skipped: false; cardId: CardId; final: number; copied?: PowerId }
   | { player: number; skipped: true };
 
 export type CardPlay = Extract<Play, { skipped: false }>;
@@ -90,7 +93,7 @@ export interface PlayerState {
   nextModifier: number;
   /** Esito delle ultime due prese giocate: true = vinta (Ascendant). */
   recentResults: boolean[];
-  /** Salta la prossima presa (predisposto per Nullchild). */
+  /** Salta la prossima presa (Nullchild). */
   skipNext: boolean;
 }
 
@@ -103,7 +106,9 @@ export type TrickNote =
   | { type: 'measure' }
   | { type: 'tieBreak' }
   | { type: 'scoreChanged'; player: number; cardId: CardId; points: number; target: number }
-  | { type: 'nextModifier'; player: number; cardId: CardId; amount: number; target: number };
+  | { type: 'nextModifier'; player: number; cardId: CardId; amount: number; target: number }
+  | { type: 'powerCopied'; player: number; cardId: CardId; power: PowerId }
+  | { type: 'skipNext'; player: number; cardId: CardId; target: number };
 
 export interface TrickResult {
   trickNo: number;

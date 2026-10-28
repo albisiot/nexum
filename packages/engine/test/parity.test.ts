@@ -1,11 +1,12 @@
 // Confronto mossa per mossa con il simulatore originale (reference/Nexum_Simulatore_v0_9.html).
-// Garantisce che il porting non abbia cambiato le regole. Quando decideremo di cambiarle
-// di proposito (es. nuovi poteri), questo test andrà aggiornato o rimosso.
+// Garantisce che il porting non abbia cambiato le regole. Gira sulle carte del v0.9 (ORIGINAL_CATALOG):
+// i poteri decisi dopo non esistono nel simulatore. L'unica regola cambiata di proposito su una carta
+// del v0.9, il tetto di Gravemind, viene corretta anche nel simulatore prima del confronto.
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { describe, expect, it } from 'vitest';
-import { applyAction, createGame, getCard } from '../src';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { DEFAULT_CATALOG, ORIGINAL_CATALOG, applyAction, createGame, getCard, setCatalog } from '../src';
 import type { CardPlay, GameState } from '../src';
 import { createRng, randomConfig } from './helpers';
 
@@ -36,7 +37,10 @@ interface ProtoApi {
 /** Carica lo script originale in una sandbox con un DOM finto e ne espone le funzioni interne. */
 function loadPrototype(): ProtoApi {
   const html = readFileSync(REFERENCE, 'utf8');
-  const script = html.match(/<script>([\s\S]*?)<\/script>/)![1]!;
+  const original = html.match(/<script>([\s\S]*?)<\/script>/)![1]!;
+  // Gravemind: il tetto è passato da +15 a +36 (decisione dell'autore del 28/10/2026).
+  const script = original.replace('final+=Math.min(15,used*3)', 'final+=Math.min(36,used*3)');
+  if (script === original) throw new Error('Gravemind non trovato nel simulatore originale.');
   const el = (): object => ({
     value: '',
     textContent: '',
@@ -78,6 +82,9 @@ function loadPrototype(): ProtoApi {
 }
 
 describe('parità con il simulatore v0.9', () => {
+  beforeAll(() => setCatalog(ORIGINAL_CATALOG));
+  afterAll(() => setCatalog(DEFAULT_CATALOG));
+
   it('300 mani casuali danno gli stessi valori, vincitori e punteggi', () => {
     const proto = loadPrototype();
     const rng = createRng(909);

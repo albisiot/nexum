@@ -7,7 +7,14 @@ export {
   MIN_CARD_VALUE,
   MAX_CARD_VALUE,
 } from './constants';
-export { DEFAULT_CATALOG } from './data/defaultCatalog';
+export { DEFAULT_CATALOG, ORIGINAL_CATALOG } from './data/defaultCatalog';
+export {
+  CATALOG_UPDATES,
+  applyCatalogUpdates,
+  pendingCatalogUpdates,
+  type CardUpdate,
+  type CatalogUpdate,
+} from './data/catalogUpdates';
 export {
   setCatalog,
   getCatalog,
@@ -37,7 +44,7 @@ export {
   ranking,
   sortHand,
 } from './game';
-export { isPowerImplemented } from './powers';
+export { isPowerImplemented, effectivePower, leadPower } from './powers';
 export { contractDelta, ruleApplies } from './scoring';
 export { getView } from './view';
 export {

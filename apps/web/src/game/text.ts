@@ -1,4 +1,4 @@
-import { contractNeedsTarget, getCard, getCatalog, getContract, getFaction } from '@nexum/engine';
+import { POWERS, contractNeedsTarget, getCard, getCatalog, getContract, getFaction } from '@nexum/engine';
 import type {
   CardFilter,
   Catalog,
@@ -92,11 +92,15 @@ export function describeNote(note: TrickNote, names: readonly string[]): string 
     case 'scoreChanged': {
       const card = getCard(note.cardId).name;
       return note.points > 0
-        ? `${card}: ${names[note.target]} ${signed(note.points)} punti Contratto.`
+        ? `${card}: ${names[note.target]} +${plural(note.points, 'punto', 'punti')} Contratto.`
         : `${card}: ${names[note.target]} perde ${plural(-note.points, 'punto', 'punti')} Contratto.`;
     }
     case 'nextModifier':
       return `${getCard(note.cardId).name}: ${signed(note.amount)} alla prossima carta di ${names[note.target]}.`;
+    case 'powerCopied':
+      return `${getCard(note.cardId).name} di ${names[note.player]} copia il potere di ${POWERS[note.power]?.name ?? note.power}.`;
+    case 'skipNext':
+      return `${getCard(note.cardId).name}: ${names[note.target]} salta la prossima presa.`;
   }
 }
 

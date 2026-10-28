@@ -1,4 +1,5 @@
 import type { CardDef, Catalog, ContractDef, FactionDef } from '../types';
+import { CATALOG_UPDATES, applyCatalogUpdates } from './catalogUpdates';
 
 const FACTION_IDS = [
   'Custodes',
@@ -169,7 +170,10 @@ const RAW: Record<string, { color: string; tagline: string; cards: readonly RawC
   },
 };
 
-/** Carte del v0.9 il cui potere è programmato, con la chiave del potere (vedi POWERS in powers.ts). */
+/**
+ * Carte del v0.9 il cui potere era già programmato, con la chiave del potere (vedi POWERS in powerList.ts).
+ * I poteri programmati dopo si assegnano in catalogUpdates.ts.
+ */
 const POWER_KEYS: Record<string, string> = {
   Afterimage: 'afterimage',
   Veritas: 'veritas',
@@ -286,5 +290,11 @@ const CONTRACTS: ContractDef[] = [
   },
 ];
 
-/** Dati predefiniti del gioco (simulatore v0.9), usati finché non ne viene pubblicata un'altra versione. */
-export const DEFAULT_CATALOG: Catalog = { version: 0, factions: FACTIONS, cards: CARDS, contracts: CONTRACTS };
+/** Le carte del simulatore v0.9 così com'erano: servono al confronto con il simulatore originale. */
+export const ORIGINAL_CATALOG: Catalog = { version: 0, factions: FACTIONS, cards: CARDS, contracts: CONTRACTS };
+
+/**
+ * Dati predefiniti del gioco, usati finché non ne viene pubblicata un'altra versione:
+ * le carte del v0.9 con le decisioni dell'autore già applicate (catalogUpdates.ts).
+ */
+export const DEFAULT_CATALOG: Catalog = applyCatalogUpdates(ORIGINAL_CATALOG, CATALOG_UPDATES);

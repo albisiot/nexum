@@ -147,3 +147,29 @@ carte basse diventano utili.
 2. **Gruppo D (protezione):** automatico, nessuna finestra nuova.
 3. **Gruppo B (scelte):** serve la finestra di scelta, utile anche per Vesper Null e Ravager.
 4. **Gruppi E e C:** richiedono le decisioni più grandi.
+
+## 4. Decisioni dell'autore (file Excel, 28 ottobre 2026)
+
+Prima parte: 29 carte decise, il foglio "Decisioni generali" è ancora vuoto. Le modifiche alle carte stanno in
+`packages/engine/src/data/catalogUpdates.ts` e si applicano al catalogo pubblicato dall'Editor.
+
+| Carta | Decisione | Stato |
+| --- | --- | --- |
+| Vigil | Se apre la presa, chi segue gioca la sua carta più alta di quella fazione | Programmato (0.18.0) |
+| Nullchild | Se vince, l'avversario in testa salta la presa successiva; la carta avanzata si scarta a fine mano | Programmato (0.18.0) |
+| Gravemind | +3 per carta già giocata, massimo +36; testo nuovo | Programmato (0.18.0) |
+| Morrowshade | Se è la più bassa della presa, +1 punto a chi l'ha giocata (a pari merito vale) | Programmato (0.18.0) |
+| Paradox | Se due carte della presa hanno lo stesso valore finale (lei compresa), vale 99 | Programmato (0.18.0) |
+| Palimpsest | Copia il potere programmato dell'ultima carta con potere giocata prima di lei nella presa | Programmato (0.18.0) |
+| Balancer | +15 se sei l'unico ultimo nei punti della mano | Programmato (0.18.0) |
+| Evenhand | +15 se sei ultimo a pari merito con altri | Programmato (0.18.0) |
+| Symmetra | Vale 69 se tra il valore più alto e il più basso della presa ci sono 40 punti o più | Programmato (0.18.0) |
+| Foreseer, Locke, Sibyl, Decima, Usurper | Potere tolto | Fatto (0.18.0) |
+| Vesper Null, Zero | Vanno bene così | — |
+| Fury | Paghi 2 punti Contratto: vale 75 | Da programmare: finestra di scelta |
+| Ashen | Paghi 1 punto per +20, fino a 4 volte (97) | Da programmare: finestra di scelta |
+| Reversal | Chi la cattura può annullare i punti di quella presa; testo nuovo | Da programmare: finestra di scelta |
+| Black Echo, Echo Prime, Mnemos | Recuperi con scambio (riprendi una carta scartandone un'altra) | Da programmare: scarti e recuperi |
+| Archivist, Unwritten, Faded One, Anchor | Proposte del gruppo C | Da programmare: scarti e recuperi |
+| Oblivion | Ognuno scarta una carta a scelta e si salta l'ultima presa | Da programmare: scarti e prese variabili |
+| Second Sight, The Witness | Proposte del gruppo E | Da programmare: informazioni nascoste |

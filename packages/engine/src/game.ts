@@ -1,6 +1,6 @@
 import { contractNeedsTarget, contracts, factionCards, factionIds, getCard } from './catalog';
 import { MAX_PLAYERS, MIN_PLAYERS, TRICKS_PER_HAND } from './constants';
-import { applyAfterTrickPowers, applyRevealPowers, isCardPlay, valueOnPlay } from './powers';
+import { applyAfterTrickPowers, applyRevealPowers, copiedPower, isCardPlay, leadPower, valueOnPlay } from './powers';
 import { createRng, shuffle } from './rng';
 import { contractDelta } from './scoring';
 import type { Action, CardId, GameConfig, GameState, PlayerState, TrickNote, TrickResult } from './types';
@@ -86,7 +86,13 @@ export function legalCards(state: GameState, player: number): CardId[] {
   const hand = state.players[player]!.hand;
   if (!state.leadFaction) return [...hand];
   const following = hand.filter((id) => getCard(id).faction === state.leadFaction);
-  return following.length ? following : [...hand];
+  if (!following.length) return [...hand];
+  // Vigil: se ha aperto la presa, chi segue deve giocare la sua carta più alta di quella fazione.
+  if (leadPower(state.plays) === 'vigil') {
+    const top = Math.max(...following.map((id) => getCard(id).value));
+    return following.filter((id) => getCard(id).value === top);
+  }
+  return following;
 }
 
 /**
@@ -104,7 +110,11 @@ export function applyAction(state: GameState, action: Action): GameState {
         throw new IllegalActionError('La carta non è nella mano del giocatore.');
       }
       if (!legalCards(s, action.player).includes(action.cardId)) {
-        throw new IllegalActionError('Devi seguire la fazione d’apertura.');
+        throw new IllegalActionError(
+          leadPower(s.plays) === 'vigil'
+            ? 'Vigil ha aperto la presa: devi giocare la tua carta più alta della fazione d’apertura.'
+            : 'Devi seguire la fazione d’apertura.',
+        );
       }
       playCard(s, action.player, action.cardId);
       advance(s);
@@ -114,6 +124,8 @@ export function applyAction(state: GameState, action: Action): GameState {
       if (s.phase !== 'trickEnd') throw new IllegalActionError('La presa non è ancora conclusa.');
       if (s.trickNo >= TRICKS_PER_HAND) {
         s.phase = 'handEnd';
+        // Chi ha saltato una presa (Nullchild) ha ancora carte in mano: a fine mano vengono scartate.
+        s.players.forEach((p) => (p.hand = []));
         return s;
       }
       s.trickNo++;
@@ -158,12 +170,13 @@ function advance(s: GameState): void {
 function playCard(s: GameState, player: number, cardId: CardId): void {
   const p = s.players[player]!;
   const card = getCard(cardId);
-  const final = valueOnPlay(s, player, card);
+  const copied = card.power === 'palimpsest' ? copiedPower(s.plays) : undefined;
+  const final = valueOnPlay(s, player, card, copied ?? card.power);
   p.nextModifier = 0;
   p.hand = p.hand.filter((id) => id !== cardId);
   p.played.push(cardId);
   if (!s.leadFaction) s.leadFaction = card.faction;
-  s.plays.push({ player, skipped: false, cardId, final });
+  s.plays.push(copied ? { player, skipped: false, cardId, final, copied } : { player, skipped: false, cardId, final });
   s.turn = (s.turn + 1) % s.players.length;
 }
 

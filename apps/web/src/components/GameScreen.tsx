@@ -1,4 +1,14 @@
-import { getCard, getContract, getFaction, hasPowerText, isPowerImplemented, matchRanking, sortHand } from '@nexum/engine';
+import {
+  POWERS,
+  getCard,
+  getContract,
+  getFaction,
+  hasPowerText,
+  isPowerImplemented,
+  leadPower,
+  matchRanking,
+  sortHand,
+} from '@nexum/engine';
 import type { CardId } from '@nexum/engine';
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
@@ -49,6 +59,8 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
   const hand = sortHand(view.hand);
   const sel = selected !== null && view.hand.includes(selected) ? selected : null;
   const lead = view.leadFaction ? getFaction(view.leadFaction) : null;
+  // Vigil ha aperto la presa: chi segue deve giocare la sua carta più alta della fazione.
+  const vigil = !trickOver && leadPower(view.plays) === 'vigil';
   const seat = view.players[anchor]!;
 
   // Primo tocco: la carta si alza e mostra il potere. Secondo tocco: si gioca.
@@ -220,17 +232,22 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
   function turnTitle(): string {
     if (!snap.canPlay) return `Tocca a ${current}`;
     if (!lead) return 'Tocca a te · apri tu';
-    return view.hand.some((id) => getCard(id).faction === view.leadFaction)
-      ? `Tocca a te · segui ${lead.name}`
-      : `Tocca a te · non hai ${lead.name}`;
+    if (!view.hand.some((id) => getCard(id).faction === view.leadFaction)) return `Tocca a te · non hai ${lead.name}`;
+    return vigil ? `Tocca a te · la tua ${lead.name} più alta` : `Tocca a te · segui ${lead.name}`;
   }
 
   function turnHint(): string {
-    if (!snap.canPlay) return lead ? `Fazione d’apertura: ${lead.name}.` : `${current} è primo di mano.`;
+    if (!snap.canPlay) {
+      if (!lead) return `${current} è primo di mano.`;
+      return vigil ? `Vigil ha aperto la presa: chi ha ${lead.name} deve giocare la sua carta più alta.` : `Fazione d’apertura: ${lead.name}.`;
+    }
     if (!lead) return 'Sei primo di mano: puoi aprire con qualsiasi fazione.';
-    return view.hand.some((id) => getCard(id).faction === view.leadFaction)
-      ? 'Devi giocare una carta della fazione d’apertura: sono quelle sollevate.'
-      : 'Puoi giocare qualsiasi carta, ma solo la fazione d’apertura può prendere.';
+    if (!view.hand.some((id) => getCard(id).faction === view.leadFaction)) {
+      return 'Puoi giocare qualsiasi carta, ma solo la fazione d’apertura può prendere.';
+    }
+    return vigil
+      ? 'Vigil ha aperto la presa: devi giocare la tua carta più alta della fazione d’apertura.'
+      : 'Devi giocare una carta della fazione d’apertura: sono quelle sollevate.';
   }
 
   function cardDetail(cardId: CardId) {
@@ -250,13 +267,18 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
           {card.effect || 'Nessun potere.'}
           {hasPowerText(card) && !isPowerImplemented(card) && <em> Potere non ancora attivo.</em>}
         </p>
+        {isPowerImplemented(card) && <p className="card-rule">Regola: {POWERS[card.power!]!.summary}.</p>}
         {playable ? (
           <button type="button" className="btn primary" onClick={() => play(cardId)}>
             Gioca {card.name}
           </button>
         ) : (
           <span className="hint">
-            {snap.canPlay ? `Non puoi giocarla: devi seguire ${lead!.name}.` : 'Potrai giocarla quando tocca a te.'}
+            {!snap.canPlay
+              ? 'Potrai giocarla quando tocca a te.'
+              : vigil && card.faction === view.leadFaction
+                ? `Non puoi giocarla: Vigil ti obbliga a giocare la tua ${lead!.name} più alta.`
+                : `Non puoi giocarla: devi seguire ${lead!.name}.`}
           </span>
         )}
         <button type="button" className="btn small" onClick={() => setSelected(null)}>

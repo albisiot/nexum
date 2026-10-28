@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import {
+  CATALOG_UPDATES,
   DEFAULT_CATALOG,
+  ORIGINAL_CATALOG,
+  POWERS,
+  applyCatalogUpdates,
+  pendingCatalogUpdates,
   contractDelta,
   contractNeedsTarget,
   contractRequiredFactions,
@@ -83,6 +88,37 @@ describe('catalogo modificabile', () => {
     expect(contractNeedsTarget(getContract('more'))).toBe(false);
     expect(contractRequiredFactions(getContract('unmade'))).toEqual(['Nullarii']);
     expect(contractRequiredFactions(getContract('chaos'))).toEqual(['Nullarii']);
+  });
+});
+
+describe('aggiornamenti delle carte', () => {
+  it('ogni aggiornamento nomina carte che esistono e poteri programmati', () => {
+    for (const update of CATALOG_UPDATES) {
+      for (const [id, change] of Object.entries(update.cards)) {
+        expect(ORIGINAL_CATALOG.cards.find((c) => c.id === id)?.name, `${update.id} · ${id}`).toBe(change.name);
+        if (change.power) expect(POWERS).toHaveProperty(change.power);
+      }
+    }
+  });
+
+  it('il catalogo predefinito li ha già tutti, quello del v0.9 no', () => {
+    expect(pendingCatalogUpdates(DEFAULT_CATALOG)).toEqual([]);
+    expect(pendingCatalogUpdates(ORIGINAL_CATALOG)).toHaveLength(CATALOG_UPDATES.length);
+  });
+
+  it('applicati a un catalogo pubblicato cambiano solo testo e potere delle carte indicate', () => {
+    const published = JSON.parse(JSON.stringify(ORIGINAL_CATALOG)) as Catalog;
+    published.version = 1;
+    published.cards.find((c) => c.id === 'Custodes-2')!.name = 'Vigile';
+    const next = applyCatalogUpdates(published, CATALOG_UPDATES);
+    const vigil = next.cards.find((c) => c.id === 'Custodes-2')!;
+    expect([vigil.name, vigil.power, vigil.effect]).toEqual(['Vigile', 'vigil', 'Controllo.']);
+    const foreseer = next.cards.find((c) => c.id === 'Custodes-4')!;
+    expect([foreseer.effect, 'power' in foreseer]).toEqual(['', false]);
+    expect(next.version).toBe(1);
+    expect(pendingCatalogUpdates(next)).toEqual([]);
+    expect(validateCatalog(next)).toEqual([]);
+    expect(published.cards.find((c) => c.id === 'Custodes-2')!.power).toBeUndefined();
   });
 });
 

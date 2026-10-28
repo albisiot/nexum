@@ -13,6 +13,41 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.18.0',
+    date: '2026-10-28',
+    title: 'Nuovi poteri',
+    changes: [
+      {
+        type: 'new',
+        text: 'Otto poteri prendono vita: Vigil, Nullchild, Morrowshade, Paradox, Palimpsest, Balancer, Evenhand e Symmetra.',
+      },
+      {
+        type: 'new',
+        text: 'Vigil: se apre la presa, chi segue deve giocare la sua carta più alta di quella fazione. Il gioco te lo dice e solleva solo quella carta.',
+      },
+      {
+        type: 'new',
+        text: 'Nullchild: se vince la presa, l’avversario in testa salta la presa successiva; la carta che gli avanza viene scartata a fine mano.',
+      },
+      {
+        type: 'new',
+        text: 'Quando scegli una carta, sotto il suo testo vedi la regola esatta del potere.',
+      },
+      {
+        type: 'change',
+        text: 'Gravemind cresce fino a +36 invece di +15.',
+      },
+      {
+        type: 'change',
+        text: 'Foreseer, Locke, Sibyl, Decima e Usurper non hanno più un potere. Reversal, Black Echo e Gravemind hanno un testo nuovo.',
+      },
+      {
+        type: 'change',
+        text: 'Editor: le modifiche alle carte decise fuori dall’Editor compaiono in un riquadro e si applicano alla bozza con un pulsante, prima di pubblicarle.',
+      },
+    ],
+  },
+  {
     version: '0.17.0',
     date: '2026-10-28',
     title: 'Icone disegnate e nuova fine mano',

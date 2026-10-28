@@ -26,11 +26,11 @@ describe('carte', () => {
     }
   });
 
-  it('51 carte hanno un potere scritto, 19 sono implementati', () => {
+  it('46 carte hanno un potere scritto, 27 sono implementati', () => {
     const withText = DEFAULT_CATALOG.cards.filter(hasPowerText);
-    expect(withText).toHaveLength(51);
+    expect(withText).toHaveLength(46);
     const implemented = DEFAULT_CATALOG.cards.filter(isPowerImplemented);
-    expect(implemented).toHaveLength(19);
+    expect(implemented).toHaveLength(27);
     expect(new Set(implemented.map((c) => c.power))).toEqual(new Set(Object.keys(POWERS)));
     expect(implemented.every(hasPowerText)).toBe(true);
   });
@@ -126,9 +126,11 @@ describe('simulazione', () => {
       const end = playOut(createGame(cfg), rng);
       const n = cfg.playerNames.length;
       expect(end.history).toHaveLength(13);
-      expect(end.players.every((p) => p.hand.length === 0 && p.played.length === 13)).toBe(true);
+      // Chi salta una presa (Nullchild) gioca una carta in meno; quella che gli avanza viene scartata.
+      const skips = end.players.map((_, i) => end.history.filter((t) => t.plays.some((pl) => pl.player === i && pl.skipped)).length);
+      expect(end.players.every((p, i) => p.hand.length === 0 && p.played.length === 13 - skips[i]!)).toBe(true);
       const captured = end.players.flatMap((p) => p.captured);
-      expect(new Set(captured).size).toBe(n * 13);
+      expect(new Set(captured).size).toBe(n * 13 - skips.reduce((a, b) => a + b, 0));
       expect(end.players.reduce((t, p) => t + p.tricks, 0)).toBe(13);
       for (const trick of end.history) {
         // il vincitore ha sempre giocato la fazione d'apertura

@@ -6,10 +6,12 @@ import {
   MIN_CARD_VALUE,
   POWERS,
   TRICKS_PER_HAND,
+  applyCatalogUpdates,
   getCatalog,
+  pendingCatalogUpdates,
   validateCatalog,
 } from '@nexum/engine';
-import type { CardFilter, Catalog, ContractDef, ScoringRule } from '@nexum/engine';
+import type { CardFilter, CardUpdate, Catalog, CatalogUpdate, ContractDef, ScoringRule } from '@nexum/engine';
 import type { CSSProperties } from 'react';
 import { useAuth } from '../auth/auth';
 import { catalogStore } from '../catalog/store';
@@ -124,7 +126,7 @@ export function EditorScreen({ onBack }: Props) {
     if (window.confirm('Annullare tutte le modifiche non salvate?')) setDraft(JSON.parse(saved) as Catalog);
   };
   const restoreDefaults = () => {
-    if (window.confirm('Sostituire la bozza con i dati originali del gioco (simulatore v0.9)? Potrai ancora annullare finché non salvi.')) {
+    if (window.confirm('Sostituire la bozza con i dati originali del gioco (carte del simulatore v0.9 con le decisioni sui poteri già applicate)? Potrai ancora annullare finché non salvi.')) {
       setDraft({ ...clone(DEFAULT_CATALOG), version: draft.version });
     }
   };
@@ -175,6 +177,10 @@ export function EditorScreen({ onBack }: Props) {
         </div>
       )}
 
+      {pendingCatalogUpdates(draft).map((u) => (
+        <CardUpdates key={u.id} update={u} draft={draft} onApply={() => setDraft(applyCatalogUpdates(draft, [u]))} />
+      ))}
+
       <div className="editor-tabs" role="tablist">
         <button type="button" role="tab" aria-selected={tab === 'factions'} onClick={() => setTab('factions')}>
           Fazioni e carte
@@ -196,6 +202,42 @@ export function EditorScreen({ onBack }: Props) {
         </button>
       </div>
     </section>
+  );
+}
+
+/** Modifiche alle carte decise fuori dall'Editor (file dei poteri): si applicano alla bozza, poi si pubblicano. */
+function CardUpdates({ update, draft, onApply }: { update: CatalogUpdate; draft: Catalog; onApply(): void }) {
+  const describe = (change: CardUpdate): string => {
+    const parts: string[] = [];
+    if (change.power === null) parts.push('potere tolto');
+    else if (change.power) parts.push(`potere ${POWERS[change.power]?.name ?? change.power}: ${POWERS[change.power]?.summary ?? ''}`);
+    if (change.effect !== undefined && change.power !== null) parts.push(`nuovo testo «${change.effect}»`);
+    return parts.join(' · ');
+  };
+  const date = new Date(`${update.date}T12:00:00`).toLocaleDateString('it-IT');
+  return (
+    <div className="editor-updates">
+      <b>
+        {update.title} · {date}
+      </b>
+      <p className="hint">
+        Queste modifiche sono già nel gioco ma non ancora nel catalogo pubblicato. Applicale alla bozza, controllale e
+        poi premi Pubblica.
+      </p>
+      <ul>
+        {Object.entries(update.cards).map(([id, change]) => {
+          const card = draft.cards.find((c) => c.id === id);
+          return (
+            <li key={id}>
+              <b>{card?.name ?? change.name}</b>: {card ? describe(change) : 'la carta non è più nel catalogo, verrà saltata'}
+            </li>
+          );
+        })}
+      </ul>
+      <button type="button" className="btn primary" onClick={onApply}>
+        Applica alla bozza
+      </button>
+    </div>
   );
 }
 
