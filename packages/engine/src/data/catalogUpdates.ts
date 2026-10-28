@@ -55,6 +55,37 @@ export const CATALOG_UPDATES: readonly CatalogUpdate[] = [
       'Dominari-10': { name: 'Fury', power: 'fury' },
     },
   },
+  {
+    id: 'poteri-2026-10-28-c',
+    date: '2026-10-28',
+    title: 'Tutte le altre decisioni: protezione, scelte, scarti e recuperi, informazioni nascoste',
+    cards: {
+      'Custodes-1': { name: 'Aegiron', power: 'aegiron' },
+      'Custodes-9': { name: 'Second Sight', power: 'second-sight' },
+      'Custodes-10': { name: 'Anchor', power: 'anchor' },
+      'Custodes-11': { name: 'The Witness', power: 'the-witness' },
+      'Nullarii-2': { name: 'Oblivion', power: 'oblivion' },
+      'Nullarii-4': { name: 'Black Echo', power: 'black-echo' },
+      'Reliquiae-2': { name: 'Echo Prime', power: 'echo-prime' },
+      'Reliquiae-3': { name: 'Mnemos', power: 'mnemos' },
+      'Reliquiae-5': {
+        name: 'Archivist',
+        effect: 'Può usare il valore di una carta già giocata o scartata.',
+        power: 'archivist',
+      },
+      'Reliquiae-10': { name: 'Unwritten', power: 'unwritten' },
+      'Reliquiae-11': { name: 'Faded One', power: 'faded-one' },
+      'Concordia-10': {
+        name: 'Pax',
+        effect: 'Nella presa in cui la giochi, i poteri avversari non possono toglierti punti.',
+        power: 'pax',
+      },
+      'Conflux-2': { name: 'Janus', effect: '', power: null },
+      'Conflux-3': { name: 'Shift', power: 'shift' },
+      'Conflux-9': { name: 'Metamorph', power: 'metamorph' },
+      'Conflux-10': { name: 'Split', effect: '', power: null },
+    },
+  },
 ];
 
 /** Applica gli aggiornamenti a una copia del catalogo; le carte che non esistono più vengono ignorate. */

@@ -40,11 +40,20 @@ export {
   createGame,
   applyAction,
   legalCards,
+  discardableNow,
   isFinished,
   ranking,
   sortHand,
 } from './game';
-export { isPowerImplemented, effectivePower, leadPower, paymentFor, PAID_POWERS } from './powers';
+export {
+  isPowerImplemented,
+  effectivePower,
+  leadPower,
+  playChoice,
+  discardableCards,
+  PAID_POWERS,
+  type PlayChoice,
+} from './powers';
 export { contractDelta, ruleApplies } from './scoring';
 export { getView } from './view';
 export {
@@ -64,5 +73,5 @@ export {
   type MatchAction,
   type MatchView,
 } from './match';
-export { chooseCard, chooseOption, chooseDecision } from './bot';
+export { chooseCard, chooseOption, chooseDecision, chooseDiscard } from './bot';
 export { createRng, shuffle, randomSeed, type Rng } from './rng';

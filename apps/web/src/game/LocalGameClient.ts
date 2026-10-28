@@ -2,14 +2,17 @@ import {
   applyMatchAction,
   chooseCard,
   chooseDecision,
+  chooseDiscard,
   chooseOption,
   createMatch,
   createRng,
+  discardableCards,
   getMatchView,
   getView,
+  sortHand,
 } from '@nexum/engine';
 import type { CardId, MatchAction, MatchState, Rng } from '@nexum/engine';
-import type { ClientSnapshot, GameClient, MatchSetup } from './GameClient';
+import type { ClientSnapshot, DecisionAnswer, GameClient, MatchSetup } from './GameClient';
 
 const CPU_DELAY_MS = 550;
 
@@ -48,10 +51,16 @@ export class LocalGameClient implements GameClient {
     this.apply({ type: 'play', player: perspective, cardId, option });
   }
 
-  decide(accept: boolean): void {
+  discard(cardId: CardId): void {
+    const { canDiscard, perspective } = this.snapshot;
+    if (!canDiscard || perspective === null) return;
+    this.apply({ type: 'discard', player: perspective, cardId });
+  }
+
+  decide(answer: DecisionAnswer): void {
     const decision = this.state.game.decision;
     if (!this.snapshot.canDecide || !decision) return;
-    this.apply({ type: 'decide', player: decision.player, accept });
+    this.apply({ type: 'decide', player: decision.player, ...answer });
   }
 
   nextTrick(): void {
@@ -91,7 +100,7 @@ export class LocalGameClient implements GameClient {
     this.scheduleCpu();
   }
 
-  /** La CPU gioca quando tocca a lei e decide per Reversal quando la cattura. */
+  /** La CPU gioca quando tocca a lei (scartando prima, se deve) e prende le decisioni che le spettano. */
   private scheduleCpu(): void {
     const g = this.state.game;
     if (this.disposed || this.timer || this.state.phase !== 'playing') return;
@@ -104,11 +113,15 @@ export class LocalGameClient implements GameClient {
       if (this.disposed) return;
       if (decider !== undefined) {
         if (now.decision?.player !== decider) return;
-        this.apply({ type: 'decide', player: decider, accept: chooseDecision(getView(now, decider)) });
+        this.apply(chooseDecision(getView(now, decider)));
         return;
       }
       if (now.phase !== 'playing' || now.turn !== seat) return;
       const view = getView(now, seat);
+      if (view.discardable.length) {
+        this.apply({ type: 'discard', player: seat, cardId: chooseDiscard(view) });
+        return;
+      }
       const cardId = chooseCard(view, this.cpuRng);
       this.apply({ type: 'play', player: seat, cardId, option: chooseOption(view, cardId) });
     }, CPU_DELAY_MS);
@@ -137,8 +150,11 @@ export class LocalGameClient implements GameClient {
       seats,
       perspective,
       handHidden,
-      canPlay: humanTurn && perspective === g.turn,
+      canPlay: humanTurn && perspective === g.turn && !match.game.discardable.length,
+      canDiscard: humanTurn && perspective === g.turn && match.game.discardable.length > 0,
       canDecide,
+      decisionHand:
+        canDecide && g.decision?.kind === 'recover' ? sortHand(discardableCards(g.players[decider!]!.hand)) : [],
       canContinue: g.phase === 'trickEnd' && !g.decision,
     };
   }

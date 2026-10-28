@@ -1,4 +1,4 @@
-import { TRICKS_PER_HAND, legalCards } from './game';
+import { discardableNow, legalCards } from './game';
 import type { GameState, PlayerView } from './types';
 
 /**
@@ -14,7 +14,7 @@ export function getView(state: GameState, seat: number | null): PlayerView {
     targetFaction: state.config.targetFaction,
     factions: [...state.config.factions],
     trickNo: state.trickNo,
-    tricksPerHand: TRICKS_PER_HAND,
+    tricksPerHand: state.tricksInHand,
     leader: state.leader,
     turn: state.turn,
     leadFaction: state.leadFaction,
@@ -26,12 +26,18 @@ export function getView(state: GameState, seat: number | null): PlayerView {
       capturedCount: p.captured.length,
       tricks: p.tricks,
       score: p.score,
-      nextModifier: p.nextModifier,
+      nextModifier: p.nextModifier + p.nextPenalty,
+      protectedNext: p.protectNext,
+      mustDiscard: p.mustDiscard,
     })),
     hand: me ? [...me.hand] : [],
     legal: seat === null ? [] : legalCards(state, seat),
     lastTrick: state.history.at(-1) ?? null,
     history: [...state.history],
     decision: state.decision,
+    discards: [...state.discards],
+    // Solo le carte viste che sono ancora in mano all'avversario: quelle giocate non servono più.
+    seen: me ? me.seen.filter((x) => state.players[x.player]!.hand.includes(x.cardId)) : [],
+    discardable: seat === null ? [] : discardableNow(state, seat),
   };
 }

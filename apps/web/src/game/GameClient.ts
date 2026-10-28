@@ -18,6 +18,14 @@ export interface MatchSetup {
   seed: number;
 }
 
+/** Risposta a una decisione: `accept` (Reversal, recupero), `target` (bersaglio), `take` e `discard` (recupero). */
+export interface DecisionAnswer {
+  accept: boolean;
+  target?: number;
+  take?: CardId;
+  discard?: CardId;
+}
+
 /** Ciò che la UI deve disegnare in un dato momento. */
 export interface ClientSnapshot {
   match: MatchView;
@@ -29,8 +37,12 @@ export interface ClientSnapshot {
   /** Pass-and-play: la mano di chi è di turno è coperta finché non la rivela. */
   handHidden: boolean;
   canPlay: boolean;
-  /** C'è una decisione in sospeso (Reversal) che spetta a un giocatore umano. */
+  /** Oblivion: chi è di turno, con la mano visibile, deve prima scartare una carta. */
+  canDiscard: boolean;
+  /** C'è una decisione in sospeso che spetta a un giocatore umano. */
   canDecide: boolean;
+  /** Recupero: le carte che chi decide può scartare (la sua mano: in pass-and-play va mostrata solo a lui). */
+  decisionHand: CardId[];
   canContinue: boolean;
 }
 
@@ -43,10 +55,12 @@ export interface GameClient {
   readonly setup: MatchSetup;
   getSnapshot(): ClientSnapshot;
   subscribe(listener: () => void): () => void;
-  /** `option`: quante volte pagare il potere della carta (Fury, Ashen). */
+  /** `option`: la scelta del potere della carta (Fury, Ashen, Shift, Archivist). */
   playCard(cardId: CardId, option?: number): void;
-  /** Risponde alla decisione in sospeso (Reversal: true = annulla i punti della presa). */
-  decide(accept: boolean): void;
+  /** Oblivion: scarta una carta prima di giocare. */
+  discard(cardId: CardId): void;
+  /** Risponde alla decisione in sospeso (Reversal, bersaglio, recupero). */
+  decide(answer: DecisionAnswer): void;
   nextTrick(): void;
   nextHand(): void;
   revealHand(): void;

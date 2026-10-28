@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { DEFAULT_CATALOG, ORIGINAL_CATALOG, applyAction, createGame, getCard, setCatalog } from '../src';
+import { DEFAULT_CATALOG, ORIGINAL_CATALOG, applyAction, chooseDecision, createGame, getCard, getView, setCatalog } from '../src';
 import type { CardPlay, GameState } from '../src';
 import { createRng, randomConfig } from './helpers';
 
@@ -115,6 +115,8 @@ describe('parità con il simulatore v0.9', () => {
         proto.play(player, cardId);
 
         if (s.phase === 'trickEnd') {
+          // Vesper Null e Ravager: la CPU sceglie l'avversario in testa, come faceva il simulatore.
+          while (s.decision) s = applyAction(s, chooseDecision(getView(s, s.decision.player)));
           proto.resolve();
           const trick = s.history.at(-1)!;
           const after = proto.state();
@@ -124,7 +126,7 @@ describe('parità con il simulatore v0.9', () => {
           );
           expect(after.nextLeader, where).toBe(trick.winner);
           expect(after.players.map((p) => p.score), where).toEqual(s.players.map((p) => p.score));
-          expect(after.players.map((p) => p.nextBoost + p.nextPenalty), where).toEqual(s.players.map((p) => p.nextModifier));
+          expect(after.players.map((p) => p.nextBoost + p.nextPenalty), where).toEqual(s.players.map((p) => p.nextModifier + p.nextPenalty));
         } else {
           const last = proto.state().plays.at(-1)!;
           expect([last.card.id, last.final]).toEqual([cardId, (s.plays.at(-1) as CardPlay).final]);

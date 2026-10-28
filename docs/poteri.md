@@ -150,13 +150,32 @@ carte basse diventano utili.
 
 ## 4. Decisioni dell'autore (file Excel, 28 ottobre 2026)
 
-Prima parte: 29 carte decise, il foglio "Decisioni generali" è ancora vuoto. Le modifiche alle carte stanno in
-`packages/engine/src/data/catalogUpdates.ts` e si applicano al catalogo pubblicato dall'Editor.
+Tutte le 104 carte hanno una decisione e il foglio "Decisioni generali" è completo. Le modifiche alle carte stanno
+in `packages/engine/src/data/catalogUpdates.ts` e si applicano al catalogo pubblicato dall'Editor.
+
+### Decisioni generali
+
+1. **Pareggio**: resta così (vince il valore stampato più basso).
+2. **Scarti e recuperi**: scambio (chi recupera una carta ne scarta un'altra), tranne le carte che fanno scartare a
+   tutti lo stesso numero di carte (Oblivion): lì la mano ha meno prese. Il recupero si decide **prima** di contare i
+   punti, così la carta recuperata non conta tra le catturate.
+3. **Protetta**: i poteri avversari non cambiano il valore della carta e in quella presa non tolgono punti.
+4. **Quando si sceglie**: quando giochi la carta.
+5. **Pronostici**: solo premio (nessuna carta li usa più).
+6. **"Un avversario"** (Vesper Null, Ravager, Nullchild): lo sceglie chi gioca; la CPU sceglie chi è in testa.
+7. **"Carta precedente"**: Afterimage guarda la tua, Metamorph quella giocata subito prima nella presa.
+8. **Carte fuori fazione**: i poteri si attivano sempre, a meno che non chiedano di seguire la fazione d'apertura.
+9. **Classifica** (Balancer, Evenhand): punti della mano in corso.
+
+Con Oblivion la mano si accorcia: le regole dei Contratti che arrivano fino all'ultima presa ("presa 13",
+"ultime 3 prese") si spostano con lei e valgono sull'ultima presa vera.
+
+### Carte
 
 | Carta | Decisione | Stato |
 | --- | --- | --- |
 | Vigil | Se apre la presa, chi segue gioca la sua carta più alta di quella fazione | Programmato (0.18.0) |
-| Nullchild | Se vince, l'avversario in testa salta la presa successiva; la carta avanzata si scarta a fine mano | Programmato (0.18.0) |
+| Nullchild | Se vince, un avversario scelto da chi gioca salta la presa successiva; la carta avanzata si scarta a fine mano | Programmato (0.18.0, scelta 0.20.0) |
 | Gravemind | +3 per carta già giocata, massimo +36; testo nuovo | Programmato (0.18.0) |
 | Morrowshade | Se è la più bassa della presa, +1 punto a chi l'ha giocata (a pari merito vale) | Programmato (0.18.0) |
 | Paradox | Se due carte della presa hanno lo stesso valore finale (lei compresa), vale 99 | Programmato (0.18.0) |
@@ -165,11 +184,23 @@ Prima parte: 29 carte decise, il foglio "Decisioni generali" è ancora vuoto. Le
 | Evenhand | +15 se sei ultimo a pari merito con altri | Programmato (0.18.0) |
 | Symmetra | Vale 69 se tra il valore più alto e il più basso della presa ci sono 40 punti o più | Programmato (0.18.0) |
 | Foreseer, Locke, Sibyl, Decima, Usurper | Potere tolto | Fatto (0.18.0) |
-| Vesper Null, Zero | Vanno bene così | — |
+| Janus, Split | Potere tolto | Fatto (0.20.0) |
+| Zero | Va bene così | — |
 | Fury | Paghi 2 punti Contratto: vale 75 | Programmato (0.19.0) |
 | Ashen | Paghi 1 punto per +20, fino a 4 volte (97) | Programmato (0.19.0) |
-| Reversal | Chi la cattura può annullare i punti nati da quella presa, per tutti i giocatori; testo nuovo | Programmato (0.19.0); "per tutti" è da confermare |
-| Black Echo, Echo Prime, Mnemos | Recuperi con scambio (riprendi una carta scartandone un'altra) | Da programmare: scarti e recuperi |
-| Archivist, Unwritten, Faded One, Anchor | Proposte del gruppo C | Da programmare: scarti e recuperi |
-| Oblivion | Ognuno scarta una carta a scelta e si salta l'ultima presa | Da programmare: scarti e prese variabili |
-| Second Sight, The Witness | Proposte del gruppo E | Da programmare: informazioni nascoste |
+| Reversal | Chi la cattura può annullare i punti nati da quella presa, per tutti (non quelli guadagnati da chi è protetto) | Programmato (0.19.0) |
+| Vesper Null, Ravager | L'avversario lo sceglie chi gioca (Ravager non può puntare chi è protetto) | Programmato (0.20.0) |
+| Aegiron | Se vince, la tua prossima carta è protetta | Programmato (0.20.0) |
+| Pax | Nella presa in cui la giochi, i poteri avversari non ti tolgono punti; testo nuovo | Programmato (0.20.0) |
+| Shift | Giocandola scegli +15 o −15 | Programmato (0.20.0) |
+| Metamorph | Prende il valore stampato della carta giocata subito prima nella presa; se apre, vale 27 | Programmato (0.20.0) |
+| Black Echo | La prima volta che perde (una volta per mano) torna in mano scartando un'altra carta | Programmato (0.20.0) |
+| Echo Prime | Una volta per mano, a fine presa, torna in mano scartando un'altra carta (anche se ha vinto) | Programmato (0.20.0) |
+| Mnemos | Se vince, prende in mano una carta catturata di valore 20 o meno, scartandone una | Programmato (0.20.0) |
+| Archivist | Giocandola prende il valore stampato di una carta già giocata in questa mano o scartata; testo nuovo | Programmato (0.20.0) |
+| Unwritten | Se un potere la fa scartare, chi la possedeva guadagna 2 punti | Programmato (0.20.0) |
+| Faded One | Nessun potere può farla scartare | Programmato (0.20.0) |
+| Anchor | Nella presa in cui è giocata nessuno recupera carte | Programmato (0.20.0) |
+| Oblivion | Se vince, tutti scartano una carta all'inizio del loro turno e la mano ha una presa in meno | Programmato (0.20.0) |
+| Second Sight | Giocandola vedi una carta a caso della mano di ogni avversario | Programmato (0.20.0) |
+| The Witness | Se è la più bassa della presa, vedi la mano di chi vince | Programmato (0.20.0) |

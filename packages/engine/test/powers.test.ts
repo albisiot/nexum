@@ -162,12 +162,31 @@ describe('poteri dopo la presa', () => {
     expect(finalOf(s.plays, 'Dominari-6')).toBe(51 + 10);
   });
 
-  it('Vesper Null che vince dà −15 alla prossima carta dell’avversario in testa', () => {
+  it('Vesper Null che vince: chi l’ha giocata sceglie l’avversario che avrà −15 sulla prossima carta', () => {
     const s = withHands([['Nullarii-1'], ['Nullarii-12'], ['Nullarii-11']]);
     s.players[2]!.score = 5;
     const after = play(s, 'Nullarii-1', 'Nullarii-12', 'Nullarii-11');
-    expect(after.players[2]!.nextModifier).toBe(-15);
-    expect(after.players[1]!.nextModifier).toBe(0);
+    expect(after.decision).toEqual({ kind: 'target', player: 0, cardId: 'Nullarii-1', power: 'vesper-null', options: [1, 2] });
+    expect(() => applyAction(after, { type: 'nextTrick' })).toThrow(IllegalActionError);
+    // La CPU sceglie l'avversario in testa.
+    expect(chooseDecision(getView(after, 0)).target).toBe(2);
+    const chosen = applyAction(after, { type: 'decide', player: 0, accept: true, target: 1 });
+    expect(chosen.players[1]!.nextPenalty).toBe(-15);
+    expect(chosen.players[2]!.nextPenalty).toBe(0);
+    expect(getView(chosen, 0).players[1]!.nextModifier).toBe(-15);
+  });
+
+  it('con un solo avversario il bersaglio è automatico', () => {
+    const after = play(withHands([['Nullarii-1'], ['Nullarii-12']]), 'Nullarii-1', 'Nullarii-12');
+    expect(after.decision).toBeNull();
+    expect(after.players[1]!.nextPenalty).toBe(-15);
+  });
+
+  it('Ravager: chi l’ha giocata sceglie chi perde 1 punto, ma non chi è protetto da Pax', () => {
+    // Ravager prende; Pax protegge il giocatore 1, quindi resta solo il 2 e il bersaglio è automatico.
+    const s = play(withHands([['Dominari-3'], ['Concordia-10'], ['Dominari-12']]), 'Dominari-3', 'Concordia-10', 'Dominari-12');
+    expect(s.decision).toBeNull();
+    expect(s.players.map((p) => p.score)).toEqual([1, 0, -1]);
   });
 
   it('Morrowshade più bassa della presa dà +1 punto a chi l’ha giocata', () => {
@@ -180,14 +199,15 @@ describe('poteri dopo la presa', () => {
     expect(notLow.history[0]!.notes.some((n) => n.type === 'scoreChanged' && n.cardId === 'Nullarii-9')).toBe(false);
   });
 
-  it('Nullchild che vince fa saltare la presa successiva all’avversario in testa', () => {
+  it('Nullchild che vince fa saltare la presa successiva all’avversario scelto', () => {
     const s = withHands([
       ['Nullarii-6', 'Dominari-0'],
       ['Nullarii-8', 'Dominari-1'],
       ['Nullarii-12', 'Dominari-2'],
     ]);
-    s.players[2]!.score = 3;
     let after = play(s, 'Nullarii-6', 'Nullarii-8', 'Nullarii-12');
+    expect(after.decision?.kind).toBe('target');
+    after = applyAction(after, { type: 'decide', player: 0, accept: true, target: 2 });
     expect(after.players[2]!.skipNext).toBe(true);
     expect(after.history[0]!.notes).toContainEqual({ type: 'skipNext', player: 0, cardId: 'Nullarii-6', target: 2 });
 
@@ -234,7 +254,7 @@ describe('poteri con una scelta', () => {
   it('rifiuta pagamenti fuori misura o su carte che non si pagano', () => {
     expect(() => opt(withHands([['Dominari-10'], ['Dominari-5']]), 'Dominari-10', 2)).toThrow(IllegalActionError);
     expect(() => opt(withHands([['Nullarii-10'], ['Nullarii-0']]), 'Nullarii-10', 5)).toThrow(IllegalActionError);
-    expect(() => opt(withHands([['Dominari-0'], ['Dominari-5']]), 'Dominari-0', 1)).toThrow(/non si paga/);
+    expect(() => opt(withHands([['Dominari-0'], ['Dominari-5']]), 'Dominari-0', 1)).toThrow(/non è possibile/);
   });
 
   it('Palimpsest che copia Fury si può pagare anche lei', () => {
@@ -247,7 +267,7 @@ describe('poteri con una scelta', () => {
     // Meno prese: chi prende perde 1 punto. Meridian cattura Reversal.
     const s = play(withHands([['Custodes-7'], ['Custodes-0']], 0, { contract: 'less' }), 'Custodes-7', 'Custodes-0');
     expect(s.decision).toEqual({ kind: 'reversal', player: 1, cardId: 'Custodes-7', deltas: [0, -1] });
-    expect(() => applyAction(s, { type: 'nextTrick' })).toThrow(/Reversal/);
+    expect(() => applyAction(s, { type: 'nextTrick' })).toThrow(/decisioni/);
     expect(() => applyAction(s, { type: 'decide', player: 0, accept: true })).toThrow(IllegalActionError);
 
     const cancelled = applyAction(s, { type: 'decide', player: 1, accept: true });
@@ -265,7 +285,7 @@ describe('poteri con una scelta', () => {
   it('Reversal annulla i punti di tutti, poteri compresi', () => {
     // Più prese: Meridian prende (+1), Morrowshade è la più bassa (+1 a chi l'ha giocata).
     const s = play(withHands([['Custodes-7'], ['Custodes-0'], ['Nullarii-9']]), 'Custodes-7', 'Custodes-0', 'Nullarii-9');
-    expect(s.decision!.deltas).toEqual([0, 1, 1]);
+    expect(s.decision).toMatchObject({ kind: 'reversal', deltas: [0, 1, 1] });
     const cancelled = applyAction(s, { type: 'decide', player: 1, accept: true });
     expect(cancelled.players.map((p) => p.score)).toEqual([0, 0, 0]);
   });
@@ -277,9 +297,9 @@ describe('poteri con una scelta', () => {
 
   it('la CPU annulla i punti solo quando le conviene', () => {
     const lose = play(withHands([['Custodes-7'], ['Custodes-0']], 0, { contract: 'less' }), 'Custodes-7', 'Custodes-0');
-    expect(chooseDecision(getView(lose, 1))).toBe(true);
+    expect(chooseDecision(getView(lose, 1)).accept).toBe(true);
     const win = play(withHands([['Custodes-7'], ['Custodes-0']]), 'Custodes-7', 'Custodes-0');
-    expect(chooseDecision(getView(win, 1))).toBe(false);
+    expect(chooseDecision(getView(win, 1)).accept).toBe(false);
   });
 
   it('la CPU paga solo se vincere le rende più di quanto spende', () => {

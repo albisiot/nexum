@@ -3,11 +3,18 @@ import { MAX_PLAYERS, MIN_PLAYERS, TRICKS_PER_HAND } from './constants';
 import {
   applyAfterTrickPowers,
   applyRevealPowers,
+  applyTarget,
   copiedPower,
+  discardByPower,
+  discardableCards,
   effectivePower,
   isCardPlay,
+  isValidOption,
   leadPower,
-  paymentFor,
+  playChoice,
+  recoveryDecisions,
+  secondSight,
+  shieldedPlayers,
   valueOnPlay,
 } from './powers';
 import { createRng, shuffle } from './rng';
@@ -69,8 +76,13 @@ export function createGame(config: GameConfig): GameState {
     tricks: 0,
     score: 0,
     nextModifier: 0,
+    nextPenalty: 0,
+    protectNext: false,
     recentResults: [],
     skipNext: false,
+    mustDiscard: 0,
+    used: [],
+    seen: [],
   }));
 
   const leader = Math.floor(rng() * n);
@@ -84,16 +96,21 @@ export function createGame(config: GameConfig): GameState {
     plays: [],
     phase: 'playing',
     history: [],
+    tricksInHand: TRICKS_PER_HAND,
+    discards: [],
     decision: null,
+    resolution: null,
   };
   startTrick(state);
   return state;
 }
 
-/** Carte che `player` può giocare adesso (vuoto se non è il suo turno). */
+/** Carte che `player` può giocare adesso (vuoto se non è il suo turno o se prima deve scartare). */
 export function legalCards(state: GameState, player: number): CardId[] {
   if (state.phase !== 'playing' || state.turn !== player) return [];
-  const hand = state.players[player]!.hand;
+  const p = state.players[player]!;
+  if (p.mustDiscard > 0) return [];
+  const hand = p.hand;
   if (!state.leadFaction) return [...hand];
   const following = hand.filter((id) => getCard(id).faction === state.leadFaction);
   if (!following.length) return [...hand];
@@ -103,6 +120,13 @@ export function legalCards(state: GameState, player: number): CardId[] {
     return following.filter((id) => getCard(id).value === top);
   }
   return following;
+}
+
+/** Carte che `player` può scartare adesso per Oblivion (vuoto se non deve scartare). */
+export function discardableNow(state: GameState, player: number): CardId[] {
+  const p = state.players[player]!;
+  if (state.phase !== 'playing' || state.turn !== player || p.mustDiscard <= 0) return [];
+  return discardableCards(p.hand);
 }
 
 /**
@@ -116,9 +140,9 @@ export function applyAction(state: GameState, action: Action): GameState {
     case 'play': {
       if (s.phase !== 'playing') throw new IllegalActionError('La presa non è in corso.');
       if (action.player !== s.turn) throw new IllegalActionError('Non è il turno di questo giocatore.');
-      if (!s.players[action.player]!.hand.includes(action.cardId)) {
-        throw new IllegalActionError('La carta non è nella mano del giocatore.');
-      }
+      const p = s.players[action.player]!;
+      if (!p.hand.includes(action.cardId)) throw new IllegalActionError('La carta non è nella mano del giocatore.');
+      if (p.mustDiscard > 0) throw new IllegalActionError('Prima scarta una carta per Oblivion.');
       if (!legalCards(s, action.player).includes(action.cardId)) {
         throw new IllegalActionError(
           leadPower(s.plays) === 'vigil'
@@ -126,35 +150,67 @@ export function applyAction(state: GameState, action: Action): GameState {
             : 'Devi seguire la fazione d’apertura.',
         );
       }
-      const times = action.option ?? 0;
-      const payment = paymentFor(s.plays, getCard(action.cardId));
-      if (!Number.isInteger(times) || times < 0 || times > (payment?.maxTimes ?? 0)) {
-        throw new IllegalActionError(
-          payment ? `Puoi pagare da 0 a ${payment.maxTimes} volte.` : 'Il potere di questa carta non si paga.',
-        );
+      const option = action.option ?? 0;
+      if (!isValidOption(playChoice(s, getCard(action.cardId)), option)) {
+        throw new IllegalActionError('Questa scelta non è possibile per questa carta.');
       }
-      playCard(s, action.player, action.cardId, times);
+      playCard(s, action.player, action.cardId, option);
       advance(s);
+      return s;
+    }
+    case 'discard': {
+      if (!discardableNow(s, action.player).includes(action.cardId)) {
+        throw new IllegalActionError('Adesso non puoi scartare questa carta.');
+      }
+      const p = s.players[action.player]!;
+      p.mustDiscard--;
+      // Lo scarto di Oblivion si annota nella presa che lo ha causato.
+      discardByPower(s, action.player, action.cardId, s.history.at(-1)!.notes);
+      settleDiscard(s);
       return s;
     }
     case 'decide': {
       const d = s.decision;
       if (!d) throw new IllegalActionError('Non c’è nessuna decisione da prendere.');
       if (action.player !== d.player) throw new IllegalActionError('Questa decisione spetta a un altro giocatore.');
+      const r = s.resolution!;
       const trick = s.history.at(-1)!;
-      if (action.accept) {
-        s.players.forEach((p, i) => (p.score -= d.deltas[i]!));
-        trick.contractDelta = 0;
-        trick.cancelled = true;
+      const source = s.plays.find((pl): pl is CardPlay => isCardPlay(pl) && pl.cardId === d.cardId)!;
+      if (d.kind === 'reversal') {
+        if (action.accept) {
+          s.players.forEach((p, i) => (p.score -= d.deltas[i]!));
+          trick.contractDelta = 0;
+          trick.cancelled = true;
+        }
+        trick.notes.push({ type: 'reversal', player: d.player, cardId: d.cardId, cancelled: action.accept });
       }
-      trick.notes.push({ type: 'reversal', player: d.player, cardId: d.cardId, cancelled: action.accept });
+      if (d.kind === 'target') {
+        if (action.target === undefined || !d.options.includes(action.target)) {
+          throw new IllegalActionError('Scegli uno degli avversari indicati.');
+        }
+        applyTarget(s, r.shielded, trick.notes, source, d.power, action.target);
+      }
+      if (d.kind === 'recover' && action.accept) {
+        const p = s.players[d.player]!;
+        const take = action.take ?? d.take[0]!;
+        if (!d.take.includes(take)) throw new IllegalActionError('Questa carta non si può recuperare.');
+        if (!action.discard || !discardableCards(p.hand).includes(action.discard)) {
+          throw new IllegalActionError('Scegli una carta della tua mano da scartare.');
+        }
+        discardByPower(s, d.player, action.discard, trick.notes);
+        p.hand.push(take);
+        r.recovered.push(take);
+        if (d.power !== 'mnemos') p.used.push(d.power);
+        trick.notes.push({ type: 'recovered', player: d.player, cardId: d.cardId, taken: take, discarded: action.discard });
+      }
       s.decision = null;
+      continueResolution(s);
       return s;
     }
     case 'nextTrick': {
       if (s.phase !== 'trickEnd') throw new IllegalActionError('La presa non è ancora conclusa.');
-      if (s.decision) throw new IllegalActionError('Prima va presa la decisione su Reversal.');
-      if (s.trickNo >= TRICKS_PER_HAND) {
+      if (s.decision || s.resolution) throw new IllegalActionError('Prima vanno prese le decisioni di questa presa.');
+      if (s.trickNo >= s.tricksInHand) {
         s.phase = 'handEnd';
         // Chi ha saltato una presa (Nullchild) ha ancora carte in mano: a fine mano vengono scartate.
         s.players.forEach((p) => (p.hand = []));
@@ -197,30 +253,46 @@ function advance(s: GameState): void {
     s.turn = (s.turn + 1) % n;
   }
   if (s.plays.length >= n) resolveTrick(s);
+  else settleDiscard(s);
 }
 
-function playCard(s: GameState, player: number, cardId: CardId, times: number): void {
+/** Chi deve scartare per Oblivion ma ha solo carte che non si scartano (Faded One) non scarta. */
+function settleDiscard(s: GameState): void {
+  const p = s.players[s.turn]!;
+  if (s.phase === 'playing' && p.mustDiscard > 0 && !discardableCards(p.hand).length) p.mustDiscard = 0;
+}
+
+function playCard(s: GameState, player: number, cardId: CardId, option: number): void {
   const p = s.players[player]!;
   const card = getCard(cardId);
   const copied = card.power === 'palimpsest' ? copiedPower(s.plays) : undefined;
-  const final = valueOnPlay(s, player, card, copied ?? card.power, times);
+  const power = copied ?? card.power;
+  const choice = playChoice(s, card);
+  const final = valueOnPlay(s, player, card, power, option);
   // Fury e Ashen si pagano subito, con i punti Contratto della mano.
-  const paid = times * (paymentFor(s.plays, card)?.costPerTime ?? 0);
+  const paid = choice?.kind === 'pay' ? option * choice.costPerTime : 0;
   p.score -= paid;
-  p.nextModifier = 0;
-  p.hand = p.hand.filter((id) => id !== cardId);
-  p.played.push(cardId);
-  if (!s.leadFaction) s.leadFaction = card.faction;
   const play: CardPlay = { player, skipped: false, cardId, final };
   if (copied) play.copied = copied;
   if (paid) play.paid = paid;
+  if (p.protectNext) play.protected = true;
+  if (choice?.kind === 'borrow' && option > 0) play.borrowed = option;
+  if (power === 'second-sight') p.seen.push(...secondSight(s, player));
+  p.nextModifier = 0;
+  p.nextPenalty = 0;
+  p.protectNext = false;
+  p.hand = p.hand.filter((id) => id !== cardId);
+  p.played.push(cardId);
+  if (!s.leadFaction) s.leadFaction = card.faction;
   s.plays.push(play);
   s.turn = (s.turn + 1) % s.players.length;
 }
 
+/** Tutti hanno giocato: si scopre chi vince, poi la presa si chiude a tappe (vedi continueResolution). */
 function resolveTrick(s: GameState): void {
   const notes: TrickNote[] = [];
   const before = s.players.map((p) => p.score);
+  const shielded = shieldedPlayers(s.plays);
   applyRevealPowers(s.plays, notes);
 
   const active = s.plays.filter(isCardPlay);
@@ -233,19 +305,10 @@ function resolveTrick(s: GameState): void {
   // A parità di valore finale vince la carta con valore stampato più basso (regola del prototipo).
   const winning = tied.sort((a, b) => getCard(a.cardId).value - getCard(b.cardId).value)[0]!;
 
-  const winner = s.players[winning.player]!;
-  const captured = active.map((pl) => pl.cardId);
-  winner.tricks++;
-  winner.captured.push(...captured);
-  const delta = contractDelta(s.config, s.trickNo, captured);
-  winner.score += delta;
-
   for (const pl of active) {
     const p = s.players[pl.player]!;
     p.recentResults = [...p.recentResults.slice(-1), pl.player === winning.player];
   }
-
-  applyAfterTrickPowers(s, winning, notes);
 
   const result: TrickResult = {
     trickNo: s.trickNo,
@@ -254,17 +317,59 @@ function resolveTrick(s: GameState): void {
     winner: winning.player,
     winningCardId: winning.cardId,
     winningValue: winning.final,
-    contractDelta: delta,
+    contractDelta: 0,
     notes,
   };
   s.history.push(result);
   s.phase = 'trickEnd';
+  // Decisione dell'autore: i recuperi si decidono prima di contare i punti.
+  s.resolution = { stage: 'recover', before, shielded, recovered: [], queue: recoveryDecisions(s, winning.player, notes) };
+  continueResolution(s);
+}
 
-  // Reversal: chi la cattura può annullare i punti nati da questa presa, se ce ne sono.
-  const deltas = s.players.map((p, i) => p.score - before[i]!);
-  const reversal = active.find((pl) => effectivePower(pl) === 'reversal');
-  if (reversal && deltas.some((d) => d !== 0)) {
-    s.decision = { kind: 'reversal', player: winning.player, cardId: reversal.cardId, deltas };
+/**
+ * Porta avanti la chiusura della presa finché non serve una decisione:
+ * recuperi → punti del Contratto e poteri dopo la presa (con i bersagli da scegliere) → Reversal.
+ */
+function continueResolution(s: GameState): void {
+  const r = s.resolution;
+  if (!r) return;
+  const trick = s.history.at(-1)!;
+  while (!s.decision) {
+    const next = r.queue.shift();
+    if (next) {
+      s.decision = next;
+      return;
+    }
+    if (r.stage === 'recover') {
+      const captured = s.plays.filter(isCardPlay).map((pl) => pl.cardId).filter((id) => !r.recovered.includes(id));
+      const winner = s.players[trick.winner]!;
+      winner.tricks++;
+      winner.captured.push(...captured);
+      trick.contractDelta = contractDelta(s.config, s.trickNo, captured, s.tricksInHand);
+      winner.score += trick.contractDelta;
+      r.queue = applyAfterTrickPowers(s, trick, r.shielded, trick.notes);
+      r.stage = 'effects';
+      continue;
+    }
+    if (r.stage === 'effects') {
+      r.stage = 'reversal';
+      // Reversal: chi la cattura può annullare i punti nati da questa presa, se ce ne sono.
+      // La protezione vale anche qui: non si tolgono i punti guadagnati da chi è protetto.
+      const reversal = s.plays.find((pl): pl is CardPlay => isCardPlay(pl) && effectivePower(pl) === 'reversal');
+      if (reversal && !r.recovered.includes(reversal.cardId)) {
+        const deltas = s.players.map((p, i) => {
+          const d = p.score - r.before[i]!;
+          return d > 0 && i !== trick.winner && r.shielded.includes(i) ? 0 : d;
+        });
+        if (deltas.some((d) => d !== 0)) {
+          r.queue.push({ kind: 'reversal', player: trick.winner, cardId: reversal.cardId, deltas });
+        }
+      }
+      continue;
+    }
+    s.resolution = null;
+    return;
   }
 }
 

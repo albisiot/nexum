@@ -1,4 +1,15 @@
-import { applyAction, chooseCard, chooseDecision, chooseOption, createGame, createRng, factionIds, getView, shuffle } from '../src';
+import {
+  applyAction,
+  chooseCard,
+  chooseDecision,
+  chooseDiscard,
+  chooseOption,
+  createGame,
+  createRng,
+  factionIds,
+  getView,
+  shuffle,
+} from '../src';
 import type { Action, CardId, ContractId, FactionId, GameConfig, GameState } from '../src';
 
 export function config(overrides: Partial<GameConfig> = {}): GameConfig {
@@ -49,12 +60,10 @@ export function playOut(state: GameState, rng: () => number): GameState {
 
 /** La prossima azione della CPU: decisione in sospeso, presa successiva o carta da giocare. */
 export function cpuAction(s: GameState, rng: () => number): Action {
-  if (s.decision) {
-    const player = s.decision.player;
-    return { type: 'decide', player, accept: chooseDecision(getView(s, player)) };
-  }
+  if (s.decision) return chooseDecision(getView(s, s.decision.player));
   if (s.phase === 'trickEnd') return { type: 'nextTrick' };
   const view = getView(s, s.turn);
+  if (view.discardable.length) return { type: 'discard', player: s.turn, cardId: chooseDiscard(view) };
   const cardId = chooseCard(view, rng);
   return { type: 'play', player: s.turn, cardId, option: chooseOption(view, cardId) };
 }

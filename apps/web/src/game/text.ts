@@ -110,6 +110,25 @@ export function describeNote(note: TrickNote, names: readonly string[]): string 
       const verb = note.cancelled ? (you ? 'annulli' : 'annulla') : you ? 'tieni' : 'tiene';
       return `${getCard(note.cardId).name}: ${you ? '' : `${names[note.player]} `}${verb} i punti di questa presa.`;
     }
+    case 'shielded':
+      return `${getCard(note.cardId).name}: ${names[note.player]} è protetto e non perde punti.`;
+    case 'protectNext':
+      return `${getCard(note.cardId).name}: la prossima carta di ${names[note.player]} è protetta.`;
+    case 'borrowed':
+      return `${getCard(note.cardId).name} di ${names[note.player]} prende il valore ${note.value}.`;
+    case 'recovered': {
+      const taken = getCard(note.taken).name;
+      const discarded = getCard(note.discarded).name;
+      return `${getCard(note.cardId).name}: ${names[note.player]} riprende in mano ${taken} e scarta ${discarded}.`;
+    }
+    case 'anchor':
+      return `${getCard(note.cardId).name}: in questa presa nessuno può recuperare carte.`;
+    case 'oblivion':
+      return `${getCard(note.cardId).name}: tutti scartano una carta all’inizio del loro turno e la mano ha una presa in meno.`;
+    case 'seen':
+      return note.target === null
+        ? `${getCard(note.cardId).name}: ${names[note.player]} guarda una carta di ogni avversario.`
+        : `${getCard(note.cardId).name}: ${names[note.player]} guarda la mano di ${names[note.target]}.`;
   }
 }
 

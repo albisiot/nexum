@@ -26,11 +26,11 @@ describe('carte', () => {
     }
   });
 
-  it('46 carte hanno un potere scritto, 30 sono implementati', () => {
+  it('44 carte hanno un potere scritto e sono tutte implementate', () => {
     const withText = DEFAULT_CATALOG.cards.filter(hasPowerText);
-    expect(withText).toHaveLength(46);
+    expect(withText).toHaveLength(44);
     const implemented = DEFAULT_CATALOG.cards.filter(isPowerImplemented);
-    expect(implemented).toHaveLength(30);
+    expect(implemented).toHaveLength(44);
     expect(new Set(implemented.map((c) => c.power))).toEqual(new Set(Object.keys(POWERS)));
     expect(implemented.every(hasPowerText)).toBe(true);
   });
@@ -125,13 +125,20 @@ describe('simulazione', () => {
       const cfg = randomConfig(rng);
       const end = playOut(createGame(cfg), rng);
       const n = cfg.playerNames.length;
-      expect(end.history).toHaveLength(13);
-      // Chi salta una presa (Nullchild) gioca una carta in meno; quella che gli avanza viene scartata.
-      const skips = end.players.map((_, i) => end.history.filter((t) => t.plays.some((pl) => pl.player === i && pl.skipped)).length);
-      expect(end.players.every((p, i) => p.hand.length === 0 && p.played.length === 13 - skips[i]!)).toBe(true);
+      // Oblivion accorcia la mano di una presa; non si scende mai sotto le prese già giocate.
+      expect(end.history).toHaveLength(end.tricksInHand);
+      expect(end.tricksInHand).toBeLessThanOrEqual(13);
+      expect(end.players.reduce((t, p) => t + p.tricks, 0)).toBe(end.tricksInHand);
+      // A fine mano non resta niente in mano (le carte avanzate si scartano).
+      expect(end.players.every((p) => p.hand.length === 0 && p.mustDiscard >= 0)).toBe(true);
+      // Ogni carta è catturata o scartata al massimo una volta, mai entrambe.
       const captured = end.players.flatMap((p) => p.captured);
-      expect(new Set(captured).size).toBe(n * 13 - skips.reduce((a, b) => a + b, 0));
-      expect(end.players.reduce((t, p) => t + p.tricks, 0)).toBe(13);
+      expect(new Set(captured).size).toBe(captured.length);
+      expect(new Set(end.discards).size).toBe(end.discards.length);
+      expect(captured.some((id) => end.discards.includes(id))).toBe(false);
+      expect(captured.length + end.discards.length).toBeLessThanOrEqual(n * 13);
+      expect(end.decision).toBeNull();
+      expect(end.resolution).toBeNull();
       for (const trick of end.history) {
         // il vincitore ha sempre giocato la fazione d'apertura
         const win = trick.plays.find((pl) => pl.player === trick.winner);

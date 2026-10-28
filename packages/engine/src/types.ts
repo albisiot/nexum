@@ -75,11 +75,29 @@ export interface GameConfig {
 }
 
 export type Play =
-  /** `copied`: il potere che Palimpsest ha copiato giocando. `paid`: punti Contratto pagati giocandola (Fury, Ashen). */
-  | { player: number; skipped: false; cardId: CardId; final: number; copied?: PowerId; paid?: number }
+  | {
+      player: number;
+      skipped: false;
+      cardId: CardId;
+      final: number;
+      /** Il potere che Palimpsest ha copiato giocando. */
+      copied?: PowerId;
+      /** Punti Contratto pagati giocandola (Fury, Ashen). */
+      paid?: number;
+      /** Carta protetta da Aegiron: i poteri avversari non ne cambiano il valore. */
+      protected?: boolean;
+      /** Archivist: il valore stampato che ha preso in prestito. */
+      borrowed?: number;
+    }
   | { player: number; skipped: true };
 
 export type CardPlay = Extract<Play, { skipped: false }>;
+
+/** Una carta avversaria vista con Second Sight o The Witness: la conosce solo chi l'ha vista. */
+export interface SeenCard {
+  player: number;
+  cardId: CardId;
+}
 
 export interface PlayerState {
   name: string;
@@ -89,12 +107,22 @@ export interface PlayerState {
   captured: CardId[];
   tricks: number;
   score: number;
-  /** Modificatore da applicare alla prossima carta giocata (Praetor, Bloodmark, Vesper Null). */
+  /** Bonus o malus propri per la prossima carta giocata (Praetor, Bloodmark). */
   nextModifier: number;
+  /** Malus degli avversari per la prossima carta (Vesper Null): una carta protetta lo ignora. */
+  nextPenalty: number;
+  /** Aegiron: la prossima carta giocata è protetta. */
+  protectNext: boolean;
   /** Esito delle ultime due prese giocate: true = vinta (Ascendant). */
   recentResults: boolean[];
   /** Salta la prossima presa (Nullchild). */
   skipNext: boolean;
+  /** Oblivion: carte da scartare all'inizio del prossimo turno. */
+  mustDiscard: number;
+  /** Recuperi da una volta per mano già usati (Black Echo, Echo Prime). */
+  used: PowerId[];
+  /** Carte avversarie viste: informazione privata. */
+  seen: SeenCard[];
 }
 
 export type Phase = 'playing' | 'trickEnd' | 'handEnd';
@@ -110,7 +138,17 @@ export type TrickNote =
   | { type: 'powerCopied'; player: number; cardId: CardId; power: PowerId }
   | { type: 'skipNext'; player: number; cardId: CardId; target: number }
   | { type: 'pointsPaid'; player: number; cardId: CardId; points: number }
-  | { type: 'reversal'; player: number; cardId: CardId; cancelled: boolean };
+  | { type: 'reversal'; player: number; cardId: CardId; cancelled: boolean }
+  /** La protezione (Aegiron, Pax) ha impedito al potere di `cardId` di togliere punti a `player`. */
+  | { type: 'shielded'; player: number; cardId: CardId }
+  | { type: 'protectNext'; player: number; cardId: CardId }
+  | { type: 'borrowed'; player: number; cardId: CardId; value: number }
+  /** Black Echo, Echo Prime, Mnemos: `taken` torna in mano a `player`, che scarta `discarded`. */
+  | { type: 'recovered'; player: number; cardId: CardId; taken: CardId; discarded: CardId }
+  | { type: 'anchor'; cardId: CardId }
+  | { type: 'oblivion'; player: number; cardId: CardId }
+  /** Second Sight, The Witness: `player` ha visto delle carte di altri (cosa, lo sa solo lui). */
+  | { type: 'seen'; player: number; cardId: CardId; target: number | null };
 
 export interface TrickResult {
   trickNo: number;
@@ -126,15 +164,29 @@ export interface TrickResult {
   cancelled?: boolean;
 }
 
-/**
- * Una decisione che blocca la partita finché il giocatore non la prende.
- * Reversal: chi la cattura può annullare i punti nati dalla presa (`deltas`, per posto).
- */
-export interface Decision {
-  kind: 'reversal';
-  player: number;
-  cardId: CardId;
-  deltas: number[];
+/** Una decisione che blocca la partita finché il giocatore non la prende. Sono pubbliche. */
+export type Decision =
+  /** Reversal: chi la cattura può annullare i punti nati dalla presa (`deltas`, per posto). */
+  | { kind: 'reversal'; player: number; cardId: CardId; deltas: number[] }
+  /** Vesper Null, Ravager, Nullchild: chi l'ha giocata sceglie l'avversario tra `options`. */
+  | { kind: 'target'; player: number; cardId: CardId; power: PowerId; options: number[] }
+  /**
+   * Black Echo, Echo Prime: riprendere in mano `cardId` scartando un'altra carta.
+   * Mnemos: prendere in mano una delle carte `take`, scartando una carta.
+   */
+  | { kind: 'recover'; player: number; cardId: CardId; power: PowerId; take: CardId[] };
+
+/** Fine presa a tappe: recuperi, poi punti e poteri, poi Reversal. */
+export interface Resolution {
+  stage: 'recover' | 'effects' | 'reversal';
+  /** Punteggi prima della presa, per sapere cosa annulla Reversal. */
+  before: number[];
+  /** Giocatori che in questa presa non perdono punti per i poteri avversari (Aegiron, Pax). */
+  shielded: number[];
+  /** Carte tornate in mano: non contano tra le catturate. */
+  recovered: CardId[];
+  /** Decisioni di questa tappa ancora da proporre. */
+  queue: Decision[];
 }
 
 export interface GameState {
@@ -148,16 +200,30 @@ export interface GameState {
   plays: Play[];
   phase: Phase;
   history: TrickResult[];
-  /** Decisione in sospeso a fine presa (Reversal), altrimenti null. */
+  /** Prese di questa mano: 13, una in meno per ogni Oblivion. */
+  tricksInHand: number;
+  /** Carte uscite dal gioco per un potere (scambi dei recuperi, Oblivion), in ordine. */
+  discards: CardId[];
+  /** Decisione in sospeso a fine presa, altrimenti null. */
   decision: Decision | null;
+  /** Presa conclusa ma non ancora chiusa; null quando si può passare alla successiva. */
+  resolution: Resolution | null;
 }
 
 export type Action =
-  /** `option`: quante volte pagare il potere della carta (Fury 0–1, Ashen 0–4); assente = 0. */
+  /**
+   * `option`: la scelta del potere della carta. Fury 0–1 e Ashen 0–4 = quante volte pagare,
+   * Shift 0 = +15 e 1 = −15, Archivist = il valore stampato preso in prestito (0 = nessuno).
+   */
   | { type: 'play'; player: number; cardId: CardId; option?: number }
   | { type: 'nextTrick' }
-  /** Risponde alla decisione in sospeso: `accept` = sì (Reversal: annulla i punti). */
-  | { type: 'decide'; player: number; accept: boolean };
+  /**
+   * Risponde alla decisione in sospeso. Reversal: `accept` = annulla i punti. Bersaglio: `target`.
+   * Recupero: `accept` = recupera, `discard` = la carta da scartare, `take` = la carta presa (Mnemos).
+   */
+  | { type: 'decide'; player: number; accept: boolean; target?: number; discard?: CardId; take?: CardId }
+  /** Oblivion: la carta scartata all'inizio del turno. */
+  | { type: 'discard'; player: number; cardId: CardId };
 
 /** Ciò che un singolo giocatore può vedere: nessuna mano altrui, nessun dato nascosto. */
 export interface PlayerView {
@@ -182,6 +248,12 @@ export interface PlayerView {
   history: TrickResult[];
   /** Decisione in sospeso: è pubblica, la vedono tutti. */
   decision: Decision | null;
+  /** Carte uscite dal gioco per un potere. */
+  discards: CardId[];
+  /** Carte avversarie viste da chi guarda e ancora in mano a quegli avversari. */
+  seen: SeenCard[];
+  /** Carte che chi guarda può scartare adesso per Oblivion (vuoto se non deve scartare). */
+  discardable: CardId[];
 }
 
 export interface PublicPlayer {
@@ -190,5 +262,10 @@ export interface PublicPlayer {
   capturedCount: number;
   tricks: number;
   score: number;
+  /** Bonus e malus sulla prossima carta, sommati. */
   nextModifier: number;
+  /** Aegiron: la prossima carta è protetta. */
+  protectedNext: boolean;
+  /** Oblivion: carte che deve ancora scartare. */
+  mustDiscard: number;
 }

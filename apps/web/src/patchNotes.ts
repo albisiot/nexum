@@ -13,6 +13,45 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.20.0',
+    date: '2026-10-28',
+    title: 'Tutti i poteri in gioco',
+    changes: [
+      {
+        type: 'new',
+        text: 'Ogni carta con un potere ora lo applica: niente più “potere non ancora attivo”.',
+      },
+      {
+        type: 'new',
+        text: 'Vesper Null, Ravager e Nullchild: l’avversario lo scegli tu, con un pulsante per ciascuno. La CPU sceglie chi è in testa.',
+      },
+      {
+        type: 'new',
+        text: 'Protezione: se Aegiron vince, la tua prossima carta è protetta dai poteri avversari; Pax ti protegge nella presa in cui la giochi. Chi è protetto non perde punti per i poteri degli altri.',
+      },
+      {
+        type: 'new',
+        text: 'Shift: giocandola scegli +15 o −15. Metamorph prende il valore stampato della carta giocata subito prima di lei.',
+      },
+      {
+        type: 'new',
+        text: 'Scarti e recuperi: Black Echo, Echo Prime e Mnemos riportano una carta in mano scartandone un’altra, prima che si contino i punti. Archivist prende il valore di una carta già giocata o scartata. Unwritten scartata vale 2 punti, Faded One non si scarta, Anchor blocca i recuperi.',
+      },
+      {
+        type: 'new',
+        text: 'Oblivion: se vince, tutti scartano una carta all’inizio del loro turno e la mano ha una presa in meno. Le regole sull’ultima presa valgono sull’ultima presa vera.',
+      },
+      {
+        type: 'new',
+        text: 'Second Sight e The Witness: le carte avversarie che hai visto restano nel riquadro “Hai visto” finché non vengono giocate.',
+      },
+      {
+        type: 'change',
+        text: 'Janus e Split non hanno più un potere. Pax e Archivist hanno un testo nuovo.',
+      },
+    ],
+  },
+  {
     version: '0.19.0',
     date: '2026-10-28',
     title: 'Poteri con una scelta',
