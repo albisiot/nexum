@@ -29,6 +29,8 @@ export interface ClientSnapshot {
   /** Pass-and-play: la mano di chi è di turno è coperta finché non la rivela. */
   handHidden: boolean;
   canPlay: boolean;
+  /** C'è una decisione in sospeso (Reversal) che spetta a un giocatore umano. */
+  canDecide: boolean;
   canContinue: boolean;
 }
 
@@ -41,7 +43,10 @@ export interface GameClient {
   readonly setup: MatchSetup;
   getSnapshot(): ClientSnapshot;
   subscribe(listener: () => void): () => void;
-  playCard(cardId: CardId): void;
+  /** `option`: quante volte pagare il potere della carta (Fury, Ashen). */
+  playCard(cardId: CardId, option?: number): void;
+  /** Risponde alla decisione in sospeso (Reversal: true = annulla i punti della presa). */
+  decide(accept: boolean): void;
   nextTrick(): void;
   nextHand(): void;
   revealHand(): void;

@@ -44,7 +44,7 @@ export {
   ranking,
   sortHand,
 } from './game';
-export { isPowerImplemented, effectivePower, leadPower } from './powers';
+export { isPowerImplemented, effectivePower, leadPower, paymentFor, PAID_POWERS } from './powers';
 export { contractDelta, ruleApplies } from './scoring';
 export { getView } from './view';
 export {
@@ -64,5 +64,5 @@ export {
   type MatchAction,
   type MatchView,
 } from './match';
-export { chooseCard } from './bot';
+export { chooseCard, chooseOption, chooseDecision } from './bot';
 export { createRng, shuffle, randomSeed, type Rng } from './rng';

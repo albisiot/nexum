@@ -1,4 +1,13 @@
-import { applyMatchAction, chooseCard, createMatch, createRng, getMatchView, getView } from '@nexum/engine';
+import {
+  applyMatchAction,
+  chooseCard,
+  chooseDecision,
+  chooseOption,
+  createMatch,
+  createRng,
+  getMatchView,
+  getView,
+} from '@nexum/engine';
 import type { CardId, MatchAction, MatchState, Rng } from '@nexum/engine';
 import type { ClientSnapshot, GameClient, MatchSetup } from './GameClient';
 
@@ -33,10 +42,16 @@ export class LocalGameClient implements GameClient {
     return () => this.listeners.delete(listener);
   };
 
-  playCard(cardId: CardId): void {
+  playCard(cardId: CardId, option = 0): void {
     const { canPlay, perspective } = this.snapshot;
     if (!canPlay || perspective === null) return;
-    this.apply({ type: 'play', player: perspective, cardId });
+    this.apply({ type: 'play', player: perspective, cardId, option });
+  }
+
+  decide(accept: boolean): void {
+    const decision = this.state.game.decision;
+    if (!this.snapshot.canDecide || !decision) return;
+    this.apply({ type: 'decide', player: decision.player, accept });
   }
 
   nextTrick(): void {
@@ -76,16 +91,26 @@ export class LocalGameClient implements GameClient {
     this.scheduleCpu();
   }
 
+  /** La CPU gioca quando tocca a lei e decide per Reversal quando la cattura. */
   private scheduleCpu(): void {
     const g = this.state.game;
-    if (this.disposed || this.timer || this.state.phase !== 'playing' || g.phase !== 'playing') return;
-    const seat = g.turn;
-    if (this.setup.seats[seat]?.kind !== 'cpu') return;
+    if (this.disposed || this.timer || this.state.phase !== 'playing') return;
+    const decider = g.decision?.player;
+    const seat = decider ?? (g.phase === 'playing' ? g.turn : null);
+    if (seat === null || this.setup.seats[seat]?.kind !== 'cpu') return;
     this.timer = setTimeout(() => {
       this.timer = null;
       const now = this.state.game;
-      if (this.disposed || now.phase !== 'playing' || now.turn !== seat) return;
-      this.apply({ type: 'play', player: seat, cardId: chooseCard(getView(now, seat), this.cpuRng) });
+      if (this.disposed) return;
+      if (decider !== undefined) {
+        if (now.decision?.player !== decider) return;
+        this.apply({ type: 'decide', player: decider, accept: chooseDecision(getView(now, decider)) });
+        return;
+      }
+      if (now.phase !== 'playing' || now.turn !== seat) return;
+      const view = getView(now, seat);
+      const cardId = chooseCard(view, this.cpuRng);
+      this.apply({ type: 'play', player: seat, cardId, option: chooseOption(view, cardId) });
     }, CPU_DELAY_MS);
   }
 
@@ -101,6 +126,10 @@ export class LocalGameClient implements GameClient {
     const handHidden = mode === 'local' && humanTurn && this.revealedFor !== g.turn;
     if (handHidden) perspective = null;
 
+    // La decisione è pubblica: in pass-and-play chi ha il dispositivo preme per il giocatore indicato.
+    const decider = g.decision?.player;
+    const canDecide = decider !== undefined && seats[decider]?.kind === 'human';
+
     const match = getMatchView(this.state, perspective);
     return {
       match,
@@ -109,7 +138,8 @@ export class LocalGameClient implements GameClient {
       perspective,
       handHidden,
       canPlay: humanTurn && perspective === g.turn,
-      canContinue: g.phase === 'trickEnd',
+      canDecide,
+      canContinue: g.phase === 'trickEnd' && !g.decision,
     };
   }
 }

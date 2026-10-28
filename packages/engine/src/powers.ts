@@ -29,6 +29,19 @@ export function copiedPower(plays: readonly Play[]): PowerId | undefined {
   return undefined;
 }
 
+/** Poteri che si pagano con punti Contratto quando giochi la carta: quanto costa ogni volta e quante volte al massimo. */
+export const PAID_POWERS: Readonly<Record<PowerId, { costPerTime: number; maxTimes: number }>> = {
+  fury: { costPerTime: 2, maxTimes: 1 },
+  ashen: { costPerTime: 1, maxTimes: 4 },
+};
+
+/** Se giocando questa carta adesso si può pagare il suo potere (anche copiato da Palimpsest), come e quanto. */
+export function paymentFor(plays: readonly Play[], card: CardDef) {
+  const power = card.power === 'palimpsest' ? copiedPower(plays) : card.power;
+  const rule = power ? PAID_POWERS[power] : undefined;
+  return power && rule ? { power, ...rule } : null;
+}
+
 /** Il potere della carta che ha aperto la presa (Vigil cambia le carte giocabili). */
 export function leadPower(plays: readonly Play[]): PowerId | undefined {
   const lead = plays.find(isCardPlay);
@@ -38,9 +51,9 @@ export function leadPower(plays: readonly Play[]): PowerId | undefined {
 /**
  * Valore finale di una carta nel momento in cui viene giocata.
  * Va chiamata prima di aggiungere la carta a `played` e a `state.plays`.
- * `power` è il potere con cui agisce (per Palimpsest, quello copiato).
+ * `power` è il potere con cui agisce (per Palimpsest, quello copiato); `times` quante volte è stato pagato.
  */
-export function valueOnPlay(state: GameState, player: number, card: CardDef, power = card.power): number {
+export function valueOnPlay(state: GameState, player: number, card: CardDef, power = card.power, times = 0): number {
   const p = state.players[player]!;
   let final = card.value + p.nextModifier;
   const prevId = p.played.at(-1);
@@ -62,6 +75,8 @@ export function valueOnPlay(state: GameState, player: number, card: CardDef, pow
     const tiedLast = scores.filter((x) => x === min).length;
     if (p.score === min && (power === 'balancer' ? tiedLast === 1 : tiedLast > 1)) final += 15;
   }
+  if (power === 'fury' && times > 0) final = 75;
+  if (power === 'ashen') final += 20 * times;
 
   return clamp(final, 0, 100);
 }
@@ -72,6 +87,7 @@ export function applyRevealPowers(plays: Play[], notes: TrickNote[]): void {
 
   for (const pl of active) {
     if (pl.copied) notes.push({ type: 'powerCopied', player: pl.player, cardId: pl.cardId, power: pl.copied });
+    if (pl.paid) notes.push({ type: 'pointsPaid', player: pl.player, cardId: pl.cardId, points: pl.paid });
   }
 
   if (active.some((pl) => effectivePower(pl) === 'axiom')) {

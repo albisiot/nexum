@@ -45,6 +45,16 @@ export const CATALOG_UPDATES: readonly CatalogUpdate[] = [
       'Concordia-7': { name: 'Symmetra', power: 'symmetra' },
     },
   },
+  {
+    id: 'poteri-2026-10-28-b',
+    date: '2026-10-28',
+    title: 'Poteri con una scelta: Fury, Ashen e Reversal',
+    cards: {
+      'Custodes-7': { name: 'Reversal', power: 'reversal' },
+      'Nullarii-10': { name: 'Ashen', power: 'ashen' },
+      'Dominari-10': { name: 'Fury', power: 'fury' },
+    },
+  },
 ];
 
 /** Applica gli aggiornamenti a una copia del catalogo; le carte che non esistono più vengono ignorate. */

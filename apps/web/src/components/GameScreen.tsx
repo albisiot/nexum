@@ -7,9 +7,10 @@ import {
   isPowerImplemented,
   leadPower,
   matchRanking,
+  paymentFor,
   sortHand,
 } from '@nexum/engine';
-import type { CardId } from '@nexum/engine';
+import type { CardId, Decision } from '@nexum/engine';
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { GameClient } from '../game/GameClient';
@@ -68,8 +69,8 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
     if (id === sel && snap.canPlay && legal.has(id)) client.playCard(id);
     setSelected(id === sel ? null : id);
   };
-  const play = (id: CardId) => {
-    client.playCard(id);
+  const play = (id: CardId, option = 0) => {
+    client.playCard(id, option);
     setSelected(null);
   };
   const exit = () => {
@@ -125,9 +126,13 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
                     ))}
                   </ul>
                 )}
-                <button type="button" className="btn primary" onClick={() => client.nextTrick()}>
-                  {view.trickNo >= view.tricksPerHand ? 'Vedi il risultato finale' : 'Presa successiva'}
-                </button>
+                {view.decision ? (
+                  reversalChoice(view.decision)
+                ) : (
+                  <button type="button" className="btn primary" onClick={() => client.nextTrick()}>
+                    {view.trickNo >= view.tricksPerHand ? 'Vedi il risultato finale' : 'Presa successiva'}
+                  </button>
+                )}
               </div>
             ) : snap.handHidden ? (
               <section className="pass-panel">
@@ -250,10 +255,45 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
       : 'Devi giocare una carta della fazione d’apertura: sono quelle sollevate.';
   }
 
+  /** Reversal: chi l'ha catturata decide se annullare i punti nati dalla presa. */
+  function reversalChoice(d: Decision) {
+    const mine = d.player === perspective;
+    const changes = d.deltas
+      .map((x, i) => (x ? `${i === perspective ? 'tu' : names[i]} ${signed(x)}` : null))
+      .filter(Boolean)
+      .join(' · ');
+    return (
+      <div className="decision">
+        <p>
+          <b>{mine ? 'Hai catturato' : `${names[d.player]} ha catturato`} {getCard(d.cardId).name}:</b>{' '}
+          {mine ? 'puoi' : 'può'} annullare i punti nati da questa presa ({changes}).
+        </p>
+        {snap.canDecide ? (
+          <div className="controls">
+            <button type="button" className="btn primary" onClick={() => client.decide(true)}>
+              Annulla i punti
+            </button>
+            <button type="button" className="btn" onClick={() => client.decide(false)}>
+              Tienili
+            </button>
+            {!mine && <span className="hint decision-who">Decide {names[d.player]}.</span>}
+          </div>
+        ) : (
+          <p className="hint">{names[d.player]} sta decidendo…</p>
+        )}
+      </div>
+    );
+  }
+
   function cardDetail(cardId: CardId) {
     const card = getCard(cardId);
     const faction = getFaction(card.faction);
     const playable = snap.canPlay && legal.has(cardId);
+    // Fury e Ashen (anche copiate da Palimpsest): si possono pagare con punti Contratto.
+    const payment = paymentFor(view.plays, card);
+    const modifier = perspective === null ? 0 : view.players[perspective]!.nextModifier;
+    const paidValue = (times: number) =>
+      payment?.power === 'fury' ? 75 : Math.min(100, Math.max(0, card.value + modifier + 20 * times));
     return (
       <div className="card-detail" aria-live="polite">
         <div className="card-detail-head">
@@ -269,9 +309,17 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
         </p>
         {isPowerImplemented(card) && <p className="card-rule">Regola: {POWERS[card.power!]!.summary}.</p>}
         {playable ? (
-          <button type="button" className="btn primary" onClick={() => play(cardId)}>
-            Gioca {card.name}
-          </button>
+          <>
+            <button type="button" className="btn primary" onClick={() => play(cardId)}>
+              Gioca {card.name}
+            </button>
+            {payment &&
+              Array.from({ length: payment.maxTimes }, (_, i) => i + 1).map((times) => (
+                <button key={times} type="button" className="btn pay" onClick={() => play(cardId, times)}>
+                  Paga {plural(times * payment.costPerTime, 'punto', 'punti')}: vale {paidValue(times)}
+                </button>
+              ))}
+          </>
         ) : (
           <span className="hint">
             {!snap.canPlay

@@ -166,9 +166,9 @@ Prima parte: 29 carte decise, il foglio "Decisioni generali" è ancora vuoto. Le
 | Symmetra | Vale 69 se tra il valore più alto e il più basso della presa ci sono 40 punti o più | Programmato (0.18.0) |
 | Foreseer, Locke, Sibyl, Decima, Usurper | Potere tolto | Fatto (0.18.0) |
 | Vesper Null, Zero | Vanno bene così | — |
-| Fury | Paghi 2 punti Contratto: vale 75 | Da programmare: finestra di scelta |
-| Ashen | Paghi 1 punto per +20, fino a 4 volte (97) | Da programmare: finestra di scelta |
-| Reversal | Chi la cattura può annullare i punti di quella presa; testo nuovo | Da programmare: finestra di scelta |
+| Fury | Paghi 2 punti Contratto: vale 75 | Programmato (0.19.0) |
+| Ashen | Paghi 1 punto per +20, fino a 4 volte (97) | Programmato (0.19.0) |
+| Reversal | Chi la cattura può annullare i punti nati da quella presa, per tutti i giocatori; testo nuovo | Programmato (0.19.0); "per tutti" è da confermare |
 | Black Echo, Echo Prime, Mnemos | Recuperi con scambio (riprendi una carta scartandone un'altra) | Da programmare: scarti e recuperi |
 | Archivist, Unwritten, Faded One, Anchor | Proposte del gruppo C | Da programmare: scarti e recuperi |
 | Oblivion | Ognuno scarta una carta a scelta e si salta l'ultima presa | Da programmare: scarti e prese variabili |

@@ -32,5 +32,6 @@ export function getView(state: GameState, seat: number | null): PlayerView {
     legal: seat === null ? [] : legalCards(state, seat),
     lastTrick: state.history.at(-1) ?? null,
     history: [...state.history],
+    decision: state.decision,
   };
 }

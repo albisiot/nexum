@@ -75,8 +75,8 @@ export interface GameConfig {
 }
 
 export type Play =
-  /** `copied`: il potere che Palimpsest ha copiato giocando. */
-  | { player: number; skipped: false; cardId: CardId; final: number; copied?: PowerId }
+  /** `copied`: il potere che Palimpsest ha copiato giocando. `paid`: punti Contratto pagati giocandola (Fury, Ashen). */
+  | { player: number; skipped: false; cardId: CardId; final: number; copied?: PowerId; paid?: number }
   | { player: number; skipped: true };
 
 export type CardPlay = Extract<Play, { skipped: false }>;
@@ -108,7 +108,9 @@ export type TrickNote =
   | { type: 'scoreChanged'; player: number; cardId: CardId; points: number; target: number }
   | { type: 'nextModifier'; player: number; cardId: CardId; amount: number; target: number }
   | { type: 'powerCopied'; player: number; cardId: CardId; power: PowerId }
-  | { type: 'skipNext'; player: number; cardId: CardId; target: number };
+  | { type: 'skipNext'; player: number; cardId: CardId; target: number }
+  | { type: 'pointsPaid'; player: number; cardId: CardId; points: number }
+  | { type: 'reversal'; player: number; cardId: CardId; cancelled: boolean };
 
 export interface TrickResult {
   trickNo: number;
@@ -117,9 +119,22 @@ export interface TrickResult {
   winner: number;
   winningCardId: CardId;
   winningValue: number;
-  /** Punti assegnati dal Contratto al vincitore. */
+  /** Punti assegnati dal Contratto al vincitore (0 se Reversal li ha annullati). */
   contractDelta: number;
   notes: TrickNote[];
+  /** Reversal: chi l'ha catturata ha annullato i punti di questa presa. */
+  cancelled?: boolean;
+}
+
+/**
+ * Una decisione che blocca la partita finché il giocatore non la prende.
+ * Reversal: chi la cattura può annullare i punti nati dalla presa (`deltas`, per posto).
+ */
+export interface Decision {
+  kind: 'reversal';
+  player: number;
+  cardId: CardId;
+  deltas: number[];
 }
 
 export interface GameState {
@@ -133,11 +148,16 @@ export interface GameState {
   plays: Play[];
   phase: Phase;
   history: TrickResult[];
+  /** Decisione in sospeso a fine presa (Reversal), altrimenti null. */
+  decision: Decision | null;
 }
 
 export type Action =
-  | { type: 'play'; player: number; cardId: CardId }
-  | { type: 'nextTrick' };
+  /** `option`: quante volte pagare il potere della carta (Fury 0–1, Ashen 0–4); assente = 0. */
+  | { type: 'play'; player: number; cardId: CardId; option?: number }
+  | { type: 'nextTrick' }
+  /** Risponde alla decisione in sospeso: `accept` = sì (Reversal: annulla i punti). */
+  | { type: 'decide'; player: number; accept: boolean };
 
 /** Ciò che un singolo giocatore può vedere: nessuna mano altrui, nessun dato nascosto. */
 export interface PlayerView {
@@ -160,6 +180,8 @@ export interface PlayerView {
   legal: CardId[];
   lastTrick: TrickResult | null;
   history: TrickResult[];
+  /** Decisione in sospeso: è pubblica, la vedono tutti. */
+  decision: Decision | null;
 }
 
 export interface PublicPlayer {

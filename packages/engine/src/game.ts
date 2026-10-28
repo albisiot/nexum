@@ -1,9 +1,18 @@
 import { contractNeedsTarget, contracts, factionCards, factionIds, getCard } from './catalog';
 import { MAX_PLAYERS, MIN_PLAYERS, TRICKS_PER_HAND } from './constants';
-import { applyAfterTrickPowers, applyRevealPowers, copiedPower, isCardPlay, leadPower, valueOnPlay } from './powers';
+import {
+  applyAfterTrickPowers,
+  applyRevealPowers,
+  copiedPower,
+  effectivePower,
+  isCardPlay,
+  leadPower,
+  paymentFor,
+  valueOnPlay,
+} from './powers';
 import { createRng, shuffle } from './rng';
 import { contractDelta } from './scoring';
-import type { Action, CardId, GameConfig, GameState, PlayerState, TrickNote, TrickResult } from './types';
+import type { Action, CardId, CardPlay, GameConfig, GameState, PlayerState, TrickNote, TrickResult } from './types';
 
 export { MAX_PLAYERS, MIN_PLAYERS, TRICKS_PER_HAND };
 
@@ -75,6 +84,7 @@ export function createGame(config: GameConfig): GameState {
     plays: [],
     phase: 'playing',
     history: [],
+    decision: null,
   };
   startTrick(state);
   return state;
@@ -116,12 +126,34 @@ export function applyAction(state: GameState, action: Action): GameState {
             : 'Devi seguire la fazione d’apertura.',
         );
       }
-      playCard(s, action.player, action.cardId);
+      const times = action.option ?? 0;
+      const payment = paymentFor(s.plays, getCard(action.cardId));
+      if (!Number.isInteger(times) || times < 0 || times > (payment?.maxTimes ?? 0)) {
+        throw new IllegalActionError(
+          payment ? `Puoi pagare da 0 a ${payment.maxTimes} volte.` : 'Il potere di questa carta non si paga.',
+        );
+      }
+      playCard(s, action.player, action.cardId, times);
       advance(s);
+      return s;
+    }
+    case 'decide': {
+      const d = s.decision;
+      if (!d) throw new IllegalActionError('Non c’è nessuna decisione da prendere.');
+      if (action.player !== d.player) throw new IllegalActionError('Questa decisione spetta a un altro giocatore.');
+      const trick = s.history.at(-1)!;
+      if (action.accept) {
+        s.players.forEach((p, i) => (p.score -= d.deltas[i]!));
+        trick.contractDelta = 0;
+        trick.cancelled = true;
+      }
+      trick.notes.push({ type: 'reversal', player: d.player, cardId: d.cardId, cancelled: action.accept });
+      s.decision = null;
       return s;
     }
     case 'nextTrick': {
       if (s.phase !== 'trickEnd') throw new IllegalActionError('La presa non è ancora conclusa.');
+      if (s.decision) throw new IllegalActionError('Prima va presa la decisione su Reversal.');
       if (s.trickNo >= TRICKS_PER_HAND) {
         s.phase = 'handEnd';
         // Chi ha saltato una presa (Nullchild) ha ancora carte in mano: a fine mano vengono scartate.
@@ -167,21 +199,28 @@ function advance(s: GameState): void {
   if (s.plays.length >= n) resolveTrick(s);
 }
 
-function playCard(s: GameState, player: number, cardId: CardId): void {
+function playCard(s: GameState, player: number, cardId: CardId, times: number): void {
   const p = s.players[player]!;
   const card = getCard(cardId);
   const copied = card.power === 'palimpsest' ? copiedPower(s.plays) : undefined;
-  const final = valueOnPlay(s, player, card, copied ?? card.power);
+  const final = valueOnPlay(s, player, card, copied ?? card.power, times);
+  // Fury e Ashen si pagano subito, con i punti Contratto della mano.
+  const paid = times * (paymentFor(s.plays, card)?.costPerTime ?? 0);
+  p.score -= paid;
   p.nextModifier = 0;
   p.hand = p.hand.filter((id) => id !== cardId);
   p.played.push(cardId);
   if (!s.leadFaction) s.leadFaction = card.faction;
-  s.plays.push(copied ? { player, skipped: false, cardId, final, copied } : { player, skipped: false, cardId, final });
+  const play: CardPlay = { player, skipped: false, cardId, final };
+  if (copied) play.copied = copied;
+  if (paid) play.paid = paid;
+  s.plays.push(play);
   s.turn = (s.turn + 1) % s.players.length;
 }
 
 function resolveTrick(s: GameState): void {
   const notes: TrickNote[] = [];
+  const before = s.players.map((p) => p.score);
   applyRevealPowers(s.plays, notes);
 
   const active = s.plays.filter(isCardPlay);
@@ -220,6 +259,13 @@ function resolveTrick(s: GameState): void {
   };
   s.history.push(result);
   s.phase = 'trickEnd';
+
+  // Reversal: chi la cattura può annullare i punti nati da questa presa, se ce ne sono.
+  const deltas = s.players.map((p, i) => p.score - before[i]!);
+  const reversal = active.find((pl) => effectivePower(pl) === 'reversal');
+  if (reversal && deltas.some((d) => d !== 0)) {
+    s.decision = { kind: 'reversal', player: winning.player, cardId: reversal.cardId, deltas };
+  }
 }
 
 /** Copia profonda: lo stato è JSON puro, quindi può viaggiare anche in rete così com'è. */

@@ -31,5 +31,8 @@ export const POWERS: Readonly<Record<PowerId, { name: string; summary: string }>
   rebel: { name: 'Rebel', summary: 'Se non vince e il vincitore ha 80+: il vincitore perde 1 punto' },
   ravager: { name: 'Ravager', summary: 'Se vince la presa: l’avversario in testa perde 1 punto' },
   morrowshade: { name: 'Morrowshade', summary: 'Se è la carta più bassa della presa: +1 punto Contratto' },
+  fury: { name: 'Fury', summary: 'Quando la giochi puoi pagare 2 punti Contratto: vale 75' },
+  ashen: { name: 'Ashen', summary: 'Quando la giochi puoi pagare 1 punto Contratto per +20, fino a 4 volte' },
+  reversal: { name: 'Reversal', summary: 'Chi la cattura può annullare i punti nati da quella presa, per tutti' },
   nullchild: { name: 'Nullchild', summary: 'Se vince la presa: l’avversario in testa salta la presa successiva' },
 };

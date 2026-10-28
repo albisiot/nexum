@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { applyAction, contractDelta, legalCards } from '../src';
-import type { CardPlay, GameConfig } from '../src';
+import { IllegalActionError, applyAction, chooseDecision, chooseOption, contractDelta, getView, legalCards } from '../src';
+import type { CardPlay, GameConfig, GameState } from '../src';
 import { config, play, withHands } from './helpers';
 
 const finalOf = (plays: unknown[], cardId: string) => (plays as CardPlay[]).find((p) => p.cardId === cardId)!.final;
@@ -205,6 +205,90 @@ describe('poteri dopo la presa', () => {
     const end = applyAction(after, { type: 'nextTrick' });
     expect(end.phase).toBe('handEnd');
     expect(end.players.every((p) => p.hand.length === 0)).toBe(true);
+  });
+});
+
+describe('poteri con una scelta', () => {
+  const opt = (s: GameState, cardId: string, option: number) =>
+    applyAction(s, { type: 'play', player: s.turn, cardId, option });
+
+  it('Fury: pagando 2 punti vale 75', () => {
+    const paid = play(opt(withHands([['Dominari-10'], ['Dominari-5']]), 'Dominari-10', 1), 'Dominari-5');
+    expect(finalOf(paid.history[0]!.plays, 'Dominari-10')).toBe(75);
+    expect(paid.history[0]!.winner).toBe(0);
+    expect(paid.players[0]!.score).toBe(-2 + 1);
+    expect(paid.history[0]!.notes).toContainEqual({ type: 'pointsPaid', player: 0, cardId: 'Dominari-10', points: 2 });
+
+    const free = play(withHands([['Dominari-10'], ['Dominari-5']]), 'Dominari-10', 'Dominari-5');
+    expect(finalOf(free.history[0]!.plays, 'Dominari-10')).toBe(20);
+    expect(free.players[0]!.score).toBe(0);
+  });
+
+  it('Ashen: 1 punto per ogni +20, fino a 4 volte', () => {
+    const s = opt(withHands([['Nullarii-10'], ['Nullarii-0']]), 'Nullarii-10', 3);
+    expect(finalOf(s.plays, 'Nullarii-10')).toBe(17 + 60);
+    expect(s.players[0]!.score).toBe(-3);
+    expect(finalOf(opt(withHands([['Nullarii-10'], ['Nullarii-0']]), 'Nullarii-10', 4).plays, 'Nullarii-10')).toBe(97);
+  });
+
+  it('rifiuta pagamenti fuori misura o su carte che non si pagano', () => {
+    expect(() => opt(withHands([['Dominari-10'], ['Dominari-5']]), 'Dominari-10', 2)).toThrow(IllegalActionError);
+    expect(() => opt(withHands([['Nullarii-10'], ['Nullarii-0']]), 'Nullarii-10', 5)).toThrow(IllegalActionError);
+    expect(() => opt(withHands([['Dominari-0'], ['Dominari-5']]), 'Dominari-0', 1)).toThrow(/non si paga/);
+  });
+
+  it('Palimpsest che copia Fury si può pagare anche lei', () => {
+    const s = opt(play(withHands([['Dominari-10'], ['Reliquiae-1']]), 'Dominari-10'), 'Reliquiae-1', 1);
+    const copy = s.history[0]!.plays.find((pl) => pl.player === 1) as CardPlay;
+    expect([copy.copied, copy.final, copy.paid]).toEqual(['fury', 75, 2]);
+  });
+
+  it('Reversal: chi la cattura decide se annullare i punti della presa', () => {
+    // Meno prese: chi prende perde 1 punto. Meridian cattura Reversal.
+    const s = play(withHands([['Custodes-7'], ['Custodes-0']], 0, { contract: 'less' }), 'Custodes-7', 'Custodes-0');
+    expect(s.decision).toEqual({ kind: 'reversal', player: 1, cardId: 'Custodes-7', deltas: [0, -1] });
+    expect(() => applyAction(s, { type: 'nextTrick' })).toThrow(/Reversal/);
+    expect(() => applyAction(s, { type: 'decide', player: 0, accept: true })).toThrow(IllegalActionError);
+
+    const cancelled = applyAction(s, { type: 'decide', player: 1, accept: true });
+    expect(cancelled.players[1]!.score).toBe(0);
+    expect(cancelled.history[0]!.contractDelta).toBe(0);
+    expect(cancelled.history[0]!.cancelled).toBe(true);
+    expect(cancelled.decision).toBeNull();
+    expect(applyAction(cancelled, { type: 'nextTrick' }).trickNo).toBe(2);
+
+    const kept = applyAction(s, { type: 'decide', player: 1, accept: false });
+    expect(kept.players[1]!.score).toBe(-1);
+    expect(kept.history[0]!.notes).toContainEqual({ type: 'reversal', player: 1, cardId: 'Custodes-7', cancelled: false });
+  });
+
+  it('Reversal annulla i punti di tutti, poteri compresi', () => {
+    // Più prese: Meridian prende (+1), Morrowshade è la più bassa (+1 a chi l'ha giocata).
+    const s = play(withHands([['Custodes-7'], ['Custodes-0'], ['Nullarii-9']]), 'Custodes-7', 'Custodes-0', 'Nullarii-9');
+    expect(s.decision!.deltas).toEqual([0, 1, 1]);
+    const cancelled = applyAction(s, { type: 'decide', player: 1, accept: true });
+    expect(cancelled.players.map((p) => p.score)).toEqual([0, 0, 0]);
+  });
+
+  it('Reversal senza punti in gioco non chiede niente', () => {
+    const s = play(withHands([['Custodes-7'], ['Custodes-0']], 0, { contract: 'last' }), 'Custodes-7', 'Custodes-0');
+    expect(s.decision).toBeNull();
+  });
+
+  it('la CPU annulla i punti solo quando le conviene', () => {
+    const lose = play(withHands([['Custodes-7'], ['Custodes-0']], 0, { contract: 'less' }), 'Custodes-7', 'Custodes-0');
+    expect(chooseDecision(getView(lose, 1))).toBe(true);
+    const win = play(withHands([['Custodes-7'], ['Custodes-0']]), 'Custodes-7', 'Custodes-0');
+    expect(chooseDecision(getView(win, 1))).toBe(false);
+  });
+
+  it('la CPU paga solo se vincere le rende più di quanto spende', () => {
+    // Più prese vale +1: pagare 2 punti per Fury non conviene mai.
+    const fury = play(withHands([['Dominari-5'], ['Dominari-10']]), 'Dominari-5');
+    expect(chooseOption(getView(fury, 1), 'Dominari-10')).toBe(0);
+    // Ashen: 1 punto per superare Hollow (33) e guadagnarne 1 è un pareggio, quindi non paga.
+    const ashen = play(withHands([['Nullarii-8'], ['Nullarii-10']]), 'Nullarii-8');
+    expect(chooseOption(getView(ashen, 1), 'Nullarii-10')).toBe(0);
   });
 });
 

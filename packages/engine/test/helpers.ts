@@ -1,5 +1,5 @@
-import { applyAction, chooseCard, createGame, createRng, factionIds, getView, shuffle } from '../src';
-import type { CardId, ContractId, FactionId, GameConfig, GameState } from '../src';
+import { applyAction, chooseCard, chooseDecision, chooseOption, createGame, createRng, factionIds, getView, shuffle } from '../src';
+import type { Action, CardId, ContractId, FactionId, GameConfig, GameState } from '../src';
 
 export function config(overrides: Partial<GameConfig> = {}): GameConfig {
   return {
@@ -40,16 +40,23 @@ export function randomConfig(rng: () => number, contract?: ContractId): GameConf
   };
 }
 
-/** Gioca una mano intera facendo decidere la CPU a ogni posto. */
+/** Gioca una mano intera facendo decidere la CPU a ogni posto, scelte dei poteri comprese. */
 export function playOut(state: GameState, rng: () => number): GameState {
   let s = state;
-  while (s.phase !== 'handEnd') {
-    s =
-      s.phase === 'trickEnd'
-        ? applyAction(s, { type: 'nextTrick' })
-        : applyAction(s, { type: 'play', player: s.turn, cardId: chooseCard(getView(s, s.turn), rng) });
-  }
+  while (s.phase !== 'handEnd') s = applyAction(s, cpuAction(s, rng));
   return s;
+}
+
+/** La prossima azione della CPU: decisione in sospeso, presa successiva o carta da giocare. */
+export function cpuAction(s: GameState, rng: () => number): Action {
+  if (s.decision) {
+    const player = s.decision.player;
+    return { type: 'decide', player, accept: chooseDecision(getView(s, player)) };
+  }
+  if (s.phase === 'trickEnd') return { type: 'nextTrick' };
+  const view = getView(s, s.turn);
+  const cardId = chooseCard(view, rng);
+  return { type: 'play', player: s.turn, cardId, option: chooseOption(view, cardId) };
 }
 
 export { createRng };

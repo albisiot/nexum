@@ -13,6 +13,29 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.19.0',
+    date: '2026-10-28',
+    title: 'Poteri con una scelta',
+    changes: [
+      {
+        type: 'new',
+        text: 'Fury: quando la giochi puoi pagare 2 punti Contratto e farla valere 75. Nel riquadro della carta trovi il pulsante “Paga 2 punti”.',
+      },
+      {
+        type: 'new',
+        text: 'Ashen: quando la giochi puoi pagare 1 punto Contratto per ogni +20, fino a 4 volte (97). Ogni scelta ha il suo pulsante con il valore che otterrai.',
+      },
+      {
+        type: 'new',
+        text: 'Reversal: chi la cattura può annullare i punti nati da quella presa, per tutti. A fine presa compaiono “Annulla i punti” e “Tienili”; la CPU decide da sola.',
+      },
+      {
+        type: 'change',
+        text: 'Anche Palimpsest può pagare, se copia Fury o Ashen.',
+      },
+    ],
+  },
+  {
     version: '0.18.0',
     date: '2026-10-28',
     title: 'Nuovi poteri',

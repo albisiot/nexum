@@ -3,7 +3,6 @@ import {
   contracts,
   IllegalActionError,
   applyMatchAction,
-  chooseCard,
   createMatch,
   getMatchView,
   matchRanking,
@@ -11,7 +10,7 @@ import {
   randomHands,
 } from '../src';
 import type { MatchConfig, MatchState } from '../src';
-import { createRng } from './helpers';
+import { cpuAction, createRng } from './helpers';
 
 const config = (overrides: Partial<MatchConfig> = {}): MatchConfig => ({
   playerNames: ['A', 'B', 'C'],
@@ -24,13 +23,7 @@ const config = (overrides: Partial<MatchConfig> = {}): MatchConfig => ({
 /** Gioca la mano in corso fino alla fine, con la CPU a ogni posto. */
 function playHand(state: MatchState, rng: () => number): MatchState {
   let s = state;
-  while (s.phase === 'playing') {
-    const g = s.game;
-    s =
-      g.phase === 'trickEnd'
-        ? applyMatchAction(s, { type: 'nextTrick' })
-        : applyMatchAction(s, { type: 'play', player: g.turn, cardId: chooseCard(getMatchView(s, g.turn).game, rng) });
-  }
+  while (s.phase === 'playing') s = applyMatchAction(s, cpuAction(s.game, rng));
   return s;
 }
 

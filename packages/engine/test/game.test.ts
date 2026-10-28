@@ -26,11 +26,11 @@ describe('carte', () => {
     }
   });
 
-  it('46 carte hanno un potere scritto, 27 sono implementati', () => {
+  it('46 carte hanno un potere scritto, 30 sono implementati', () => {
     const withText = DEFAULT_CATALOG.cards.filter(hasPowerText);
     expect(withText).toHaveLength(46);
     const implemented = DEFAULT_CATALOG.cards.filter(isPowerImplemented);
-    expect(implemented).toHaveLength(27);
+    expect(implemented).toHaveLength(30);
     expect(new Set(implemented.map((c) => c.power))).toEqual(new Set(Object.keys(POWERS)));
     expect(implemented.every(hasPowerText)).toBe(true);
   });

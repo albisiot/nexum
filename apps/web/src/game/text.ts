@@ -101,6 +101,15 @@ export function describeNote(note: TrickNote, names: readonly string[]): string 
       return `${getCard(note.cardId).name} di ${names[note.player]} copia il potere di ${POWERS[note.power]?.name ?? note.power}.`;
     case 'skipNext':
       return `${getCard(note.cardId).name}: ${names[note.target]} salta la prossima presa.`;
+    case 'pointsPaid': {
+      const who = names[note.player] === 'Tu' ? 'paghi' : `${names[note.player]} paga`;
+      return `${getCard(note.cardId).name}: ${who} ${plural(note.points, 'punto', 'punti')} Contratto per potenziarla.`;
+    }
+    case 'reversal': {
+      const you = names[note.player] === 'Tu';
+      const verb = note.cancelled ? (you ? 'annulli' : 'annulla') : you ? 'tieni' : 'tiene';
+      return `${getCard(note.cardId).name}: ${you ? '' : `${names[note.player]} `}${verb} i punti di questa presa.`;
+    }
   }
 }
 
