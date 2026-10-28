@@ -15,6 +15,10 @@ export function MenuScreen({ onPlay, onRoadmap, onPatchNotes, onEditor }: Props)
   return (
     <section className="menu">
       <div className="menu-hero">
+        <svg className="menu-crown" viewBox="0 0 24 24" width="56" height="56" aria-hidden="true">
+          <path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 10H5Z" fill="var(--gold)" stroke="var(--ink)" strokeWidth="1.75" strokeLinejoin="round" />
+          <path d="M5 21h14" fill="none" stroke="var(--ink)" strokeWidth="1.75" strokeLinecap="round" />
+        </svg>
         <h1 className="menu-logo">NEXUM</h1>
         <p>Gioco di carte trick-taking a Contratti</p>
       </div>

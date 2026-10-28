@@ -13,6 +13,29 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.21.0',
+    date: '2026-10-28',
+    title: 'Nuovo stile: Pop Reale',
+    changes: [
+      {
+        type: 'change',
+        text: 'Tutto il gioco ha un nuovo aspetto: fondo avorio, contorni blu reale, ombre piene e l’oro per ciò che scegli.',
+      },
+      {
+        type: 'change',
+        text: 'Le carte sono a colore pieno: il colore della fazione con il valore grande in alto, nome e fazione nella fascia in basso. Il valore cambiato da un potere compare in un tassello d’oro.',
+      },
+      {
+        type: 'change',
+        text: 'Il tavolo è di velluto blu con il bordo d’oro, e i dorsi delle carte sono blu a righe d’oro.',
+      },
+      {
+        type: 'change',
+        text: 'Nuovo carattere, Rubik, incluso nel gioco: si vede uguale su tutti i dispositivi.',
+      },
+    ],
+  },
+  {
     version: '0.20.0',
     date: '2026-10-28',
     title: 'Tutti i poteri in gioco',

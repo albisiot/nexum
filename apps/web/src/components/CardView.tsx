@@ -10,13 +10,30 @@ interface Props {
   mini?: boolean;
 }
 
-/** Le fazioni molto chiare usano una carta bianca, quelle molto scure un bordo più chiaro. */
-export function colorTone(hex: string): 'light' | 'dark' | null {
+/** Luminanza relativa (WCAG) di un colore "#rrggbb", o null se non è un colore valido. */
+function luminance(hex: string): number | null {
   const n = parseInt(hex.slice(1), 16);
   if (Number.isNaN(n)) return null;
-  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
-  return luminance > 0.82 ? 'light' : luminance < 0.16 ? 'dark' : null;
+  const lin = (c: number) => {
+    const v = c / 255;
+    return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * lin((n >> 16) & 255) + 0.7152 * lin((n >> 8) & 255) + 0.0722 * lin(n & 255);
+}
+
+/** Luminanza del blu scuro dei testi (--ink, #1c2340). */
+const INK = 0.0182;
+
+/**
+ * Sul colore pieno della fazione il valore va in bianco o in blu scuro: il blu solo quando si legge
+ * nettamente meglio (Auguria, Conflux, Concordia, Axiomata), così le fazioni intermedie restano in bianco.
+ */
+export function cardInk(hex: string): 'light' | 'dark' {
+  const l = luminance(hex);
+  if (l === null) return 'light';
+  const onWhite = 1.05 / (l + 0.05);
+  const onInk = (l + 0.05) / (INK + 0.05);
+  return onInk > onWhite * 1.15 ? 'dark' : 'light';
 }
 
 export function CardView({ cardId, final, mini }: Props) {
@@ -25,34 +42,35 @@ export function CardView({ cardId, final, mini }: Props) {
   const value = final ?? card.value;
   const changed = final !== undefined && final !== card.value;
   const pending = hasPowerText(card) && !isPowerImplemented(card);
-  const tone = colorTone(faction.color);
-  const className = `card${mini ? ' mini' : ''}${tone ? ` ${tone}` : ''}`;
+  const className = `card${mini ? ' mini' : ''}${cardInk(faction.color) === 'dark' ? ' ink-dark' : ''}`;
   const style = { '--faction': faction.color } as CSSProperties;
+  const valueClass = `card-value${changed ? ' changed' : ''}`;
 
   if (mini) {
     // Una parola lunga ("Convergence") non entra nella carta piccola: meglio rimpicciolirla che spezzarla.
     const long = Math.max(...card.name.split(/\s+/).map((w) => w.length)) >= 10;
     return (
       <div className={className} data-faction={card.faction} style={style}>
-        <div className={`card-value${changed ? ' changed' : ''}`}>{value}</div>
-        <div className={`card-name${long ? ' long' : ''}`}>{card.name}</div>
-        <div className="card-suit">{faction.name}</div>
+        <div className="card-top">
+          <div className={valueClass}>{value}</div>
+        </div>
+        <div className="card-band">
+          <div className={`card-name${long ? ' long' : ''}`}>{card.name}</div>
+          <div className="card-suit">{faction.name}</div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className={className} data-faction={card.faction} style={style}>
-      <div>
-        <div className="card-suit">
-          <span className="dot" />
-          {faction.name}
-        </div>
+      <div className="card-top">
+        <div className="card-suit">{faction.name}</div>
         <div className="card-name">{card.name}</div>
-      </div>
-      <div>
-        <div className={`card-value${changed ? ' changed' : ''}`}>{value}</div>
+        <div className={valueClass}>{value}</div>
         {changed && <div className="card-printed">stampato {card.value}</div>}
+      </div>
+      <div className="card-band">
         <div className="card-effect">
           {card.effect || 'Nessun potere.'}
           {pending && <span className="card-pending">potere non ancora attivo</span>}
