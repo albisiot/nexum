@@ -1,6 +1,7 @@
 import { getCard, getFaction, hasPowerText, isPowerImplemented } from '@nexum/engine';
 import type { CardId } from '@nexum/engine';
 import type { CSSProperties } from 'react';
+import { Icon, factionSymbol } from './Icon';
 
 interface Props {
   cardId: CardId;
@@ -45,6 +46,13 @@ export function CardView({ cardId, final, mini }: Props) {
   const className = `card${mini ? ' mini' : ''}${cardInk(faction.color) === 'dark' ? ' ink-dark' : ''}`;
   const style = { '--faction': faction.color } as CSSProperties;
   const valueClass = `card-value${changed ? ' changed' : ''}`;
+  // Il simbolo della fazione, in filigrana sulla parte colorata (solo le fazioni predefinite ne hanno uno).
+  const symbolName = factionSymbol(card.faction);
+  const symbol = symbolName && (
+    <span className="card-symbol">
+      <Icon name={symbolName} />
+    </span>
+  );
 
   if (mini) {
     // Una parola lunga ("Convergence") non entra nella carta piccola: meglio rimpicciolirla che spezzarla.
@@ -52,6 +60,7 @@ export function CardView({ cardId, final, mini }: Props) {
     return (
       <div className={className} data-faction={card.faction} style={style}>
         <div className="card-top">
+          {symbol}
           <div className={valueClass}>{value}</div>
         </div>
         <div className="card-band">
@@ -65,6 +74,7 @@ export function CardView({ cardId, final, mini }: Props) {
   return (
     <div className={className} data-faction={card.faction} style={style}>
       <div className="card-top">
+        {symbol}
         <div className="card-suit">{faction.name}</div>
         <div className="card-name">{card.name}</div>
         <div className={valueClass}>{value}</div>

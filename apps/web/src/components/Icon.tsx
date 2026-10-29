@@ -153,6 +153,63 @@ const PATHS = {
       <path d="M8.5 12.3l2.4 2.4 4.6-5" />
     </>
   ),
+
+  // simboli delle fazioni, in filigrana sulle carte
+  scudo: (
+    <>
+      <path d="M12 3l7 2.8v5.7c0 4.6-3 8.1-7 9.5-4-1.4-7-4.9-7-9.5V5.8Z" />
+      <path d="M12 7.5v9M8.5 11.5h7" />
+    </>
+  ),
+  eclissi: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <circle cx="14" cy="10" r="5" fill="currentColor" stroke="none" />
+    </>
+  ),
+  volo: (
+    <>
+      <path d="M2.5 11.5c3-3 6.5-3 9.5 1 3-4 6.5-4 9.5-1" />
+      <path d="M8 17.5c1.5-1.5 3.2-1.5 4.5.5 1.3-2 3-2 4.5-.5" />
+    </>
+  ),
+  clessidra: (
+    <>
+      <path d="M7 3h10M7 21h10" />
+      <path d="M8 3v2.5c0 2.6 4 4 4 6.5s-4 3.9-4 6.5V21" />
+      <path d="M16 3v2.5c0 2.6-4 4-4 6.5s4 3.9 4 6.5V21" />
+      <path d="M10 19.5h4" />
+    </>
+  ),
+  alloro: (
+    <>
+      <path d="M8.5 20C5 17.5 3.5 13.5 4.5 8.5" />
+      <path d="M15.5 20c3.5-2.5 5-6.5 4-11.5" />
+      <path d="M5 15.5 2.5 14.5M4.3 12 2 10.8M4.6 8.8 3.2 6.6M19 15.5l2.5-1M19.7 12l2.3-1.2M19.4 8.8l1.4-2.2" />
+      <path d="M8.5 20 12 21.5l3.5-1.5" />
+    </>
+  ),
+  bilancia: (
+    <>
+      <circle cx="12" cy="3.5" r="1" />
+      <path d="M12 4.5v15.5M8 20.5h8M5 7h14" />
+      <path d="M5 7 2.5 12.5M5 7l2.5 5.5M19 7l-2.5 5.5M19 7l2.5 5.5" />
+      <path d="M2.5 12.5h5a2.5 2.5 0 0 1-5 0ZM16.5 12.5h5a2.5 2.5 0 0 1-5 0Z" />
+    </>
+  ),
+  colonna: (
+    <>
+      <path d="M4.5 4h15M6 6.5h12M4.5 21h15M6 18.5h12M8.5 6.5v12M12 6.5v12M15.5 6.5v12" />
+    </>
+  ),
+  farfalla: (
+    <>
+      <path d="M12 7.5v11" />
+      <path d="M12 9.5C10.5 5.5 7 3.5 4.5 4.5S3 10 7.5 11.5C4 12.5 3.5 16 5.5 17.5s5-.5 6.5-3" />
+      <path d="M12 9.5c1.5-4 5-6 7.5-5S21 10 16.5 11.5c3.5 1 4 4.5 2 6s-5-.5-6.5-3" />
+      <path d="M12 7.5 10 4.5M12 7.5l2-3" />
+    </>
+  ),
 } satisfies Record<string, ReactNode>;
 
 export type IconName = keyof typeof PATHS;
@@ -192,6 +249,20 @@ const CONTRACT_ICONS: Partial<Record<string, IconName>> = {
 };
 
 export const drawnContractIcon = (id: string): IconName | undefined => CONTRACT_ICONS[id];
+
+/** Simboli delle fazioni predefinite, per id. Le fazioni create nell'Editor non ne hanno. */
+const FACTION_SYMBOLS: Partial<Record<string, IconName>> = {
+  Custodes: 'scudo',
+  Nullarii: 'eclissi',
+  Auguria: 'volo',
+  Reliquiae: 'clessidra',
+  Dominari: 'alloro',
+  Concordia: 'bilancia',
+  Axiomata: 'colonna',
+  Conflux: 'farfalla',
+};
+
+export const factionSymbol = (id: string): IconName | undefined => FACTION_SYMBOLS[id];
 
 export function ContractIcon({ contract, size }: { contract: ContractDef; size?: number }) {
   const name = drawnContractIcon(contract.id);

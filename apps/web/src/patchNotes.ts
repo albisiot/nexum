@@ -13,6 +13,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.22.0',
+    date: '2026-10-29',
+    title: 'Simboli delle fazioni',
+    changes: [
+      {
+        type: 'new',
+        text: 'Ogni fazione ha il suo simbolo, in filigrana sulla parte colorata delle carte: Scudo per Custodes, Eclissi per Nullarii, Volo per Auguria, Clessidra per Reliquiae, Alloro per Dominari, Bilancia per Concordia, Colonna per Axiomata e Farfalla per Conflux.',
+      },
+    ],
+  },
+  {
     version: '0.21.0',
     date: '2026-10-28',
     title: 'Nuovo stile: Pop Reale',

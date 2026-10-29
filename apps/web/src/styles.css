@@ -1779,12 +1779,35 @@ input {
 }
 
 .card-top {
+  position: relative;
+  overflow: hidden;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
   padding: 10px 12px;
+}
+
+/* Simbolo della fazione in filigrana: grande, in basso a destra sulla parte colorata, dietro al valore. */
+.card-top > :not(.card-symbol) {
+  position: relative;
+}
+
+.card-symbol {
+  position: absolute;
+  right: -10%;
+  bottom: -14%;
+  width: 72%;
+  opacity: 0.28;
+  pointer-events: none;
+}
+
+.card-symbol .icon {
+  display: block;
+  width: 100%;
+  height: auto;
+  stroke-width: 1.5;
 }
 
 .card-band {
