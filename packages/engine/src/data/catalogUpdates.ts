@@ -1,4 +1,5 @@
-import type { CardId, Catalog, PowerId } from '../types';
+import { CARDS_PER_FACTION } from '../constants';
+import type { CardDef, CardId, Catalog, FactionDef, PowerId } from '../types';
 
 /** Modifica di una carta: testo nuovo, potere assegnato, oppure `power: null` per togliere il potere. */
 export interface CardUpdate {
@@ -14,6 +15,10 @@ export interface CatalogUpdate {
   id: string;
   date: string;
   title: string;
+  /** Spiegazione per l'autore, quando la modifica non riguarda singole carte. */
+  note?: string;
+  /** Tutte le carte dei mazzi passano ai pacchetti e ogni fazione riceve le carte da 1 a 13 senza effetti. */
+  moveToPacks?: boolean;
   /** Per id di carta; il nome serve solo a chi legge. */
   cards: Record<CardId, CardUpdate & { name: string }>;
 }
@@ -86,18 +91,41 @@ export const CATALOG_UPDATES: readonly CatalogUpdate[] = [
       'Conflux-10': { name: 'Split', effect: '', power: null },
     },
   },
+  {
+    id: 'mazzi-base-2026-10-31',
+    date: '2026-10-31',
+    title: 'Mazzi da 1 a 13 e carte per i pacchetti',
+    note: 'Tutte le carte attuali escono dalle fazioni e vengono conservate come carte dei pacchetti, con nomi, testi e poteri. Ogni fazione riceve 13 carte nuove, da 1 a 13, senza effetti.',
+    moveToPacks: true,
+    cards: {},
+  },
 ];
+
+/** Le 13 carte di base di una fazione: valori da 1 a 13, senza effetti. */
+function baseCards(faction: FactionDef): CardDef[] {
+  return Array.from({ length: CARDS_PER_FACTION }, (_, i) => ({
+    id: `${faction.id}-n${i + 1}`,
+    faction: faction.id,
+    name: `${faction.name} ${i + 1}`,
+    value: i + 1,
+    effect: '',
+  }));
+}
 
 /** Applica gli aggiornamenti a una copia del catalogo; le carte che non esistono più vengono ignorate. */
 export function applyCatalogUpdates(catalog: Catalog, updates: readonly CatalogUpdate[]): Catalog {
   const next = JSON.parse(JSON.stringify(catalog)) as Catalog;
   for (const update of updates) {
-    for (const card of next.cards) {
+    for (const card of [...next.cards, ...(next.packCards ?? [])]) {
       const change = update.cards[card.id];
       if (!change) continue;
       if (change.effect !== undefined) card.effect = change.effect;
       if (change.power === null) delete card.power;
       else if (change.power !== undefined) card.power = change.power;
+    }
+    if (update.moveToPacks) {
+      next.packCards = [...(next.packCards ?? []), ...next.cards];
+      next.cards = next.factions.flatMap(baseCards);
     }
     next.appliedUpdates = [...new Set([...(next.appliedUpdates ?? []), update.id])];
   }

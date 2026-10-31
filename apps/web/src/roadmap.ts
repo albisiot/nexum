@@ -20,8 +20,8 @@ export const ROADMAP: RoadmapItem[] = [
   {
     icon: '⚡',
     title: 'Nuovi poteri',
-    status: 'inProgress',
-    text: 'Le carte che oggi mostrano “potere non ancora attivo” prenderanno vita un po’ alla volta, insieme a qualche ritocco ai poteri esistenti.',
+    status: 'planned',
+    text: 'Le carte con i poteri sono già programmate: torneranno in partita con i pacchetti e il deckbuilding, insieme a qualche ritocco.',
   },
   {
     icon: '🃏',

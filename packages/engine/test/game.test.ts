@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   DEFAULT_CATALOG,
   IllegalActionError,
   POWERS,
   applyAction,
+  chooseCard,
   createGame,
   factionCards,
   factionIds,
@@ -12,8 +13,10 @@ import {
   hasPowerText,
   isPowerImplemented,
   ranking,
+  setCatalog,
   validateCatalog,
 } from '../src';
+import type { Catalog } from '../src';
 import { config, createRng, playOut, randomConfig, withHands } from './helpers';
 
 describe('carte', () => {
@@ -26,10 +29,12 @@ describe('carte', () => {
     }
   });
 
-  it('44 carte hanno un potere scritto e sono tutte implementate', () => {
-    const withText = DEFAULT_CATALOG.cards.filter(hasPowerText);
+  it('tra le carte dei pacchetti 44 hanno un potere scritto e sono tutte implementate', () => {
+    const pack = DEFAULT_CATALOG.packCards!;
+    expect(pack).toHaveLength(104);
+    const withText = pack.filter(hasPowerText);
     expect(withText).toHaveLength(44);
-    const implemented = DEFAULT_CATALOG.cards.filter(isPowerImplemented);
+    const implemented = pack.filter(isPowerImplemented);
     expect(implemented).toHaveLength(44);
     expect(new Set(implemented.map((c) => c.power))).toEqual(new Set(Object.keys(POWERS)));
     expect(implemented.every(hasPowerText)).toBe(true);
@@ -119,7 +124,22 @@ describe('vista del giocatore', () => {
 });
 
 describe('simulazione', () => {
-  it('500 mani complete con la CPU a ogni posto rispettano tutte le regole', () => {
+  // Con i mazzi da 1 a 13 e con le carte dei pacchetti nei mazzi, così tutti i poteri restano provati.
+  const decks: [string, Catalog][] = [
+    ['i mazzi da 1 a 13', DEFAULT_CATALOG],
+    ['le carte dei pacchetti', { ...DEFAULT_CATALOG, cards: DEFAULT_CATALOG.packCards!, packCards: DEFAULT_CATALOG.cards }],
+  ];
+  afterEach(() => setCatalog(DEFAULT_CATALOG));
+
+  it('con i mazzi da 1 a 13 la CPU preferisce le carte alte quando vuole vincere', () => {
+    const rng = createRng(5);
+    const s = withHands([['Custodes-n1', 'Custodes-n13'], ['Custodes-n2']]);
+    const picks = Array.from({ length: 200 }, () => chooseCard(getView(s, 0), rng));
+    expect(picks.filter((id) => id === 'Custodes-n13').length).toBeGreaterThan(160);
+  });
+
+  it.each(decks)('500 mani complete con la CPU a ogni posto rispettano tutte le regole, con %s', (_, catalog) => {
+    setCatalog(catalog);
     const rng = createRng(2026);
     for (let g = 0; g < 500; g++) {
       const cfg = randomConfig(rng);

@@ -3,6 +3,7 @@ import {
   MAX_PLAYERS,
   MIN_PLAYERS,
   contractNeedsTarget,
+  contractPlayableWith,
   contractRequiredFactions,
   contracts,
   createRng,
@@ -65,9 +66,14 @@ const randomFactions = (n: number, keep: FactionId[] = []): FactionId[] => {
 };
 
 /** Toglie dalle scelte fazioni e Contratti che non esistono più nel catalogo (dopo una pubblicazione). */
+/** I Contratti che con i mazzi attuali possono assegnare punti: gli altri restano nel catalogo ma non si propongono. */
+function offeredContracts() {
+  return contracts().filter((c) => contractPlayableWith(c, factionIds()));
+}
+
 export function sanitizeSetup(v: SetupValues): SetupValues {
   const knownFactions = factionIds();
-  const knownContracts = contracts().map((c) => c.id);
+  const knownContracts = offeredContracts().map((c) => c.id);
   return {
     ...v,
     factions: v.factions.filter((f) => knownFactions.includes(f)),
@@ -327,7 +333,7 @@ function ContractGrid({
 }) {
   return (
     <div className="contract-picker">
-      {contracts().map((c) => {
+      {offeredContracts().map((c) => {
         const index = selected.indexOf(c.id);
         return (
           <button

@@ -58,7 +58,10 @@ export interface Catalog {
   /** Numero della versione pubblicata (0 = dati predefiniti del gioco). */
   version: number;
   factions: FactionDef[];
+  /** Le carte dei mazzi: 13 per ogni fazione. */
   cards: CardDef[];
+  /** Carte fuori dai mazzi delle fazioni: si troveranno nei pacchetti. Conservano la fazione d'origine. */
+  packCards?: CardDef[];
   contracts: ContractDef[];
   /** Aggiornamenti delle carte già applicati (vedi CATALOG_UPDATES), così l'Editor non li ripropone. */
   appliedUpdates?: string[];

@@ -23,6 +23,7 @@ export {
   factionIds,
   getFaction,
   factionCards,
+  packCards,
   getCard,
   contracts,
   getContract,

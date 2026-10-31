@@ -10,6 +10,8 @@ import {
   contractNeedsTarget,
   contractRequiredFactions,
   createGame,
+  factionCards,
+  packCards,
   getCard,
   getContract,
   playableContracts,
@@ -45,7 +47,7 @@ describe('catalogo modificabile', () => {
 
   it('una carta rinominata conserva il suo potere', () => {
     const c = copy();
-    c.cards.find((x) => x.id === 'Axiomata-2')!.name = 'Verità';
+    c.packCards!.find((x) => x.id === 'Axiomata-2')!.name = 'Verità';
     setCatalog(c);
     const s = play(withHands([['Axiomata-2'], ['Axiomata-0']]), 'Axiomata-2');
     expect(getCard('Axiomata-2').name).toBe('Verità');
@@ -54,9 +56,9 @@ describe('catalogo modificabile', () => {
 
   it('un potere programmato si può dare a un’altra carta', () => {
     const c = copy();
-    c.cards.find((x) => x.id === 'Auguria-0')!.power = 'veritas';
+    c.cards.find((x) => x.id === 'Auguria-n1')!.power = 'veritas';
     setCatalog(c);
-    const s = play(withHands([['Auguria-0'], ['Auguria-1']]), 'Auguria-0');
+    const s = play(withHands([['Auguria-n1'], ['Auguria-n2']]), 'Auguria-n1');
     expect((s.plays[0] as { final: number }).final).toBe(80);
   });
 
@@ -86,7 +88,8 @@ describe('catalogo modificabile', () => {
   it('riconosce i Contratti con fazione bersaglio e quelli legati a una fazione', () => {
     expect(contractNeedsTarget(getContract('avoidFaction'))).toBe(true);
     expect(contractNeedsTarget(getContract('more'))).toBe(false);
-    expect(contractRequiredFactions(getContract('unmade'))).toEqual(['Nullarii']);
+    // The Unmade è tra le carte dei pacchetti: non è legata a nessun mazzo.
+    expect(contractRequiredFactions(getContract('unmade'))).toEqual([]);
     expect(contractRequiredFactions(getContract('chaos'))).toEqual(['Nullarii']);
   });
 });
@@ -111,23 +114,57 @@ describe('aggiornamenti delle carte', () => {
     published.version = 1;
     published.cards.find((c) => c.id === 'Custodes-2')!.name = 'Vigile';
     const next = applyCatalogUpdates(published, CATALOG_UPDATES);
-    const vigil = next.cards.find((c) => c.id === 'Custodes-2')!;
+    const vigil = next.packCards!.find((c) => c.id === 'Custodes-2')!;
     expect([vigil.name, vigil.power, vigil.effect]).toEqual(['Vigile', 'vigil', 'Controllo.']);
-    const foreseer = next.cards.find((c) => c.id === 'Custodes-4')!;
+    const foreseer = next.packCards!.find((c) => c.id === 'Custodes-4')!;
     expect([foreseer.effect, 'power' in foreseer]).toEqual(['', false]);
     expect(next.version).toBe(1);
     expect(pendingCatalogUpdates(next)).toEqual([]);
     expect(validateCatalog(next)).toEqual([]);
     expect(published.cards.find((c) => c.id === 'Custodes-2')!.power).toBeUndefined();
   });
+
+  it('il passaggio ai mazzi da 1 a 13 conserva tutte le carte, anche quelle cambiate nell’Editor', () => {
+    const published = applyCatalogUpdates(
+      ORIGINAL_CATALOG,
+      CATALOG_UPDATES.filter((u) => !u.moveToPacks),
+    );
+    published.cards.find((c) => c.id === 'Custodes-0')!.name = 'Meridianis';
+    const next = applyCatalogUpdates(published, pendingCatalogUpdates(published));
+
+    expect(next.packCards).toEqual(published.cards);
+    expect(next.packCards!.find((c) => c.id === 'Custodes-0')!.name).toBe('Meridianis');
+    expect(next.cards).toHaveLength(104);
+    for (const f of next.factions) {
+      const cards = next.cards.filter((c) => c.faction === f.id);
+      expect(cards.map((c) => c.value)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
+      expect(cards.every((c) => c.effect === '' && c.power === undefined)).toBe(true);
+    }
+    expect(validateCatalog(next)).toEqual([]);
+    expect(pendingCatalogUpdates(next)).toEqual([]);
+  });
+
+  it('le carte dei pacchetti non finiscono nei mazzi, ma si trovano per codice', () => {
+    expect(factionCards('Custodes').map((c) => c.id)).not.toContain('Custodes-0');
+    expect(getCard('Custodes-0').name).toBe('Meridian');
+    expect(packCards()).toHaveLength(104);
+    const dealt = createGame(config()).players.flatMap((p) => p.hand);
+    expect(dealt.every((id) => getCard(id).value <= 13 && getCard(id).effect === '')).toBe(true);
+  });
+
+  it('un codice di carta non può essere usato sia nei mazzi sia nei pacchetti', () => {
+    const c = copy();
+    c.packCards![0]!.id = c.cards[0]!.id;
+    expect(validateCatalog(c).join(' ')).toMatch(/usato due volte/);
+  });
 });
 
 describe('controlli del catalogo', () => {
   it('rifiuta un catalogo non valido e lascia attivo quello di prima', () => {
     const c = copy();
-    c.cards = c.cards.filter((x) => x.id !== 'Custodes-0');
+    c.cards = c.cards.filter((x) => x.id !== 'Custodes-n1');
     expect(() => setCatalog(c)).toThrow(/12 carte invece di 13/);
-    expect(getCard('Custodes-0').name).toBe('Meridian');
+    expect(getCard('Custodes-n1').name).toBe('Custodes 1');
   });
 
   it('segnala i problemi in italiano', () => {

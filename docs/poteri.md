@@ -204,3 +204,10 @@ Con Oblivion la mano si accorcia: le regole dei Contratti che arrivano fino all'
 | Oblivion | Se vince, tutti scartano una carta all'inizio del loro turno e la mano ha una presa in meno | Programmato (0.20.0) |
 | Second Sight | Giocandola vedi una carta a caso della mano di ogni avversario | Programmato (0.20.0) |
 | The Witness | Se è la più bassa della presa, vedi la mano di chi vince | Programmato (0.20.0) |
+
+## 5. Mazzi da 1 a 13 e carte dei pacchetti (31 ottobre 2026)
+
+Le 104 carte con nomi e poteri sono uscite dai mazzi delle fazioni: stanno in `Catalog.packCards`, con la fazione
+d'origine, e si troveranno aprendo i pacchetti. I poteri restano tutti programmati e provati. Ogni fazione ha ora 13
+carte da 1 a 13 senza effetti. Non si propongono i Contratti che con questi mazzi non assegnerebbero mai punti
+("Non prendere carte alte", "Evita The Unmade", "Non prendere carte con potere"): restano nel catalogo.

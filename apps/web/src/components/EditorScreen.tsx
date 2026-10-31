@@ -12,13 +12,13 @@ import {
   validateCatalog,
 } from '@nexum/engine';
 import type { CardFilter, CardUpdate, Catalog, CatalogUpdate, ContractDef, ScoringRule } from '@nexum/engine';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { useAuth } from '../auth/auth';
 import { catalogStore } from '../catalog/store';
 import { describeRule, describeScoring } from '../game/text';
 import { ContractIcon, Icon, drawnContractIcon } from './Icon';
 
-type Tab = 'factions' | 'contracts';
+type Tab = 'factions' | 'contracts' | 'packs';
 type Status = { kind: 'busy' | 'ok' | 'error' | 'info'; text: string };
 type Update = (change: (draft: Catalog) => void) => void;
 
@@ -126,7 +126,7 @@ export function EditorScreen({ onBack }: Props) {
     if (window.confirm('Annullare tutte le modifiche non salvate?')) setDraft(JSON.parse(saved) as Catalog);
   };
   const restoreDefaults = () => {
-    if (window.confirm('Sostituire la bozza con i dati originali del gioco (carte del simulatore v0.9 con le decisioni sui poteri già applicate)? Potrai ancora annullare finché non salvi.')) {
+    if (window.confirm('Sostituire la bozza con i dati originali del gioco (mazzi da 1 a 13 e carte dei pacchetti con le decisioni sui poteri già applicate)? Potrai ancora annullare finché non salvi.')) {
       setDraft({ ...clone(DEFAULT_CATALOG), version: draft.version });
     }
   };
@@ -188,10 +188,15 @@ export function EditorScreen({ onBack }: Props) {
         <button type="button" role="tab" aria-selected={tab === 'contracts'} onClick={() => setTab('contracts')}>
           Contratti
         </button>
+        <button type="button" role="tab" aria-selected={tab === 'packs'} onClick={() => setTab('packs')}>
+          Carte dei pacchetti
+        </button>
       </div>
 
       {tab === 'factions' ? (
         <FactionsTab draft={draft} update={update} selected={factionId} select={setFactionId} />
+      ) : tab === 'packs' ? (
+        <PacksTab draft={draft} update={update} />
       ) : (
         <ContractsTab draft={draft} update={update} selected={contractId} select={setContractId} />
       )}
@@ -224,9 +229,10 @@ function CardUpdates({ update, draft, onApply }: { update: CatalogUpdate; draft:
         Queste modifiche sono già nel gioco ma non ancora nel catalogo pubblicato. Applicale alla bozza, controllale e
         poi premi Pubblica.
       </p>
+      {update.note && <p>{update.note}</p>}
       <ul>
         {Object.entries(update.cards).map(([id, change]) => {
-          const card = draft.cards.find((c) => c.id === id);
+          const card = [...draft.cards, ...(draft.packCards ?? [])].find((c) => c.id === id);
           return (
             <li key={id}>
               <b>{card?.name ?? change.name}</b>: {card ? describe(change) : 'la carta non è più nel catalogo, verrà saltata'}
@@ -237,6 +243,130 @@ function CardUpdates({ update, draft, onApply }: { update: CatalogUpdate; draft:
       <button type="button" className="btn primary" onClick={onApply}>
         Applica alla bozza
       </button>
+    </div>
+  );
+}
+
+type CardDraft = Catalog['cards'][number];
+
+/** I campi di una carta. `children` aggiunge altri campi in fondo (la fazione, per le carte dei pacchetti). */
+function CardFields({
+  card,
+  color,
+  edit,
+  children,
+}: {
+  card: CardDraft;
+  color: string;
+  edit(change: (card: CardDraft) => void): void;
+  children?: ReactNode;
+}) {
+  return (
+    <div className="card-editor" style={{ '--faction': color } as CSSProperties}>
+      <div className="card-editor-row">
+        <label className="field grow">
+          <span className="label">Nome</span>
+          <input
+            value={card.name}
+            maxLength={30}
+            onChange={(e) => edit((x) => (x.name = e.target.value))}
+          />
+        </label>
+        <label className="field value">
+          <span className="label">Valore</span>
+          <input
+            type="number"
+            min={MIN_CARD_VALUE}
+            max={MAX_CARD_VALUE}
+            value={numValue(card.value)}
+            onChange={(e) => edit((x) => (x.value = parseInt(e.target.value, 10)))}
+          />
+        </label>
+      </div>
+      <label className="field">
+        <span className="label">Testo del potere</span>
+        <textarea
+          rows={2}
+          value={card.effect}
+          maxLength={200}
+          placeholder="Nessun potere"
+          onChange={(e) => edit((x) => (x.effect = e.target.value))}
+        />
+      </label>
+      <label className="field">
+        <span className="label">Potere programmato</span>
+        <select
+          value={card.power ?? ''}
+          onChange={(e) =>
+            edit((x) => {
+              if (e.target.value) x.power = e.target.value;
+              else delete x.power;
+            })
+          }
+        >
+          <option value="">Nessuno</option>
+          {Object.entries(POWERS).map(([id, p]) => (
+            <option key={id} value={id}>
+              {p.name} — {p.summary}
+            </option>
+          ))}
+        </select>
+      </label>
+      {children}
+    </div>
+  );
+}
+
+/** Le carte fuori dalle fazioni: si troveranno nei pacchetti. Si modificano come le altre, ma non vanno nei mazzi. */
+function PacksTab({ draft, update }: { draft: Catalog; update: Update }) {
+  const [factionId, setFactionId] = useState(draft.factions[0]?.id ?? '');
+  const all = draft.packCards ?? [];
+  const cards = all.filter((c) => c.faction === factionId);
+  const editCard = (cardId: string, change: (card: CardDraft) => void) =>
+    update((c) => change((c.packCards ?? []).find((x) => x.id === cardId)!));
+  const color = (id: string) => draft.factions.find((f) => f.id === id)?.color ?? '#888888';
+
+  if (!all.length) {
+    return <p className="hint">Non ci sono ancora carte dei pacchetti.</p>;
+  }
+  return (
+    <div className="editor-body">
+      <div className="editor-list">
+        {draft.factions.map((f) => (
+          <button
+            key={f.id}
+            type="button"
+            className={`editor-item${f.id === factionId ? ' selected' : ''}`}
+            onClick={() => setFactionId(f.id)}
+          >
+            <span className="dot" style={{ '--faction': f.color } as CSSProperties} />
+            {f.name} ({all.filter((c) => c.faction === f.id).length})
+          </button>
+        ))}
+      </div>
+      <div className="editor-form">
+        <h3 className="step">Carte dei pacchetti</h3>
+        <p className="hint">
+          {all.length} carte fuori dai mazzi: non si usano in partita, si troveranno aprendo i pacchetti. Conservano nomi,
+          testi e poteri; la fazione indica da dove vengono.
+        </p>
+        <div className="card-editor-list">
+          {cards.map((card) => (
+            <CardFields key={card.id} card={card} color={color(card.faction)} edit={(change) => editCard(card.id, change)}>
+              <label className="field">
+                <span className="label">Fazione</span>
+                <select value={card.faction} onChange={(e) => editCard(card.id, (x) => (x.faction = e.target.value))}>
+                  {draft.factions.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </CardFields>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -341,57 +471,7 @@ function FactionForm({
       </p>
       <div className="card-editor-list">
         {cards.map((card) => (
-          <div key={card.id} className="card-editor" style={{ '--faction': faction.color } as CSSProperties}>
-            <div className="card-editor-row">
-              <label className="field grow">
-                <span className="label">Nome</span>
-                <input
-                  value={card.name}
-                  maxLength={30}
-                  onChange={(e) => editCard(card.id, (x) => (x.name = e.target.value))}
-                />
-              </label>
-              <label className="field value">
-                <span className="label">Valore</span>
-                <input
-                  type="number"
-                  min={MIN_CARD_VALUE}
-                  max={MAX_CARD_VALUE}
-                  value={numValue(card.value)}
-                  onChange={(e) => editCard(card.id, (x) => (x.value = parseInt(e.target.value, 10)))}
-                />
-              </label>
-            </div>
-            <label className="field">
-              <span className="label">Testo del potere</span>
-              <textarea
-                rows={2}
-                value={card.effect}
-                maxLength={200}
-                placeholder="Nessun potere"
-                onChange={(e) => editCard(card.id, (x) => (x.effect = e.target.value))}
-              />
-            </label>
-            <label className="field">
-              <span className="label">Potere programmato</span>
-              <select
-                value={card.power ?? ''}
-                onChange={(e) =>
-                  editCard(card.id, (x) => {
-                    if (e.target.value) x.power = e.target.value;
-                    else delete x.power;
-                  })
-                }
-              >
-                <option value="">Nessuno</option>
-                {Object.entries(POWERS).map(([id, p]) => (
-                  <option key={id} value={id}>
-                    {p.name} — {p.summary}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
+          <CardFields key={card.id} card={card} color={faction.color} edit={(change) => editCard(card.id, change)} />
         ))}
       </div>
 
@@ -639,7 +719,7 @@ function RuleEditor({
               >
                 {draft.factions.map((f) => (
                   <optgroup key={f.id} label={f.name}>
-                    {draft.cards
+                    {[...draft.cards, ...(draft.packCards ?? [])]
                       .filter((c) => c.faction === f.id)
                       .map((c) => (
                         <option key={c.id} value={c.id}>

@@ -13,6 +13,29 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.23.0',
+    date: '2026-10-31',
+    title: 'Mazzi da 1 a 13',
+    changes: [
+      {
+        type: 'change',
+        text: 'Ogni fazione ora ha 13 carte, da 1 a 13, senza effetti.',
+      },
+      {
+        type: 'change',
+        text: 'Le carte con nomi e poteri escono dai mazzi delle fazioni: non sono state eliminate, si troveranno nei pacchetti.',
+      },
+      {
+        type: 'change',
+        text: 'Per ora non si propongono i Contratti che con questi mazzi non assegnerebbero mai punti: Non prendere carte alte, Evita The Unmade e Non prendere carte con potere.',
+      },
+      {
+        type: 'new',
+        text: 'Editor: nuova scheda “Carte dei pacchetti” per modificare le carte fuori dai mazzi.',
+      },
+    ],
+  },
+  {
     version: '0.22.0',
     date: '2026-10-29',
     title: 'Simboli delle fazioni',

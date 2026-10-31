@@ -1,4 +1,4 @@
-import { cardMatches, getCard, getContract } from './catalog';
+import { cardMatches, factionCards, getCard, getContract } from './catalog';
 import { discardableCards, isCardPlay, leadingAmong, playChoice } from './powers';
 import type { Rng } from './rng';
 import { ruleApplies } from './scoring';
@@ -15,10 +15,12 @@ export function chooseCard(view: PlayerView, rng: Rng): CardId {
   const rules = activeRules(view);
   const trickPoints = rules.filter((r) => r.per === 'trick').reduce((t, r) => t + r.points, 0);
   const cardRules = rules.filter((r) => r.per === 'card');
+  // I ragionamenti sono su una scala da 0 a 100, qualunque sia il valore massimo delle carte in gioco.
+  const top = Math.max(...view.factions.flatMap((f) => factionCards(f).map((c) => c.value)));
 
   const scored = view.legal.map((id) => {
     const card = getCard(id);
-    const v = card.value;
+    const v = (card.value / top) * 100;
     let s = rng() * 18;
 
     // Vincere questa presa conviene? Allora carte alte, altrimenti carte basse.

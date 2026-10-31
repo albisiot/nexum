@@ -28,7 +28,8 @@ let contractIndex = new Map<ContractId, ContractDef>();
 function activate(catalog: Catalog): void {
   active = JSON.parse(JSON.stringify(catalog)) as Catalog;
   factionIndex = new Map(active.factions.map((f) => [f.id, f]));
-  cardIndex = new Map(active.cards.map((c) => [c.id, c]));
+  // Anche le carte dei pacchetti si possono cercare per codice, ma non finiscono nei mazzi (factionCards).
+  cardIndex = new Map([...active.cards, ...(active.packCards ?? [])].map((c) => [c.id, c]));
   contractIndex = new Map(active.contracts.map((c) => [c.id, c]));
 }
 
@@ -61,6 +62,11 @@ export function getFaction(id: FactionId): FactionDef {
 
 export function factionCards(faction: FactionId): CardDef[] {
   return active.cards.filter((c) => c.faction === faction);
+}
+
+/** Le carte fuori dai mazzi, che si troveranno nei pacchetti. */
+export function packCards(): CardDef[] {
+  return active.packCards ?? [];
 }
 
 export function getCard(id: string): CardDef {
@@ -103,11 +109,13 @@ export function contractRequiredFactions(contract: ContractDef, catalog: Catalog
   return [...new Set(needed)];
 }
 
-/** Il Contratto ha senso con queste fazioni: almeno una regola può assegnare punti. */
+/** Il Contratto ha senso con queste fazioni: almeno una regola può assegnare punti con le carte di quei mazzi. */
 export function contractPlayableWith(contract: ContractDef, factions: readonly FactionId[]): boolean {
   return contract.rules.some((r) => {
-    const f = ruleRequiredFaction(r);
-    return f === null || factions.includes(f);
+    if (r.per === 'trick') return true;
+    const filter = r.filter ?? { kind: 'any' };
+    if (filter.kind === 'faction' && filter.faction === 'target') return factions.length > 0;
+    return active.cards.some((c) => factions.includes(c.faction) && cardMatches(filter, c));
   });
 }
 
@@ -159,7 +167,7 @@ export function validateCatalog(catalog: Catalog): string[] {
   }
 
   const cardIds = new Set<string>();
-  for (const c of catalog.cards) {
+  for (const c of [...catalog.cards, ...(catalog.packCards ?? [])]) {
     const label = c.name || c.id;
     if (cardIds.has(c.id)) errors.push(`Il codice di carta “${c.id}” è usato due volte.`);
     cardIds.add(c.id);

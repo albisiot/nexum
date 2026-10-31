@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  DEFAULT_CATALOG,
   contracts,
+  setCatalog,
   IllegalActionError,
   applyMatchAction,
   createMatch,
@@ -79,9 +81,17 @@ describe('serie di Contratti', () => {
 });
 
 describe('Contratti casuali', () => {
-  it('senza Nullarii esclude Evita The Unmade', () => {
+  it('esclude i Contratti che con i mazzi da 1 a 13 non possono assegnare punti', () => {
+    const playable = playableContracts(['Custodes', 'Nullarii']);
+    expect(playable.sort()).toEqual(['avoidFaction', 'avoidLow', 'chaos', 'last', 'last3', 'less', 'more']);
+    expect(contracts()).toHaveLength(10);
+  });
+
+  it('con carte adatte nei mazzi quei Contratti tornano', () => {
+    setCatalog({ ...DEFAULT_CATALOG, cards: DEFAULT_CATALOG.packCards!, packCards: DEFAULT_CATALOG.cards });
+    expect(playableContracts(['Custodes', 'Nullarii'])).toHaveLength(10);
     expect(playableContracts(['Custodes', 'Auguria'])).not.toContain('unmade');
-    expect(playableContracts(['Custodes', 'Nullarii'])).toHaveLength(contracts().length);
+    setCatalog(DEFAULT_CATALOG);
   });
 
   it('estrae Contratti diversi, con bersaglio nel mazzo quando serve', () => {
@@ -97,6 +107,6 @@ describe('Contratti casuali', () => {
         else expect(h.targetFaction).toBeUndefined();
       }
     }
-    expect(randomHands(10, ['Custodes', 'Auguria'], rng)).toHaveLength(9);
+    expect(randomHands(10, ['Custodes', 'Auguria'], rng)).toHaveLength(7);
   });
 });

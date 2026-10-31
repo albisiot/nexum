@@ -34,7 +34,8 @@ export function handLabel(h: HandPlan): string {
 }
 
 const factionName = (catalog: Catalog, id: string) => catalog.factions.find((f) => f.id === id)?.name ?? 'eliminata';
-const cardName = (catalog: Catalog, id: string) => catalog.cards.find((c) => c.id === id)?.name ?? 'una carta eliminata';
+const cardName = (catalog: Catalog, id: string) =>
+  [...catalog.cards, ...(catalog.packCards ?? [])].find((c) => c.id === id)?.name ?? 'una carta eliminata';
 
 function filterText(filter: CardFilter, catalog: Catalog): string {
   switch (filter.kind) {
