@@ -13,6 +13,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.29.0',
+    date: '2026-10-31',
+    title: 'Il logo di NEXUM',
+    changes: [
+      {
+        type: 'new',
+        text: 'NEXUM ha il suo logo: la carta d’oro sul velluto blu. Lo vedi sulla schermata Home dell’iPhone, dopo “Aggiungi alla schermata Home”, e sulla scheda del browser.',
+      },
+    ],
+  },
+  {
     version: '0.28.0',
     date: '2026-10-31',
     title: 'QR per entrare nella stanza',
