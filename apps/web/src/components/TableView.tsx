@@ -257,12 +257,12 @@ export function TableView({ view, names, totals, anchor, plays, winner }: Props)
                   <span className="seat-avatar">
                     {initials(names[seat]!)}
                     {p.nextModifier !== 0 && (
-                      <span className="seat-mod" title={`Prossima carta ${signed(p.nextModifier)}`}>
+                      <span className="seat-mod" data-tip={`Prossima carta ${signed(p.nextModifier)}`}>
                         {signed(p.nextModifier)}
                       </span>
                     )}
                     {g.density === 'mini' && seat === view.leader && (
-                      <span className="seat-lead" title="Primo di mano">
+                      <span className="seat-lead" data-tip="Primo di mano">
                         1°
                       </span>
                     )}

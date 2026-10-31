@@ -1,6 +1,7 @@
 import { cardMatches, getCard, getContract, getFaction, matchRanking, ruleApplies } from '@nexum/engine';
 import type { ContractDef, FactionId, MatchView, TrickResult } from '@nexum/engine';
 import { describeScoring, handLabel as contractLabel, plural, signed } from '../game/text';
+import { askConfirm } from './ConfirmDialog';
 import { ContractIcon } from './Icon';
 
 interface ResultProps {
@@ -44,7 +45,15 @@ export function HandEndScreen({ match, names, me, onNext, onMenu }: ResultProps 
   // Punti arrivati dai poteri delle carte invece che dalle prese vinte.
   const fromPowers = me === null ? 0 : hand.scores[me]! - tricks.reduce((sum, t) => sum + t.contractDelta, 0);
   const leave = () => {
-    if (window.confirm('Abbandonare la serie in corso e tornare al menu?')) onMenu();
+    void askConfirm({
+      title: 'Abbandonare la serie?',
+      text: 'Torni al menu e la serie in corso va persa.',
+      confirm: 'Abbandona',
+      cancel: 'Continua la serie',
+      danger: true,
+    }).then((ok) => {
+      if (ok) onMenu();
+    });
   };
 
   return (

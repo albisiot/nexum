@@ -3,6 +3,7 @@ import { randomSeed } from '@nexum/engine';
 import { useAuth } from './auth/auth';
 import { isEditor } from './auth/editor';
 import { catalogStore, useCatalogVersion } from './catalog/store';
+import { ConfirmHost } from './components/ConfirmDialog';
 import { EditorScreen } from './components/EditorScreen';
 import { GameScreen } from './components/GameScreen';
 import { MenuScreen } from './components/MenuScreen';
@@ -104,6 +105,7 @@ export function App() {
           onEditor={canEdit ? () => go('editor') : undefined}
         />
       )}
+      <ConfirmHost />
     </div>
   );
 }

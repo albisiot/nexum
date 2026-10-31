@@ -13,6 +13,29 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.25.0',
+    date: '2026-10-31',
+    title: 'Finestre tutte nello stile del gioco',
+    changes: [
+      {
+        type: 'change',
+        text: 'Le richieste di conferma, come “Abbandonare la partita?”, ora sono finestre di Nexum e non più quelle grigie del browser.',
+      },
+      {
+        type: 'change',
+        text: 'Anche gli elenchi a tendina e i suggerimenti al passaggio del mouse hanno lo stile del gioco.',
+      },
+      {
+        type: 'fix',
+        text: 'L’esito della presa, il riquadro “Hai visto” e il pulsante per pagare i punti sono uniformi alle altre finestre.',
+      },
+      {
+        type: 'new',
+        text: 'Editor: nuova scelta del colore delle fazioni, con una tavolozza e il codice del colore.',
+      },
+    ],
+  },
+  {
     version: '0.24.0',
     date: '2026-10-31',
     title: 'Contratti con i numeri',

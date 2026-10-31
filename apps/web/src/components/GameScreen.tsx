@@ -16,9 +16,11 @@ import type { CSSProperties } from 'react';
 import type { GameClient } from '../game/GameClient';
 import { contractDescription, contractTitle, describeNote, describeScoring, describeTrick, plural, signed } from '../game/text';
 import { useGame } from '../game/useGame';
+import { askConfirm } from './ConfirmDialog';
 import { EndScreen, HandEndScreen } from './EndScreen';
 import { HandFan } from './HandFan';
 import { ContractIcon } from './Icon';
+import { Select } from './Select';
 import { TableView, initials } from './TableView';
 
 interface Props {
@@ -85,7 +87,15 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
     setSelected(null);
   };
   const exit = () => {
-    if (window.confirm('Abbandonare la partita in corso e tornare alla preparazione?')) onExit();
+    void askConfirm({
+      title: 'Abbandonare la partita?',
+      text: 'Torni alla preparazione e la partita in corso va persa.',
+      confirm: 'Abbandona',
+      cancel: 'Continua a giocare',
+      danger: true,
+    }).then((ok) => {
+      if (ok) onExit();
+    });
   };
 
   return (
@@ -464,13 +474,11 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
           </button>
           <label className="borrow">
             <span className="hint">Valore di una carta già giocata o scartata</span>
-            <select value={borrowed} onChange={(e) => setBorrow(Number(e.target.value))}>
-              {choice.values.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={String(borrowed)}
+              options={choice.values.map((v) => ({ value: String(v), label: String(v) }))}
+              onChange={(v) => setBorrow(Number(v))}
+            />
           </label>
           <button type="button" className="btn pay" onClick={() => play(cardId, borrowed)}>
             Gioca a {borrowed}

@@ -22,7 +22,7 @@ export function RoadmapScreen({ onBack }: Props) {
             <div>
               <header className="note-head">
                 <h3>{item.title}</h3>
-                <span className={`roadmap-status ${item.status}`} title={ROADMAP_STATUS[item.status].hint}>
+                <span className={`roadmap-status ${item.status}`} data-tip={ROADMAP_STATUS[item.status].hint}>
                   {ROADMAP_STATUS[item.status].label}
                 </span>
               </header>

@@ -16,7 +16,9 @@ import type { CSSProperties, ReactNode } from 'react';
 import { useAuth } from '../auth/auth';
 import { catalogStore } from '../catalog/store';
 import { describeRule, describeScoring } from '../game/text';
+import { askConfirm } from './ConfirmDialog';
 import { ContractIcon, Icon, drawnContractIcon } from './Icon';
+import { ColorField, Select } from './Select';
 
 type Tab = 'factions' | 'contracts' | 'packs';
 type Status = { kind: 'busy' | 'ok' | 'error' | 'info'; text: string };
@@ -106,7 +108,12 @@ export function EditorScreen({ onBack }: Props) {
 
   const publish = async () => {
     const next = (publishedVersion ?? 0) + 1;
-    if (!window.confirm(`Pubblicare la versione ${next}? Da ora le nuove partite di tutti useranno questi dati.`)) return;
+    const ok = await askConfirm({
+      title: `Pubblicare la versione ${next}?`,
+      text: 'Da ora le nuove partite di tutti useranno questi dati.',
+      confirm: 'Pubblica',
+    });
+    if (!ok) return;
     setStatus({ kind: 'busy', text: 'Pubblicazione…' });
     try {
       const remote = await import('../catalog/remote');
@@ -123,15 +130,40 @@ export function EditorScreen({ onBack }: Props) {
   };
 
   const revert = () => {
-    if (window.confirm('Annullare tutte le modifiche non salvate?')) setDraft(JSON.parse(saved) as Catalog);
+    void askConfirm({
+      title: 'Annullare le modifiche?',
+      text: 'Tutte le modifiche non salvate andranno perse.',
+      confirm: 'Annulla le modifiche',
+      cancel: 'Tieni le modifiche',
+      danger: true,
+    }).then((ok) => {
+      if (ok) setDraft(JSON.parse(saved) as Catalog);
+    });
   };
   const restoreDefaults = () => {
-    if (window.confirm('Sostituire la bozza con i dati originali del gioco (mazzi da 1 a 13 e carte dei pacchetti con le decisioni sui poteri già applicate)? Potrai ancora annullare finché non salvi.')) {
-      setDraft({ ...clone(DEFAULT_CATALOG), version: draft.version });
-    }
+    void askConfirm({
+      title: 'Ripristinare i dati originali?',
+      text: 'La bozza viene sostituita con i dati originali del gioco: mazzi da 1 a 13 e carte dei pacchetti con le decisioni sui poteri già applicate. Potrai ancora annullare finché non salvi.',
+      confirm: 'Ripristina',
+      danger: true,
+    }).then((ok) => {
+      if (ok) setDraft({ ...clone(DEFAULT_CATALOG), version: draft.version });
+    });
   };
   const back = () => {
-    if (!dirty || window.confirm('Ci sono modifiche non salvate. Uscire comunque?')) onBack();
+    if (!dirty) {
+      onBack();
+      return;
+    }
+    void askConfirm({
+      title: 'Uscire senza salvare?',
+      text: 'Ci sono modifiche non salvate.',
+      confirm: 'Esci senza salvare',
+      cancel: 'Resta nell’Editor',
+      danger: true,
+    }).then((ok) => {
+      if (ok) onBack();
+    });
   };
 
   return (
@@ -295,22 +327,19 @@ function CardFields({
       </label>
       <label className="field">
         <span className="label">Potere programmato</span>
-        <select
+        <Select
           value={card.power ?? ''}
-          onChange={(e) =>
+          options={[
+            { value: '', label: 'Nessuno' },
+            ...Object.entries(POWERS).map(([id, p]) => ({ value: id, label: `${p.name} — ${p.summary}` })),
+          ]}
+          onChange={(power) =>
             edit((x) => {
-              if (e.target.value) x.power = e.target.value;
+              if (power) x.power = power;
               else delete x.power;
             })
           }
-        >
-          <option value="">Nessuno</option>
-          {Object.entries(POWERS).map(([id, p]) => (
-            <option key={id} value={id}>
-              {p.name} — {p.summary}
-            </option>
-          ))}
-        </select>
+        />
       </label>
       {children}
     </div>
@@ -355,13 +384,11 @@ function PacksTab({ draft, update }: { draft: Catalog; update: Update }) {
             <CardFields key={card.id} card={card} color={color(card.faction)} edit={(change) => editCard(card.id, change)}>
               <label className="field">
                 <span className="label">Fazione</span>
-                <select value={card.faction} onChange={(e) => editCard(card.id, (x) => (x.faction = e.target.value))}>
-                  {draft.factions.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
-                  ))}
-                </select>
+                <Select
+                  value={card.faction}
+                  options={draft.factions.map((f) => ({ value: f.id, label: f.name }))}
+                  onChange={(faction) => editCard(card.id, (x) => (x.faction = faction))}
+                />
               </label>
             </CardFields>
           ))}
@@ -437,8 +464,14 @@ function FactionForm({
   const editCard = (cardId: string, change: (card: Catalog['cards'][number]) => void) =>
     update((c) => change(c.cards.find((x) => x.id === cardId)!));
 
-  const remove = () => {
-    if (!window.confirm(`Eliminare la fazione “${faction.name}” e le sue ${cards.length} carte?`)) return;
+  const remove = async () => {
+    const ok = await askConfirm({
+      title: `Eliminare la fazione “${faction.name}”?`,
+      text: `Spariranno anche le sue ${cards.length} carte.`,
+      confirm: 'Elimina',
+      danger: true,
+    });
+    if (!ok) return;
     update((c) => {
       c.factions = c.factions.filter((f) => f.id !== factionId);
       c.cards = c.cards.filter((x) => x.faction !== factionId);
@@ -455,7 +488,7 @@ function FactionForm({
         </label>
         <label className="field">
           <span className="label">Colore</span>
-          <input type="color" value={faction.color} onChange={(e) => editFaction({ color: e.target.value })} />
+          <ColorField value={faction.color} onChange={(color) => editFaction({ color })} />
         </label>
       </div>
       <label className="field">
@@ -532,8 +565,9 @@ function ContractForm({
   onDeleted(): void;
 }) {
   const edit = (change: (c: ContractDef) => void) => update((cat) => change(cat.contracts.find((c) => c.id === contract.id)!));
-  const remove = () => {
-    if (!window.confirm(`Eliminare il Contratto “${contract.name}”?`)) return;
+  const remove = async () => {
+    const ok = await askConfirm({ title: `Eliminare il Contratto “${contract.name}”?`, confirm: 'Elimina', danger: true });
+    if (!ok) return;
     update((cat) => {
       cat.contracts = cat.contracts.filter((c) => c.id !== contract.id);
     });
@@ -549,7 +583,7 @@ function ContractForm({
           // I Contratti predefiniti hanno un'icona disegnata: l'emoji del catalogo non si vede.
           <div className="field icon">
             <span className="label">Icona</span>
-            <span className="icon-drawn" title="Icona disegnata, uguale per tutti i giocatori">
+            <span className="icon-drawn" data-tip="Icona disegnata, uguale per tutti i giocatori">
               <Icon name={drawn} />
             </span>
           </div>
@@ -655,19 +689,20 @@ function RuleEditor({
         </label>
         <label className="field grow">
           <span className="label">Per</span>
-          <select
+          <Select
             value={rule.per}
-            onChange={(e) =>
+            options={[
+              { value: 'trick', label: 'ogni presa vinta' },
+              { value: 'card', label: 'ogni carta catturata…' },
+            ]}
+            onChange={(per) =>
               onChange((r) => {
-                r.per = e.target.value as ScoringRule['per'];
+                r.per = per as ScoringRule['per'];
                 if (r.per === 'card') r.filter ??= { kind: 'any' };
                 else delete r.filter;
               })
             }
-          >
-            <option value="trick">ogni presa vinta</option>
-            <option value="card">ogni carta catturata…</option>
-          </select>
+          />
         </label>
       </div>
 
@@ -675,27 +710,20 @@ function RuleEditor({
         <div className="rule-row">
           <label className="field grow">
             <span className="label">Quali carte</span>
-            <select value={key} onChange={(e) => setFilter(e.target.value as FilterKey)}>
-              {(Object.keys(FILTER_LABELS) as FilterKey[]).map((k) => (
-                <option key={k} value={k}>
-                  {FILTER_LABELS[k]}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={key}
+              options={(Object.keys(FILTER_LABELS) as FilterKey[]).map((k) => ({ value: k, label: FILTER_LABELS[k] }))}
+              onChange={(k) => setFilter(k as FilterKey)}
+            />
           </label>
           {rule.filter?.kind === 'faction' && rule.filter.faction !== 'target' && (
             <label className="field grow">
               <span className="label">Fazione</span>
-              <select
+              <Select
                 value={rule.filter.faction}
-                onChange={(e) => onChange((r) => (r.filter = { kind: 'faction', faction: e.target.value }))}
-              >
-                {draft.factions.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name}
-                  </option>
-                ))}
-              </select>
+                options={draft.factions.map((f) => ({ value: f.id, label: f.name }))}
+                onChange={(faction) => onChange((r) => (r.filter = { kind: 'faction', faction }))}
+              />
             </label>
           )}
           {(rule.filter?.kind === 'minValue' || rule.filter?.kind === 'maxValue' || rule.filter?.kind === 'exactValue') && (
@@ -717,22 +745,15 @@ function RuleEditor({
           {rule.filter?.kind === 'card' && (
             <label className="field grow">
               <span className="label">Carta</span>
-              <select
+              <Select
                 value={rule.filter.cardId}
-                onChange={(e) => onChange((r) => (r.filter = { kind: 'card', cardId: e.target.value }))}
-              >
-                {draft.factions.map((f) => (
-                  <optgroup key={f.id} label={f.name}>
-                    {[...draft.cards, ...(draft.packCards ?? [])]
-                      .filter((c) => c.faction === f.id)
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name} ({c.value})
-                        </option>
-                      ))}
-                  </optgroup>
-                ))}
-              </select>
+                options={draft.factions.flatMap((f) =>
+                  [...draft.cards, ...(draft.packCards ?? [])]
+                    .filter((c) => c.faction === f.id)
+                    .map((c) => ({ value: c.id, label: `${c.name} (${c.value})`, group: f.name })),
+                )}
+                onChange={(cardId) => onChange((r) => (r.filter = { kind: 'card', cardId }))}
+              />
             </label>
           )}
         </div>
@@ -741,18 +762,19 @@ function RuleEditor({
       <div className="rule-row">
         <label className="field grow">
           <span className="label">Quando</span>
-          <select
+          <Select
             value={rule.tricks ? 'range' : 'all'}
-            onChange={(e) =>
+            options={[
+              { value: 'all', label: 'in tutte le prese' },
+              { value: 'range', label: 'solo in alcune prese' },
+            ]}
+            onChange={(when) =>
               onChange((r) => {
-                if (e.target.value === 'range') r.tricks = { from: TRICKS_PER_HAND, to: TRICKS_PER_HAND };
+                if (when === 'range') r.tricks = { from: TRICKS_PER_HAND, to: TRICKS_PER_HAND };
                 else delete r.tricks;
               })
             }
-          >
-            <option value="all">in tutte le prese</option>
-            <option value="range">solo in alcune prese</option>
-          </select>
+          />
         </label>
         {rule.tricks && (
           <>

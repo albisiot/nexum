@@ -18,6 +18,7 @@ import type { ContractId, FactionId, HandPlan } from '@nexum/engine';
 import type { CSSProperties } from 'react';
 import type { GameMode, MatchSetup, Seat } from '../game/GameClient';
 import { describeScoring } from '../game/text';
+import { Select } from './Select';
 import { ContractIcon, Icon } from './Icon';
 import type { IconName } from './Icon';
 
@@ -413,17 +414,11 @@ function FactionsStep({ v, set }: StepProps) {
       {needsTarget && (
         <label className="field target">
           <span className="label">Fazione da evitare in “Non prendere una fazione”</span>
-          <select
+          <Select
             value={v.targetFaction && v.factions.includes(v.targetFaction) ? v.targetFaction : ''}
-            onChange={(e) => set({ targetFaction: (e.target.value || null) as FactionId | null })}
-          >
-            <option value="">Casuale</option>
-            {v.factions.map((f) => (
-              <option key={f} value={f}>
-                {getFaction(f).name}
-              </option>
-            ))}
-          </select>
+            options={[{ value: '', label: 'Casuale' }, ...v.factions.map((f) => ({ value: f, label: getFaction(f).name }))]}
+            onChange={(f) => set({ targetFaction: (f || null) as FactionId | null })}
+          />
         </label>
       )}
       {missing.length > 0 && (
