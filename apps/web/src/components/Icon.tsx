@@ -96,6 +96,18 @@ const PATHS = {
       <circle cx="14" cy="18" r="1" />
     </>
   ),
+  negozio: (
+    <>
+      <path d="M5 9h14l-1.2 11.5H6.2Z" />
+      <path d="M8.5 11.5V7a3.5 3.5 0 0 1 7 0v4.5" />
+    </>
+  ),
+  collezione: (
+    <>
+      <rect x="4" y="6" width="11" height="15" rx="2" />
+      <path d="M8 3h9.5A2.5 2.5 0 0 1 20 5.5V17" />
+    </>
+  ),
   'carta-nove': (
     <>
       <rect x="5.5" y="3" width="13" height="18" rx="2.5" />

@@ -4,6 +4,7 @@ import { useAuth } from './auth/auth';
 import { isEditor } from './auth/editor';
 import { catalogStore, useCatalogVersion } from './catalog/store';
 import { ConfirmHost } from './components/ConfirmDialog';
+import { CollectionScreen } from './components/CollectionScreen';
 import { EditorScreen } from './components/EditorScreen';
 import { GameScreen } from './components/GameScreen';
 import { MenuScreen } from './components/MenuScreen';
@@ -12,11 +13,12 @@ import { PatchNotesScreen } from './components/PatchNotesScreen';
 import { RoadmapScreen } from './components/RoadmapScreen';
 import { RulesPanel } from './components/RulesPanel';
 import { SetupScreen, defaultSetup, sanitizeSetup } from './components/SetupScreen';
+import { ShopScreen } from './components/ShopScreen';
 import type { SetupValues } from './components/SetupScreen';
 import type { GameClient, GameMode, MatchSetup } from './game/GameClient';
 import { LocalGameClient } from './game/LocalGameClient';
 
-type Screen = 'menu' | 'setup' | 'online' | 'patchNotes' | 'roadmap' | 'editor';
+type Screen = 'menu' | 'setup' | 'online' | 'shop' | 'collection' | 'patchNotes' | 'roadmap' | 'editor';
 
 /** In sviluppo, `?editor` apre l'Editor anche senza accesso (salvare e pubblicare restano bloccati dal database). */
 const DEV_EDITOR = import.meta.env.DEV && new URLSearchParams(window.location.search).has('editor');
@@ -104,6 +106,10 @@ export function App() {
         <SetupScreen values={setupValues} onChange={setSetupValues} onStart={start} onBack={() => go('menu')} />
       ) : screen === 'online' ? (
         <OnlineScreen invite={INVITE} onEnter={enterOnline} onBack={() => go('menu')} />
+      ) : screen === 'shop' ? (
+        <ShopScreen onCollection={() => go('collection')} onBack={() => go('menu')} />
+      ) : screen === 'collection' ? (
+        <CollectionScreen onShop={() => go('shop')} onBack={() => go('menu')} />
       ) : screen === 'patchNotes' ? (
         <PatchNotesScreen onBack={() => go('menu')} />
       ) : screen === 'roadmap' ? (
@@ -114,6 +120,8 @@ export function App() {
         <MenuScreen
           onPlay={choose}
           onOnline={() => go('online')}
+          onShop={() => go('shop')}
+          onCollection={() => go('collection')}
           onRoadmap={() => go('roadmap')}
           onPatchNotes={() => go('patchNotes')}
           onEditor={canEdit ? () => go('editor') : undefined}

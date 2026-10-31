@@ -79,6 +79,33 @@ service cloud.firestore {
       }
     }
 
+    // Monete e collezione: ognuno vede e scrive solo le proprie. Le carte le estrae il browser, quindi queste regole
+    // limitano gli abusi senza impedirli del tutto: un acquisto costa almeno 125 monete (150 meno 5 doppioni)
+    // e porta al massimo 5 carte nuove; un premio vale al massimo 30 monete.
+    function validProfile(data) {
+      return data.keys().hasOnly(['coins', 'cards', 'rewarded'])
+        && data.coins is int
+        && data.coins >= 0
+        && data.cards is map
+        && data.rewarded is list
+        && data.rewarded.size() <= 50;
+    }
+
+    match /profiles/{uid} {
+      allow read: if request.auth != null && request.auth.uid == uid;
+      allow create: if request.auth != null && request.auth.uid == uid
+        && validProfile(request.resource.data)
+        && request.resource.data.coins <= 30
+        && request.resource.data.cards.size() == 0;
+      allow update: if request.auth != null && request.auth.uid == uid
+        && validProfile(request.resource.data)
+        && request.resource.data.cards.diff(resource.data.cards).removedKeys().size() == 0
+        && request.resource.data.cards.diff(resource.data.cards).addedKeys().size() <= 5
+        && (request.resource.data.cards.size() == resource.data.cards.size()
+          ? request.resource.data.coins <= resource.data.coins + 30
+          : request.resource.data.coins <= resource.data.coins - 125);
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

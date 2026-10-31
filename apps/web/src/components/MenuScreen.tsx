@@ -1,18 +1,23 @@
 import type { GameMode } from '../game/GameClient';
 import { PATCH_NOTES } from '../patchNotes';
+import { useProfile } from '../shop/profile';
 import { AccountPanel } from './AccountPanel';
 import { Icon } from './Icon';
 
 interface Props {
   onPlay(mode: GameMode): void;
   onOnline(): void;
+  onShop(): void;
+  onCollection(): void;
   onRoadmap(): void;
   onPatchNotes(): void;
   /** Presente solo per l'account autorizzato a modificare carte e Contratti. */
   onEditor?: () => void;
 }
 
-export function MenuScreen({ onPlay, onOnline, onRoadmap, onPatchNotes, onEditor }: Props) {
+export function MenuScreen({ onPlay, onOnline, onShop, onCollection, onRoadmap, onPatchNotes, onEditor }: Props) {
+  const profile = useProfile();
+  const ready = profile.status === 'ready' ? profile.profile : null;
   return (
     <section className="menu">
       <div className="menu-hero">
@@ -54,13 +59,31 @@ export function MenuScreen({ onPlay, onOnline, onRoadmap, onPatchNotes, onEditor
             <span className="menu-sub">Partite con gli amici, ognuno dal proprio dispositivo</span>
           </span>
         </button>
+        <button type="button" className="menu-item" onClick={onShop}>
+          <span className="menu-icon">
+            <Icon name="negozio" />
+          </span>
+          <span className="menu-text">
+            <span className="menu-title">Negozio</span>
+            <span className="menu-sub">{ready ? `Pacchetti di carte · hai ${ready.coins} monete` : 'Compra pacchetti di carte con le monete'}</span>
+          </span>
+        </button>
+        <button type="button" className="menu-item" onClick={onCollection}>
+          <span className="menu-icon">
+            <Icon name="collezione" />
+          </span>
+          <span className="menu-text">
+            <span className="menu-title">Collezione</span>
+            <span className="menu-sub">Le carte che hai trovato e quelle che ti mancano</span>
+          </span>
+        </button>
         <button type="button" className="menu-item" onClick={onRoadmap}>
           <span className="menu-icon">
             <Icon name="novita" />
           </span>
           <span className="menu-text">
             <span className="menu-title">Prossimamente</span>
-            <span className="menu-sub">Deckbuilding, pacchetti da aprire e le altre novità in arrivo</span>
+            <span className="menu-sub">Deckbuilding e le altre novità in arrivo</span>
           </span>
         </button>
         <button type="button" className="menu-item" onClick={onPatchNotes}>

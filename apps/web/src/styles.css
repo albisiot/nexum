@@ -1464,6 +1464,178 @@ input {
   color: var(--bad);
 }
 
+/* Negozio e collezione. */
+.shop-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+}
+
+.shop-head h2 {
+  margin: 0;
+}
+
+.coins {
+  padding: 6px 14px;
+  background: var(--gold-light);
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  box-shadow: var(--shadow-sm);
+  font-weight: 900;
+}
+
+.pack-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  margin-top: 16px;
+  padding: 14px;
+  background: var(--panel2);
+  border: 2px solid var(--line);
+  border-radius: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.pack-art {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 100px;
+  background: repeating-linear-gradient(45deg, var(--gold) 0 3px, var(--velvet) 3px 9px);
+  border: 2px solid var(--ink);
+  border-radius: 12px;
+  color: var(--gold-light);
+  font-size: 30px;
+  font-weight: 900;
+  text-shadow: 2px 2px 0 var(--ink);
+}
+
+.pack-info {
+  flex: 1 1 220px;
+}
+
+.pack-info h3 {
+  margin: 0 0 4px;
+}
+
+.card-slot {
+  --card-w: 112px;
+  display: block;
+  width: var(--card-w);
+  height: calc(var(--card-w) * 1.42);
+}
+
+.pack-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.pack-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  animation: pack-reveal 0.45s ease-out backwards;
+  animation-delay: calc(var(--i) * 0.14s);
+}
+
+@keyframes pack-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px) rotateY(80deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pack-card {
+    animation: none;
+  }
+}
+
+.pack-tag {
+  padding: 2px 9px;
+  background: var(--panel2);
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.pack-tag.new {
+  background: var(--gold-light);
+}
+
+.collection-faction .step {
+  display: flex;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.collection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 10px;
+}
+
+.collection-grid .card-slot {
+  --card-w: 84px;
+}
+
+.collection-card {
+  width: max-content;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 12px;
+}
+
+.collection-card.selected {
+  outline: 3px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.card-missing {
+  display: grid;
+  place-items: center;
+  background: var(--inset);
+  border: 2px dashed var(--line-soft);
+  border-radius: 11px;
+  color: var(--muted);
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.collection-detail {
+  position: sticky;
+  top: 8px;
+  z-index: 10;
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: var(--me);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.collection-detail .hint {
+  display: inline;
+  margin-left: 8px;
+}
+
+.collection-detail p {
+  margin: 6px 0 0;
+}
+
+.collection-detail .card-rule {
+  display: block;
+  margin-left: 0;
+}
+
 /* Gioco online: la stanza. */
 .online .step {
   margin-top: 18px;

@@ -36,6 +36,18 @@ export {
 } from './catalog';
 export { POWERS } from './powerList';
 export { botAction, canRequest, pendingSeat } from './arbiter';
+export {
+  CONTRACT_WIN_COINS,
+  DUPLICATE_COINS,
+  PACK_PRICE,
+  PACK_SIZE,
+  SERIES_WIN_COINS,
+  duplicateCoins,
+  matchRewards,
+  openPack,
+  type CoinReward,
+  type PackPull,
+} from './economy';
 export { canPlaceDomino, dominoCards, dominoPlaced, dominoStartValue } from './domino';
 export {
   IllegalActionError,

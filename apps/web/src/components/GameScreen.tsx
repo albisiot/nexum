@@ -8,6 +8,7 @@ import {
   isPowerImplemented,
   leadPower,
   matchRanking,
+  matchRewards,
   playChoice,
   sortHand,
 } from '@nexum/engine';
@@ -17,6 +18,7 @@ import type { CSSProperties } from 'react';
 import type { GameClient } from '../game/GameClient';
 import { contractDescription, contractTitle, describeNote, describeScoring, describeTrick, plural, signed } from '../game/text';
 import { useGame } from '../game/useGame';
+import { profileStore } from '../shop/profile';
 import { askConfirm } from './ConfirmDialog';
 import { EndScreen, HandEndScreen } from './EndScreen';
 import { HandFan } from './HandFan';
@@ -65,11 +67,22 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
   const me = client.setup.mode === 'local' ? null : perspective;
   const series = match.hands.length > 1;
 
+  // Le monete: si incassano appena un Contratto o la partita è vinta, una volta sola anche rientrando.
+  const rewards = me === null ? [] : matchRewards(match, me);
+  const rewardKeys = rewards.map((r) => `${r.key}=${r.amount}`).join();
+  const seed = client.setup.seed;
+  useEffect(() => {
+    if (me === null) return;
+    for (const r of matchRewards(match, me)) profileStore.award(`${seed}:${r.key}`, r.amount);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seed, rewardKeys]);
+  const coins = rewards.filter((r) => r.handIndex === match.completed.length - 1).reduce((t, r) => t + r.amount, 0);
+
   if (match.phase === 'matchEnd') {
-    return <EndScreen match={match} names={names} me={me} onReplay={onReplay} onExit={onExit} onMenu={onMenu} />;
+    return <EndScreen match={match} names={names} me={me} coins={coins} onReplay={onReplay} onExit={onExit} onMenu={onMenu} />;
   }
   if (match.phase === 'handEnd') {
-    return <HandEndScreen match={match} names={names} me={me} onNext={() => client.nextHand()} onMenu={onMenu} leaveNote={client.leaveNote} />;
+    return <HandEndScreen match={match} names={names} me={me} coins={coins} onNext={() => client.nextHand()} onMenu={onMenu} leaveNote={client.leaveNote} />;
   }
 
   const trickOver = view.phase === 'trickEnd';

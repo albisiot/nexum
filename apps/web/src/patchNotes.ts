@@ -13,6 +13,25 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.30.0',
+    date: '2026-10-31',
+    title: 'Negozio e collezione',
+    changes: [
+      {
+        type: 'new',
+        text: 'Nuovo negozio: un pacchetto costa 150 monete e contiene 5 carte casuali. Ogni doppione vale 5 monete.',
+      },
+      {
+        type: 'new',
+        text: 'Le monete si guadagnano vincendo, contro la CPU o online: 5 per ogni Contratto, più 25 se vinci una partita a più Contratti. Serve l’accesso con Google.',
+      },
+      {
+        type: 'new',
+        text: 'Nuova pagina Collezione: le carte trovate, i loro poteri e quelle che mancano. Per ora non cambiano le partite.',
+      },
+    ],
+  },
+  {
     version: '0.29.0',
     date: '2026-10-31',
     title: 'Il logo di NEXUM',

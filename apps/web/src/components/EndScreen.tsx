@@ -1,6 +1,7 @@
 import { cardMatches, getCard, getContract, getFaction, matchRanking, ruleApplies } from '@nexum/engine';
 import type { ContractDef, FactionId, HandSummary, MatchView, TrickResult } from '@nexum/engine';
 import { describeScoring, handLabel as contractLabel, plural, signed } from '../game/text';
+import { useProfile } from '../shop/profile';
 import { askConfirm } from './ConfirmDialog';
 import { ContractIcon } from './Icon';
 
@@ -9,6 +10,15 @@ interface ResultProps {
   names: readonly string[];
   /** Posto da evidenziare (il giocatore umano contro la CPU). */
   me: number | null;
+  /** Le monete vinte con questo Contratto (e con la partita, se è finita). */
+  coins: number;
+}
+
+function CoinNote({ coins }: { coins: number }) {
+  const profile = useProfile();
+  if (!coins) return null;
+  if (profile.status === 'signedOut') return <p className="hint">Con l’accesso Google avresti vinto {plural(coins, 'moneta', 'monete')}.</p>;
+  return <p className="status good">Hai vinto {plural(coins, 'moneta', 'monete')}!</p>;
 }
 
 const tone = (n: number) => (n > 0 ? 'good' : n < 0 ? 'bad' : undefined);
@@ -43,6 +53,7 @@ export function HandEndScreen({
   match,
   names,
   me,
+  coins,
   onNext,
   onMenu,
   leaveNote,
@@ -175,6 +186,7 @@ export function HandEndScreen({
         <section className="panel">
           <h3>{domino ? 'Com’è andata' : me === null ? 'Prese della mano' : 'Le tue prese'}</h3>
           {handNote(hand, contract, names) && <p className="status good">{handNote(hand, contract, names)}</p>}
+          <CoinNote coins={coins} />
           {domino ? null : tricks.length === 0 ? (
             <p className="hint">Nessuna presa vinta in questa mano.</p>
           ) : (
@@ -236,6 +248,7 @@ export function EndScreen({
   match,
   names,
   me,
+  coins,
   onReplay,
   onExit,
   onMenu,
@@ -272,6 +285,8 @@ export function EndScreen({
         const note = handNote(h, getContract(h.contract), names);
         return note && <p key={i} className="status good">{note}</p>;
       })}
+
+      <CoinNote coins={coins} />
 
       <div className="final-score">
         {order.map((pi, i) => {

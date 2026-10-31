@@ -30,18 +30,6 @@ export const ROADMAP: RoadmapItem[] = [
     text: 'Componi il tuo mazzo personale scegliendo le carte da portare in partita, invece di usare solo fazioni intere.',
   },
   {
-    icon: '🎁',
-    title: 'Pacchetti da aprire',
-    status: 'planned',
-    text: 'Apri pacchetti di carte e scopri nuovi personaggi da aggiungere alla tua collezione.',
-  },
-  {
-    icon: '📚',
-    title: 'Collezione',
-    status: 'planned',
-    text: 'Un album con tutte le carte che hai trovato, i loro poteri e quelle che ti mancano.',
-  },
-  {
     icon: '📊',
     title: 'Statistiche',
     status: 'idea',

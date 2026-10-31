@@ -28,7 +28,7 @@ export function RulesPanel() {
         può giocare passa, e chi finisce per primo prende 1 punto per ogni carta rimasta agli altri, che li perdono.
       </p>
       <p className="hint">
-        Le carte con i poteri non sono nei mazzi delle fazioni: si troveranno nei pacchetti, in arrivo.
+        Le carte con i poteri non sono nei mazzi delle fazioni: si trovano nei pacchetti del negozio e per ora servono alla collezione. Le monete si guadagnano vincendo: 5 per ogni Contratto, più 25 per una partita a più Contratti.
       </p>
     </section>
   );
