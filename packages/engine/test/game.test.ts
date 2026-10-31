@@ -138,6 +138,17 @@ describe('simulazione', () => {
     expect(picks.filter((id) => id === 'Custodes-n13').length).toBeGreaterThan(160);
   });
 
+  it('100 mani complete con il Contratto sul numero esatto rispettano le regole', () => {
+    const rng = createRng(9);
+    for (let g = 0; g < 100; g++) {
+      const end = playOut(createGame(randomConfig(rng, 'avoidNine')), rng);
+      expect(end.players.every((p) => p.score <= 0)).toBe(true);
+      // Ogni 9 catturato vale −1, e non c'è altro modo di perdere punti con questi mazzi.
+      const nines = end.players.map((p) => p.captured.filter((id) => getCard(id).value === 9).length);
+      expect(end.players.map((p) => Math.abs(p.score))).toEqual(nines);
+    }
+  });
+
   it.each(decks)('500 mani complete con la CPU a ogni posto rispettano tutte le regole, con %s', (_, catalog) => {
     setCatalog(catalog);
     const rng = createRng(2026);

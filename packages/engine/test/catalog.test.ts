@@ -144,6 +144,17 @@ describe('aggiornamenti delle carte', () => {
     expect(pendingCatalogUpdates(next)).toEqual([]);
   });
 
+  it('i Contratti dicono il numero: riscrive quelli esistenti e aggiunge i nuovi, una volta sola', () => {
+    const next = applyCatalogUpdates(ORIGINAL_CATALOG, CATALOG_UPDATES);
+    const ids = next.contracts.map((k) => k.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    expect(ids).toHaveLength(ORIGINAL_CATALOG.contracts.length + 1);
+    expect(next.contracts.map((k) => k.name).join(' ')).not.toMatch(/alte|basse/);
+    expect(JSON.stringify(next.contracts)).not.toContain('"value":80');
+    expect(getContract('avoidNine').rules[0]!.filter).toEqual({ kind: 'exactValue', value: 9 });
+    expect(ORIGINAL_CATALOG.contracts.find((k) => k.id === 'avoidHigh')!.name).toBe('Non prendere carte alte');
+  });
+
   it('le carte dei pacchetti non finiscono nei mazzi, ma si trovano per codice', () => {
     expect(factionCards('Custodes').map((c) => c.id)).not.toContain('Custodes-0');
     expect(getCard('Custodes-0').name).toBe('Meridian');

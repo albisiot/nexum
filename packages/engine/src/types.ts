@@ -30,6 +30,7 @@ export type CardFilter =
   | { kind: 'faction'; faction: FactionId | 'target' }
   | { kind: 'minValue'; value: number }
   | { kind: 'maxValue'; value: number }
+  | { kind: 'exactValue'; value: number }
   | { kind: 'hasPower' }
   | { kind: 'card'; cardId: CardId };
 

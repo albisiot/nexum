@@ -49,6 +49,8 @@ function filterText(filter: CardFilter, catalog: Catalog): string {
       return ` di valore ${filter.value} o più`;
     case 'maxValue':
       return ` di valore ${filter.value} o meno`;
+    case 'exactValue':
+      return ` di valore ${filter.value}`;
     case 'hasPower':
       return ' con un potere';
     case 'card':
@@ -63,7 +65,7 @@ function tricksText(rule: ScoringRule): string {
 }
 
 /**
- * Una regola di punteggio in parole, es. "−1 per ogni carta catturata di valore 80 o più".
+ * Una regola di punteggio in parole, es. "−1 per ogni carta catturata di valore 12 o più".
  * `catalog` serve all'Editor per descrivere regole che usano fazioni o carte non ancora pubblicate.
  */
 export function describeRule(rule: ScoringRule, catalog: Catalog = getCatalog()): string {

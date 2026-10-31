@@ -13,6 +13,29 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.24.0',
+    date: '2026-10-31',
+    title: 'Contratti con i numeri',
+    changes: [
+      {
+        type: 'change',
+        text: 'I Contratti dicono il numero invece di “alte” e “basse”: ora ci sono Non prendere 12 o più e Non prendere 3 o meno.',
+      },
+      {
+        type: 'change',
+        text: 'Tutto negativo conta le carte di valore 12 o più.',
+      },
+      {
+        type: 'new',
+        text: 'Nuovo Contratto: Non prendere i 9.',
+      },
+      {
+        type: 'new',
+        text: 'Editor: le regole dei Contratti possono contare le carte di un numero preciso.',
+      },
+    ],
+  },
+  {
     version: '0.23.0',
     date: '2026-10-31',
     title: 'Mazzi da 1 a 13',

@@ -81,6 +81,13 @@ const PATHS = {
       <path d="M12 8v7.5M9 12.5l3 3 3-3" />
     </>
   ),
+  'carta-nove': (
+    <>
+      <rect x="5.5" y="3" width="13" height="18" rx="2.5" />
+      <circle cx="12" cy="10.2" r="2.7" />
+      <path d="M14.7 10.2c0 3-1.2 5-3.6 6" />
+    </>
+  ),
   'the-unmade': (
     <>
       <path d="M12 3a7.5 7.5 0 0 0-7.5 7.5c0 2.6 1.3 4.6 3.5 5.8V20a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-3.7c2.2-1.2 3.5-3.2 3.5-5.8A7.5 7.5 0 0 0 12 3Z" />
@@ -241,6 +248,7 @@ const CONTRACT_ICONS: Partial<Record<string, IconName>> = {
   avoidFaction: 'fazione',
   avoidHigh: 'carte-alte',
   avoidLow: 'carte-basse',
+  avoidNine: 'carta-nove',
   unmade: 'the-unmade',
   last: 'ultima',
   last3: 'ultime-tre',

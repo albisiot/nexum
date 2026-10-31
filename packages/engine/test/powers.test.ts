@@ -320,7 +320,7 @@ describe('punteggio dei Contratti', () => {
     ['more', 5, 1],
     ['less', 5, -1],
     ['avoidFaction', 5, -1],
-    ['avoidHigh', 5, -2],
+    ['avoidHigh', 5, -3],
     ['avoidLow', 5, -1],
     ['unmade', 5, -5],
     ['last', 12, 0],
@@ -328,9 +328,18 @@ describe('punteggio dei Contratti', () => {
     ['last3', 10, 0],
     ['last3', 11, -2],
     ['special', 5, -2],
-    ['chaos', 5, -1 - 1 - 2],
-    ['chaos', 13, -1 - 1 - 2 - 3],
+    ['chaos', 5, -1 - 1 - 3],
+    ['chaos', 13, -1 - 1 - 3 - 3],
   ] as const)('%s alla presa %i vale %i', (contract, trickNo, expected) => {
     expect(contractDelta(cfg(contract), trickNo, trick)).toBe(expected);
+  });
+
+  it.each([
+    ['avoidHigh', ['Custodes-n12', 'Nullarii-n13', 'Dominari-n11', 'Conflux-n1'], -2],
+    ['avoidLow', ['Custodes-n3', 'Nullarii-n1', 'Dominari-n4', 'Conflux-n13'], -2],
+    ['avoidNine', ['Custodes-n9', 'Nullarii-n9', 'Dominari-n8', 'Conflux-n10'], -2],
+    ['avoidNine', ['Custodes-n8', 'Nullarii-n10', 'Dominari-n1', 'Conflux-n13'], 0],
+  ] as const)('%s con le carte da 1 a 13: %j vale %i', (contract, cards, expected) => {
+    expect(contractDelta(cfg(contract), 5, cards)).toBe(expected);
   });
 });

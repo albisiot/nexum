@@ -595,14 +595,15 @@ function ContractForm({
   );
 }
 
-type FilterKey = 'any' | 'target' | 'faction' | 'minValue' | 'maxValue' | 'hasPower' | 'card';
+type FilterKey = 'any' | 'target' | 'faction' | 'minValue' | 'maxValue' | 'exactValue' | 'hasPower' | 'card';
 
 const FILTER_LABELS: Record<FilterKey, string> = {
   any: 'qualsiasi carta',
   target: 'della fazione bersaglio (scelta a inizio mano)',
   faction: 'di una fazione precisa',
-  minValue: 'di valore almeno…',
-  maxValue: 'di valore al massimo…',
+  minValue: 'di valore … o più',
+  maxValue: 'di valore … o meno',
+  exactValue: 'di valore esattamente…',
   hasPower: 'con un potere scritto',
   card: 'una carta precisa',
 };
@@ -632,8 +633,9 @@ function RuleEditor({
         any: { kind: 'any' },
         target: { kind: 'faction', faction: 'target' },
         faction: { kind: 'faction', faction: first },
-        minValue: { kind: 'minValue', value: 80 },
-        maxValue: { kind: 'maxValue', value: 20 },
+        minValue: { kind: 'minValue', value: 12 },
+        maxValue: { kind: 'maxValue', value: 3 },
+        exactValue: { kind: 'exactValue', value: 9 },
         hasPower: { kind: 'hasPower' },
         card: { kind: 'card', cardId: draft.cards[0]?.id ?? '' },
       };
@@ -696,7 +698,7 @@ function RuleEditor({
               </select>
             </label>
           )}
-          {(rule.filter?.kind === 'minValue' || rule.filter?.kind === 'maxValue') && (
+          {(rule.filter?.kind === 'minValue' || rule.filter?.kind === 'maxValue' || rule.filter?.kind === 'exactValue') && (
             <label className="field points">
               <span className="label">Valore</span>
               <input
@@ -704,7 +706,9 @@ function RuleEditor({
                 value={numValue(rule.filter.value)}
                 onChange={(e) =>
                   onChange((r) => {
-                    if (r.filter?.kind === 'minValue' || r.filter?.kind === 'maxValue') r.filter.value = parseInt(e.target.value, 10);
+                    if (r.filter?.kind === 'minValue' || r.filter?.kind === 'maxValue' || r.filter?.kind === 'exactValue') {
+                      r.filter.value = parseInt(e.target.value, 10);
+                    }
                   })
                 }
               />

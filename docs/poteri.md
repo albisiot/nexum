@@ -211,3 +211,7 @@ Le 104 carte con nomi e poteri sono uscite dai mazzi delle fazioni: stanno in `C
 d'origine, e si troveranno aprendo i pacchetti. I poteri restano tutti programmati e provati. Ogni fazione ha ora 13
 carte da 1 a 13 senza effetti. Non si propongono i Contratti che con questi mazzi non assegnerebbero mai punti
 ("Non prendere carte alte", "Evita The Unmade", "Non prendere carte con potere"): restano nel catalogo.
+
+I Contratti dicono il numero invece di "alte" e "basse": "Non prendere 12 o più", "Non prendere 3 o meno" e "Tutto
+negativo" (12 o più). Nuovo Contratto "Non prendere i 9" (−1 per ogni 9 catturato); nell'Editor una regola può contare
+qualsiasi numero esatto. "Non prendere 12 o più" torna quindi tra i Contratti proposti.

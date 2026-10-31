@@ -129,6 +129,8 @@ export function cardMatches(filter: CardFilter, card: CardDef, targetFaction?: F
       return card.value >= filter.value;
     case 'maxValue':
       return card.value <= filter.value;
+    case 'exactValue':
+      return card.value === filter.value;
     case 'hasPower':
       return hasPowerText(card);
     case 'card':
@@ -200,8 +202,8 @@ export function validateCatalog(catalog: Catalog): string[] {
           errors.push(`Nel Contratto “${label}” una regola usa una fazione che non esiste.`);
         } else if (f.kind === 'card' && !cardIds.has(f.cardId)) {
           errors.push(`Nel Contratto “${label}” una regola usa una carta che non esiste.`);
-        } else if ((f.kind === 'minValue' || f.kind === 'maxValue') && !Number.isInteger(f.value)) {
-          errors.push(`Nel Contratto “${label}” una regola ha un valore soglia non valido.`);
+        } else if ((f.kind === 'minValue' || f.kind === 'maxValue' || f.kind === 'exactValue') && !Number.isInteger(f.value)) {
+          errors.push(`Nel Contratto “${label}” una regola ha un valore non valido.`);
         }
       }
       if (r.tricks) {

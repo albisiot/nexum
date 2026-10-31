@@ -1,5 +1,5 @@
 import { CARDS_PER_FACTION } from '../constants';
-import type { CardDef, CardId, Catalog, FactionDef, PowerId } from '../types';
+import type { CardDef, CardId, Catalog, ContractDef, FactionDef, PowerId } from '../types';
 
 /** Modifica di una carta: testo nuovo, potere assegnato, oppure `power: null` per togliere il potere. */
 export interface CardUpdate {
@@ -19,6 +19,8 @@ export interface CatalogUpdate {
   note?: string;
   /** Tutte le carte dei mazzi passano ai pacchetti e ogni fazione riceve le carte da 1 a 13 senza effetti. */
   moveToPacks?: boolean;
+  /** Contratti da riscrivere (stesso id) o da aggiungere. */
+  contracts?: ContractDef[];
   /** Per id di carta; il nome serve solo a chi legge. */
   cards: Record<CardId, CardUpdate & { name: string }>;
 }
@@ -99,6 +101,48 @@ export const CATALOG_UPDATES: readonly CatalogUpdate[] = [
     moveToPacks: true,
     cards: {},
   },
+  {
+    id: 'contratti-numeri-2026-10-31',
+    date: '2026-10-31',
+    title: 'Contratti con i numeri',
+    note: 'I Contratti dicono il numero invece di “alte” e “basse”: Non prendere 12 o più, Non prendere 3 o meno e Tutto negativo (12 o più). Nuovo Contratto: Non prendere i 9.',
+    contracts: [
+      {
+        id: 'avoidHigh',
+        icon: '⬆️',
+        name: 'Non prendere 12 o più',
+        desc: 'Evita di catturare carte di valore 12 o più.',
+        rules: [{ points: -1, per: 'card', filter: { kind: 'minValue', value: 12 } }],
+      },
+      {
+        id: 'avoidLow',
+        icon: '⬇️',
+        name: 'Non prendere 3 o meno',
+        desc: 'Evita di catturare carte di valore 3 o meno.',
+        rules: [{ points: -1, per: 'card', filter: { kind: 'maxValue', value: 3 } }],
+      },
+      {
+        id: 'chaos',
+        icon: '🔥',
+        name: 'Tutto negativo',
+        desc: 'Prese, Nullarii, carte di valore 12 o più e ultima presa accumulano penalità.',
+        rules: [
+          { points: -1, per: 'trick' },
+          { points: -1, per: 'card', filter: { kind: 'faction', faction: 'Nullarii' } },
+          { points: -1, per: 'card', filter: { kind: 'minValue', value: 12 } },
+          { points: -3, per: 'trick', tricks: { from: 13, to: 13 } },
+        ],
+      },
+      {
+        id: 'avoidNine',
+        icon: '9️⃣',
+        name: 'Non prendere i 9',
+        desc: 'Evita di catturare le carte di valore 9.',
+        rules: [{ points: -1, per: 'card', filter: { kind: 'exactValue', value: 9 } }],
+      },
+    ],
+    cards: {},
+  },
 ];
 
 /** Le 13 carte di base di una fazione: valori da 1 a 13, senza effetti. */
@@ -126,6 +170,11 @@ export function applyCatalogUpdates(catalog: Catalog, updates: readonly CatalogU
     if (update.moveToPacks) {
       next.packCards = [...(next.packCards ?? []), ...next.cards];
       next.cards = next.factions.flatMap(baseCards);
+    }
+    for (const contract of update.contracts ?? []) {
+      const i = next.contracts.findIndex((k) => k.id === contract.id);
+      if (i >= 0) next.contracts[i] = contract;
+      else next.contracts.push(contract);
     }
     next.appliedUpdates = [...new Set([...(next.appliedUpdates ?? []), update.id])];
   }
