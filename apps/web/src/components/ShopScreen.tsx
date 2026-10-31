@@ -74,6 +74,19 @@ export function ShopScreen({ onCollection, onBack }: Props) {
         </div>
       )}
 
+      <div className="pack-item">
+        <span className="pack-art free" aria-hidden="true">
+          N
+        </span>
+        <div className="pack-info">
+          <h3>Pacchetto gratis</h3>
+          <p className="hint">Uno al giorno, in arrivo.</p>
+        </div>
+        <button type="button" className="btn" disabled>
+          PROSSIMAMENTE
+        </button>
+      </div>
+
       {profile && (
         <>
           <div className="pack-item">

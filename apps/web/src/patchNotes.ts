@@ -13,6 +13,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.31.0',
+    date: '2026-10-31',
+    title: 'Pacchetto gratis in arrivo',
+    changes: [
+      {
+        type: 'new',
+        text: 'Nel negozio compare il pacchetto gratis: per ora è segnato come “Prossimamente” e non si può ancora aprire.',
+      },
+    ],
+  },
+  {
     version: '0.30.0',
     date: '2026-10-31',
     title: 'Negozio e collezione',
