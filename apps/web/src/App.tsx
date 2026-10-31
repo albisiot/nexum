@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { randomSeed } from '@nexum/engine';
+import { randomBotLevel, randomSeed } from '@nexum/engine';
 import { useAuth } from './auth/auth';
 import { isEditor } from './auth/editor';
 import { catalogStore, useCatalogVersion } from './catalog/store';
@@ -98,7 +98,16 @@ export function App() {
           client={client}
           rulesOpen={showRules}
           onRules={() => setShowRules((s) => !s)}
-          onReplay={client.setup.mode === 'online' ? undefined : () => start({ ...client.setup, seed: randomSeed() })}
+          onReplay={
+            client.setup.mode === 'online'
+              ? undefined
+              : () =>
+                  start({
+                    ...client.setup,
+                    seed: randomSeed(),
+                    seats: client.setup.seats.map((s) => (s.kind === 'cpu' ? { ...s, level: randomBotLevel(Math.random) } : s)),
+                  })
+          }
           onExit={() => go(client.setup.mode === 'online' ? 'online' : 'setup')}
           onMenu={() => go('menu')}
         />

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getCatalog } from '@nexum/engine';
+import { getCatalog, randomBotLevel } from '@nexum/engine';
 import type { Catalog, MatchState } from '@nexum/engine';
 import { useAuth } from '../auth/auth';
 import { catalogStore } from '../catalog/store';
@@ -59,7 +59,7 @@ function buildSeats(room: Room, count: number): Seat[] {
     used.set(m.name, times);
     return { name: times > 1 ? `${m.name} ${times}` : m.name, kind: 'human', uid: m.uid };
   });
-  const cpus = Array.from({ length: Math.max(0, count - humans.length) }, (_, i): Seat => ({ name: `CPU ${i + 1}`, kind: 'cpu' }));
+  const cpus = Array.from({ length: Math.max(0, count - humans.length) }, (_, i): Seat => ({ name: `CPU ${i + 1}`, kind: 'cpu', level: randomBotLevel(Math.random) }));
   return [...humans, ...cpus];
 }
 

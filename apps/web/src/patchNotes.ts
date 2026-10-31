@@ -13,6 +13,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.32.0',
+    date: '2026-10-31',
+    title: 'CPU di livelli diversi',
+    changes: [
+      {
+        type: 'new',
+        text: 'Ora le CPU hanno tre livelli: facile, normale e difficile. A ogni partita il livello di ogni CPU è casuale, non si sceglie e non viene mostrato: sta a te capire chi hai davanti.',
+      },
+      {
+        type: 'change',
+        text: 'La CPU normale gioca meglio: non spreca le carte alte e prova a vincere con il minimo. La difficile ricorda anche le carte già uscite.',
+      },
+    ],
+  },
+  {
     version: '0.31.0',
     date: '2026-10-31',
     title: 'Pacchetto gratis in arrivo',

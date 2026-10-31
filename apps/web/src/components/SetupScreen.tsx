@@ -10,6 +10,7 @@ import {
   factionIds,
   getContract,
   getFaction,
+  randomBotLevel,
   randomHands,
   randomSeed,
   shuffle,
@@ -127,7 +128,9 @@ export function toMatchSetup(v: SetupValues): MatchSetup {
   const seats: Seat[] = Array.from({ length: n }, (_, i) =>
     v.mode === 'local'
       ? { name: v.names[i]?.trim() || `Giocatore ${i + 1}`, kind: 'human' }
-      : { name: i === 0 ? 'Tu' : `Avversario ${i}`, kind: i === 0 ? 'human' : 'cpu' },
+      : i === 0
+        ? { name: 'Tu', kind: 'human' }
+        : { name: `Avversario ${i}`, kind: 'cpu', level: randomBotLevel(rng) },
   );
   const plan = (contract: ContractId): HandPlan => {
     if (!contractNeedsTarget(getContract(contract))) return { contract };

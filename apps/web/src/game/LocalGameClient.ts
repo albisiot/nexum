@@ -110,10 +110,11 @@ export class LocalGameClient implements GameClient {
     this.timer = setTimeout(() => {
       this.timer = null;
       const now = this.state.game;
+      const level = this.setup.seats[seat]?.level;
       if (this.disposed) return;
       if (decider !== undefined) {
         if (now.decision?.player !== decider) return;
-        this.apply(chooseDecision(getView(now, decider)));
+        this.apply(chooseDecision(getView(now, decider), level, this.cpuRng));
         return;
       }
       if (now.phase !== 'playing' || now.turn !== seat) return;
@@ -122,7 +123,7 @@ export class LocalGameClient implements GameClient {
         this.apply({ type: 'discard', player: seat, cardId: chooseDiscard(view) });
         return;
       }
-      const cardId = chooseCard(view, this.cpuRng);
+      const cardId = chooseCard(view, this.cpuRng, level);
       this.apply({ type: 'play', player: seat, cardId, option: chooseOption(view, cardId) });
     }, CPU_DELAY_MS);
   }

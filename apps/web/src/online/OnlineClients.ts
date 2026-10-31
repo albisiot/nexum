@@ -181,7 +181,8 @@ export class OnlineHostClient implements GameClient {
     if (seat !== null) {
       const human = this.setup.seats[seat]?.kind === 'human';
       if (human) this.deadline = Date.now() + TURN_MS;
-      run(human ? TURN_MS : CPU_DELAY_MS, () => this.tryApply(botAction(this.state, seat, this.rng)));
+      // Chi non risponde in tempo viene sostituito da una CPU di livello normale.
+      run(human ? TURN_MS : CPU_DELAY_MS, () => this.tryApply(botAction(this.state, seat, this.rng, this.setup.seats[seat]?.level)));
     } else if (this.state.phase === 'playing') {
       run(TRICK_END_MS, () => this.tryApply({ type: 'nextTrick' }));
     } else if (this.state.phase === 'handEnd') {

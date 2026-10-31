@@ -1,6 +1,7 @@
 // Ciò che serve a chi fa da arbitro della partita: oggi il browser di chi crea la stanza online,
 // domani eventualmente un server.
 import { chooseCard, chooseDecision, chooseDiscard, chooseOption } from './bot';
+import type { BotLevel } from './bot';
 import type { MatchAction, MatchState } from './match';
 import type { Rng } from './rng';
 import type { Action } from './types';
@@ -23,10 +24,10 @@ export function canRequest(seat: number, action: MatchAction): boolean {
 }
 
 /** La mossa della CPU per il posto che deve agire (vede solo la vista di quel posto). */
-export function botAction(state: MatchState, seat: number, rng: Rng): Action {
+export function botAction(state: MatchState, seat: number, rng: Rng, level: BotLevel = 'normal'): Action {
   const view = getView(state.game, seat);
-  if (view.decision) return chooseDecision(view);
+  if (view.decision) return chooseDecision(view, level, rng);
   if (view.discardable.length) return { type: 'discard', player: seat, cardId: chooseDiscard(view) };
-  const cardId = chooseCard(view, rng);
+  const cardId = chooseCard(view, rng, level);
   return { type: 'play', player: seat, cardId, option: chooseOption(view, cardId) };
 }

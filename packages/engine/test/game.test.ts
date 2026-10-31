@@ -134,8 +134,10 @@ describe('simulazione', () => {
   it('con i mazzi da 1 a 13 la CPU preferisce le carte alte quando vuole vincere', () => {
     const rng = createRng(5);
     const s = withHands([['Custodes-n1', 'Custodes-n13'], ['Custodes-n2']]);
-    const picks = Array.from({ length: 200 }, () => chooseCard(getView(s, 0), rng));
-    expect(picks.filter((id) => id === 'Custodes-n13').length).toBeGreaterThan(160);
+    const count = (level: 'normal' | 'hard') =>
+      Array.from({ length: 200 }, () => chooseCard(getView(s, 0), rng, level)).filter((id) => id === 'Custodes-n13').length;
+    expect(count('hard')).toBeGreaterThan(190);
+    expect(count('normal')).toBeGreaterThan(100); // la normale sbaglia di più, ma resta sulla strada giusta
   });
 
   it('100 mani complete con il Contratto sul numero esatto rispettano le regole', () => {

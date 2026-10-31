@@ -88,5 +88,5 @@ export {
   type MatchAction,
   type MatchView,
 } from './match';
-export { chooseCard, chooseOption, chooseDecision, chooseDiscard } from './bot';
+export { chooseCard, chooseOption, chooseDecision, chooseDiscard, randomBotLevel, type BotLevel } from './bot';
 export { createRng, shuffle, randomSeed, type Rng } from './rng';

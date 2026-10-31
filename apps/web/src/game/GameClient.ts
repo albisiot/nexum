@@ -1,4 +1,4 @@
-import type { CardId, FactionId, HandPlan, MatchView, PlayerView } from '@nexum/engine';
+import type { BotLevel, CardId, FactionId, HandPlan, MatchView, PlayerView } from '@nexum/engine';
 
 export type SeatKind = 'human' | 'cpu';
 
@@ -7,6 +7,8 @@ export interface Seat {
   kind: SeatKind;
   /** Online: l'account di chi siede a questo posto. */
   uid?: string;
+  /** Il livello della CPU: estratto a caso a ogni partita, non si sceglie e non si mostra. */
+  level?: BotLevel;
 }
 
 export type GameMode = 'solo' | 'local' | 'online';
