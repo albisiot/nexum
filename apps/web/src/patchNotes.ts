@@ -13,6 +13,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.28.0',
+    date: '2026-10-31',
+    title: 'QR per entrare nella stanza',
+    changes: [
+      {
+        type: 'new',
+        text: 'Chi crea la stanza vede un QR: basta inquadrarlo con il telefono per entrare.',
+      },
+      {
+        type: 'change',
+        text: 'Aprendo il QR o il link di invito si entra da soli nella stanza, appena fatto l’accesso con Google.',
+      },
+    ],
+  },
+  {
     version: '0.27.0',
     date: '2026-10-31',
     title: 'Partite online',

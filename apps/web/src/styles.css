@@ -1501,6 +1501,24 @@ input {
   letter-spacing: 0.18em;
 }
 
+.room-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 14px 0 0;
+}
+
+.room-qr svg {
+  display: block;
+  width: 210px;
+  max-width: 100%;
+  height: auto;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
 .room-members {
   display: flex;
   flex-direction: column;

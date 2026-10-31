@@ -9,10 +9,23 @@ import type { Room, RoomBackend } from '../online/backend';
 import { OnlineGuestClient, OnlineHostClient } from '../online/OnlineClients';
 import { AccountPanel } from './AccountPanel';
 import { askConfirm } from './ConfirmDialog';
+import { RoomQr } from './RoomQr';
 import { SetupScreen, defaultSetup } from './SetupScreen';
 import type { SetupValues } from './SetupScreen';
 
 const SAVED_ROOM = 'nexum.room';
+
+/** Un link di invito vale una volta sola: chi esce dalla stanza non deve rientrarci da solo. */
+let inviteUsed = false;
+
+function forgetInvite() {
+  inviteUsed = true;
+  const url = new URL(window.location.href);
+  url.searchParams.delete('room');
+  window.history.replaceState(null, '', url);
+}
+
+const inviteLink = (code: string) => `${window.location.origin}${window.location.pathname}?room=${code}`;
 
 function savedRoom(): string | null {
   try {
@@ -164,13 +177,22 @@ export function OnlineScreen({ invite, onEnter, onBack }: Props) {
       setCode(newCode);
     });
 
-  const join = () =>
+  const join = (target: string) =>
     run('Ingresso nella stanza…', async () => {
-      const target = normalizeCode(input);
       await backend!.joinRoom(target, me!.uid, me!.firstName);
       saveRoom(target);
       setCode(target);
     });
+
+  // Chi arriva dal QR o da un link entra da solo, appena ha fatto l'accesso.
+  const joinRef = useRef(join);
+  joinRef.current = join;
+  useEffect(() => {
+    if (!backend || !uid || !invite || inviteUsed) return;
+    forgetInvite();
+    const target = normalizeCode(invite);
+    if (target.length === 5) void joinRef.current(target);
+  }, [backend, uid, invite]);
 
   const start = (setup: MatchSetup) => {
     const r = room!;
@@ -199,7 +221,7 @@ export function OnlineScreen({ invite, onEnter, onBack }: Props) {
   };
 
   const copyLink = async () => {
-    const link = `${window.location.origin}${window.location.pathname}?room=${room!.code}`;
+    const link = inviteLink(room!.code);
     try {
       await navigator.clipboard.writeText(link);
       setCopied(true);
@@ -260,7 +282,7 @@ export function OnlineScreen({ invite, onEnter, onBack }: Props) {
           className="room-join"
           onSubmit={(e) => {
             e.preventDefault();
-            if (ready && normalizeCode(input).length === 5) void join();
+            if (ready && normalizeCode(input).length === 5) void join(normalizeCode(input));
           }}
         >
           <label className="field grow">
@@ -299,6 +321,7 @@ export function OnlineScreen({ invite, onEnter, onBack }: Props) {
           {copied ? 'Link copiato' : 'Copia il link di invito'}
         </button>
       </div>
+      {isHost && room.status === 'lobby' && <RoomQr link={inviteLink(room.code)} />}
 
       <h3 className="step">Nella stanza ({memberCount})</h3>
       <ul className="room-members">
