@@ -18,12 +18,13 @@ export interface MatchSetup {
   seed: number;
 }
 
-/** Risposta a una decisione: `accept` (Reversal, recupero), `target` (bersaglio), `take` e `discard` (recupero). */
+/** Risposta a una decisione: `accept` (Reversal, recupero), `target` (bersaglio), `take` e `discard` (recupero), `faction` (Briscola). */
 export interface DecisionAnswer {
   accept: boolean;
   target?: number;
   take?: CardId;
   discard?: CardId;
+  faction?: FactionId;
 }
 
 /** Ciò che la UI deve disegnare in un dato momento. */

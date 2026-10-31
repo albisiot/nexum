@@ -17,6 +17,16 @@ export function RulesPanel() {
         solo Contratto oppure una <strong>serie</strong>: a ogni Contratto le carte si rimescolano e si ridistribuiscono,
         e i punti si sommano. Vince chi chiude con il punteggio più alto.
       </p>
+      <p>
+        <strong>Limiti del King</strong> (nei Contratti che lo indicano): alla prima presa chi non può seguire non scarta
+        carte che fanno penalità, se ne ha altre; e non si apre con la fazione bersaglio finché qualcuno non l’ha giocata.{' '}
+        <strong>Cappotto</strong>: chi prende tutto ciò che il Contratto penalizza riceve +13 invece delle penalità.
+      </p>
+      <p>
+        <strong>Briscola</strong>: chi è primo di mano sceglie una fazione che batte la fazione d’apertura.{' '}
+        <strong>Domino</strong>: niente prese, si parte dai 7 e si attaccano le carte vicine della stessa fazione; chi non
+        può giocare passa, e chi finisce per primo prende 1 punto per ogni carta rimasta agli altri, che li perdono.
+      </p>
       <p className="hint">
         Le carte con i poteri non sono nei mazzi delle fazioni: si troveranno nei pacchetti, in arrivo.
       </p>

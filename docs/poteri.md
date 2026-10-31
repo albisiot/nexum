@@ -215,3 +215,14 @@ carte da 1 a 13 senza effetti. Non si propongono i Contratti che con questi mazz
 I Contratti dicono il numero invece di "alte" e "basse": "Non prendere 12 o più", "Non prendere 3 o meno" e "Tutto
 negativo" (12 o più). Nuovo Contratto "Non prendere i 9" (−1 per ogni 9 catturato); nell'Editor una regola può contare
 qualsiasi numero esatto. "Non prendere 12 o più" torna quindi tra i Contratti proposti.
+
+## 6. Contratti dal King (31 ottobre 2026)
+
+Dalle regole del King (https://it.wikipedia.org/wiki/King_(gioco)) arrivano otto Contratti, tutti approvati dall'autore:
+"Non prendere 11 e 13" (Re e Fanti), "Non prendere i 12" (Regine), "Non prendere il 13 della fazione" (Re di cuori),
+"Non prendere l'8 della fazione" (8 di quadri), "Evita le ultime due", "Più prese doppie" (Sans Atout), "Briscola"
+(Dichiarazione) e "Domino". "No cuori" e "Misère" esistevano già. Il Re di cuori e l'8 di quadri usano la fazione
+bersaglio, perché le fazioni in gioco cambiano. La Briscola è un solo Contratto, non quattro; la sceglie il primo di mano
+e la CPU prende la fazione di cui ha più carte. Il Domino parte da un 7 qualsiasi e chi non può giocare passa da solo.
+Il Cappotto (+13) vale per "Meno prese" e "Non prendere una fazione"; i Limiti del King per i Contratti che penalizzano
+delle carte. Sono scelte per Contratto, modificabili nell'Editor.

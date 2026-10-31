@@ -39,5 +39,8 @@ export function getView(state: GameState, seat: number | null): PlayerView {
     // Solo le carte viste che sono ancora in mano all'avversario: quelle giocate non servono più.
     seen: me ? me.seen.filter((x) => state.players[x.player]!.hand.includes(x.cardId)) : [],
     discardable: seat === null ? [] : discardableNow(state, seat),
+    trump: state.trump,
+    domino: state.domino,
+    slam: state.slam,
   };
 }

@@ -1,4 +1,5 @@
 import { cardMatches, factionCards, getCard, getContract } from './catalog';
+import { dominoCards } from './domino';
 import { discardableCards, isCardPlay, leadingAmong, playChoice } from './powers';
 import type { Rng } from './rng';
 import { ruleApplies } from './scoring';
@@ -11,6 +12,7 @@ import type { Action, CardId, PlayerView } from './types';
  */
 export function chooseCard(view: PlayerView, rng: Rng): CardId {
   if (!view.legal.length) throw new Error('La CPU non ha carte giocabili.');
+  if (view.domino) return chooseDomino(view, rng);
   const lead = view.leadFaction;
   const rules = activeRules(view);
   const trickPoints = rules.filter((r) => r.per === 'trick').reduce((t, r) => t + r.points, 0);
@@ -36,9 +38,26 @@ export function chooseCard(view: PlayerView, rng: Rng): CardId {
     else if (cardRules.length) s += 10;
 
     if (lead && card.faction !== lead) s += 10;
+    // Briscola: se conviene vincere, tagliare con la briscola è il modo più sicuro.
+    if (lead && view.trump === card.faction && card.faction !== lead) s += trickPoints > 0 ? 45 : -45;
     return { id, s };
   });
 
+  scored.sort((a, b) => b.s - a.s);
+  return scored[0]!.id;
+}
+
+/** Domino: meglio aprire la strada alle proprie carte, senza liberare quelle degli altri. */
+function chooseDomino(view: PlayerView, rng: Rng): CardId {
+  const scored = view.legal.map((id) => {
+    const { faction } = getCard(id);
+    const line = dominoCards(faction);
+    const rank = line.indexOf(id);
+    const open = view.domino!.table[faction];
+    const mine = view.hand.filter((other) => getCard(other).faction === faction).map((other) => line.indexOf(other));
+    const freed = !open ? mine.length - 1 : rank < open.low ? mine.filter((r) => r < rank).length : mine.filter((r) => r > rank).length;
+    return { id, s: freed * 3 + rng() * 2 };
+  });
   scored.sort((a, b) => b.s - a.s);
   return scored[0]!.id;
 }
@@ -64,6 +83,7 @@ function winGain(view: PlayerView, extra: CardId[]): number {
  * alza il valore se vincere conviene, lo abbassa se conviene perdere.
  */
 export function chooseOption(view: PlayerView, cardId: CardId): number {
+  if (view.domino) return 0;
   const card = getCard(cardId);
   const choice = playChoice(view, card);
   const me = view.seat === null ? undefined : view.players[view.seat];
@@ -120,6 +140,14 @@ export function chooseDecision(view: PlayerView): Extract<Action, { type: 'decid
   if (!d || seat === null) throw new Error('Nessuna decisione per la CPU.');
   const answer = { type: 'decide' as const, player: seat };
   switch (d.kind) {
+    case 'trump': {
+      // La fazione di cui ha più carte; a parità, quella con i valori più alti.
+      const strength = (f: string) => {
+        const cards = view.hand.map(getCard).filter((c) => c.faction === f);
+        return cards.length * 1000 + cards.reduce((t, c) => t + c.value, 0);
+      };
+      return { ...answer, accept: true, faction: [...d.options].sort((a, b) => strength(b) - strength(a))[0]! };
+    }
     case 'reversal': {
       // Annulla i punti della presa se le costano, o se ne guadagnano solo gli altri.
       const mine = d.deltas[seat]!;

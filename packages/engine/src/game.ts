@@ -1,5 +1,6 @@
-import { contractNeedsTarget, contracts, factionCards, factionIds, getCard } from './catalog';
+import { cardMatches, contractNeedsTarget, contracts, factionCards, factionIds, getCard, getContract } from './catalog';
 import { MAX_PLAYERS, MIN_PLAYERS, TRICKS_PER_HAND } from './constants';
+import { canPlaceDomino, playDomino, startDomino } from './domino';
 import {
   applyAfterTrickPowers,
   applyRevealPowers,
@@ -19,7 +20,7 @@ import {
 } from './powers';
 import { createRng, shuffle } from './rng';
 import { contractDelta } from './scoring';
-import type { Action, CardId, CardPlay, GameConfig, GameState, PlayerState, TrickNote, TrickResult } from './types';
+import type { Action, CardId, CardPlay, FactionId, GameConfig, GameState, PlayerState, TrickNote, TrickResult } from './types';
 
 export { MAX_PLAYERS, MIN_PLAYERS, TRICKS_PER_HAND };
 
@@ -100,20 +101,57 @@ export function createGame(config: GameConfig): GameState {
     discards: [],
     decision: null,
     resolution: null,
+    trump: null,
+    domino: null,
+    slam: null,
   };
+  const contract = getContract(config.contract);
+  if (contract.mode === 'domino') {
+    startDomino(state);
+    return state;
+  }
+  if (contract.trump) state.decision = { kind: 'trump', player: leader, options: [...config.factions] };
   startTrick(state);
   return state;
 }
 
+/** La fazione è già uscita: da adesso ci si può aprire la presa. */
+function factionPlayed(s: GameState, faction: FactionId): boolean {
+  return s.players.some((p) => p.played.some((id) => getCard(id).faction === faction));
+}
+
+/** Chi apre la presa non può usare la briscola, né la fazione bersaglio con i Limiti del King, finché non sono uscite. */
+function openingCards(s: GameState, hand: readonly CardId[]): CardId[] {
+  const contract = getContract(s.config.contract);
+  const closed = [s.trump, contract.limits && contractNeedsTarget(contract) ? s.config.targetFaction : null];
+  const open = hand.filter((id) => {
+    const { faction } = getCard(id);
+    return !closed.includes(faction) || factionPlayed(s, faction);
+  });
+  return open.length ? open : [...hand];
+}
+
+/** Limiti del King: alla prima presa chi non può seguire non scarta carte che fanno penalità, se ne ha altre. */
+function cuttingCards(s: GameState, hand: readonly CardId[]): CardId[] {
+  const contract = getContract(s.config.contract);
+  if (!contract.limits || s.trickNo > 1) return [...hand];
+  const penalties = contract.rules.filter((r) => r.per === 'card' && r.points < 0);
+  const safe = hand.filter(
+    (id) => !penalties.some((r) => cardMatches(r.filter ?? { kind: 'any' }, getCard(id), s.config.targetFaction)),
+  );
+  return safe.length ? safe : [...hand];
+}
+
 /** Carte che `player` può giocare adesso (vuoto se non è il suo turno o se prima deve scartare). */
 export function legalCards(state: GameState, player: number): CardId[] {
-  if (state.phase !== 'playing' || state.turn !== player) return [];
+  if (state.phase !== 'playing' || state.turn !== player || state.decision) return [];
   const p = state.players[player]!;
   if (p.mustDiscard > 0) return [];
   const hand = p.hand;
-  if (!state.leadFaction) return [...hand];
+  if (state.domino) return hand.filter((id) => canPlaceDomino(state.domino!, id));
+  if (!state.leadFaction) return openingCards(state, hand);
   const following = hand.filter((id) => getCard(id).faction === state.leadFaction);
-  if (!following.length) return [...hand];
+  if (!following.length) return cuttingCards(state, hand);
   // Vigil: se ha aperto la presa, chi segue deve giocare la sua carta più alta di quella fazione.
   if (leadPower(state.plays) === 'vigil') {
     const top = Math.max(...following.map((id) => getCard(id).value));
@@ -143,12 +181,13 @@ export function applyAction(state: GameState, action: Action): GameState {
       const p = s.players[action.player]!;
       if (!p.hand.includes(action.cardId)) throw new IllegalActionError('La carta non è nella mano del giocatore.');
       if (p.mustDiscard > 0) throw new IllegalActionError('Prima scarta una carta per Oblivion.');
+      if (s.decision) throw new IllegalActionError('Prima va presa la decisione in sospeso.');
       if (!legalCards(s, action.player).includes(action.cardId)) {
-        throw new IllegalActionError(
-          leadPower(s.plays) === 'vigil'
-            ? 'Vigil ha aperto la presa: devi giocare la tua carta più alta della fazione d’apertura.'
-            : 'Devi seguire la fazione d’apertura.',
-        );
+        throw new IllegalActionError(illegalReason(s));
+      }
+      if (s.domino) {
+        playDomino(s, action.player, action.cardId);
+        return s;
       }
       const option = action.option ?? 0;
       if (!isValidOption(playChoice(s, getCard(action.cardId)), option)) {
@@ -173,6 +212,12 @@ export function applyAction(state: GameState, action: Action): GameState {
       const d = s.decision;
       if (!d) throw new IllegalActionError('Non c’è nessuna decisione da prendere.');
       if (action.player !== d.player) throw new IllegalActionError('Questa decisione spetta a un altro giocatore.');
+      if (d.kind === 'trump') {
+        if (!action.faction || !d.options.includes(action.faction)) throw new IllegalActionError('Scegli una delle fazioni in gioco.');
+        s.trump = action.faction;
+        s.decision = null;
+        return s;
+      }
       const r = s.resolution!;
       const trick = s.history.at(-1)!;
       const source = s.plays.find((pl): pl is CardPlay => isCardPlay(pl) && pl.cardId === d.cardId)!;
@@ -212,6 +257,7 @@ export function applyAction(state: GameState, action: Action): GameState {
       if (s.decision || s.resolution) throw new IllegalActionError('Prima vanno prese le decisioni di questa presa.');
       if (s.trickNo >= s.tricksInHand) {
         s.phase = 'handEnd';
+        settleSlam(s);
         // Chi ha saltato una presa (Nullchild) ha ancora carte in mano: a fine mano vengono scartate.
         s.players.forEach((p) => (p.hand = []));
         return s;
@@ -234,6 +280,32 @@ export function ranking(state: { players: readonly { score: number }[] }): numbe
     .map((p, i) => ({ score: p.score, i }))
     .sort((a, b) => b.score - a.score)
     .map((x) => x.i);
+}
+
+function illegalReason(s: GameState): string {
+  if (s.domino) return 'Questa carta non si può attaccare a quelle in tavola.';
+  if (!s.leadFaction) return 'Non puoi ancora aprire con questa fazione: nessuno l’ha giocata.';
+  if (leadPower(s.plays) === 'vigil') return 'Vigil ha aperto la presa: devi giocare la tua carta più alta della fazione d’apertura.';
+  const following = s.players[s.turn]!.hand.some((id) => getCard(id).faction === s.leadFaction);
+  return following ? 'Devi seguire la fazione d’apertura.' : 'Alla prima presa non puoi scartare una carta che fa penalità.';
+}
+
+/** Cappotto: chi ha preso tutto ciò che il Contratto penalizza riceve i punti del cappotto al posto delle penalità. */
+function settleSlam(s: GameState): void {
+  const contract = getContract(s.config.contract);
+  if (contract.slam === undefined) return;
+  const deck = s.config.factions.flatMap((f) => factionCards(f));
+  const seat = s.players.findIndex((p) =>
+    contract.rules.every((r) => {
+      if (r.per === 'trick') return p.tricks === s.history.length;
+      const counted = deck.filter((c) => cardMatches(r.filter ?? { kind: 'any' }, c, s.config.targetFaction));
+      return counted.length > 0 && counted.every((c) => p.captured.includes(c.id));
+    }),
+  );
+  if (seat < 0) return;
+  const earned = s.history.filter((t) => t.winner === seat).reduce((sum, t) => sum + t.contractDelta, 0);
+  s.players[seat]!.score += contract.slam - earned;
+  s.slam = seat;
 }
 
 function startTrick(s: GameState): void {
@@ -296,7 +368,9 @@ function resolveTrick(s: GameState): void {
   applyRevealPowers(s.plays, notes);
 
   const active = s.plays.filter(isCardPlay);
-  const eligible = active.filter((pl) => getCard(pl.cardId).faction === s.leadFaction);
+  // La briscola batte la fazione d'apertura.
+  const trumps = active.filter((pl) => getCard(pl.cardId).faction === s.trump);
+  const eligible = trumps.length ? trumps : active.filter((pl) => getCard(pl.cardId).faction === s.leadFaction);
   if (!eligible.length || !s.leadFaction) throw new Error('Presa senza carte della fazione d’apertura.');
 
   const max = Math.max(...eligible.map((pl) => pl.final));

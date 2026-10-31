@@ -1,5 +1,6 @@
 import {
   POWERS,
+  dominoStartValue,
   getCard,
   getContract,
   getFaction,
@@ -19,6 +20,7 @@ import { useGame } from '../game/useGame';
 import { askConfirm } from './ConfirmDialog';
 import { EndScreen, HandEndScreen } from './EndScreen';
 import { HandFan } from './HandFan';
+import { DominoBoard } from './DominoBoard';
 import { ContractIcon } from './Icon';
 import { Select } from './Select';
 import { TableView, initials } from './TableView';
@@ -71,6 +73,8 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
   // Vigil ha aperto la presa: chi segue deve giocare la sua carta più alta della fazione.
   const vigil = !trickOver && leadPower(view.plays) === 'vigil';
   const seat = view.players[anchor]!;
+  const domino = view.domino;
+  const placed = domino ? Object.values(domino.table).reduce((t, line) => t + line.high - line.low + 1, 0) : 0;
 
   // Primo tocco: la carta si alza e mostra il potere. Secondo tocco: si gioca.
   const pick = (id: CardId) => {
@@ -111,10 +115,21 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
         </div>
         <div className="contract-side">
           <div className="phase">
-            <span className="hint">Presa</span>
-            <strong>
-              {view.trickNo} / {view.tricksPerHand}
-            </strong>
+            {domino ? (
+              <>
+                <span className="hint">In tavola</span>
+                <strong>
+                  {placed} / {view.factions.length * 13}
+                </strong>
+              </>
+            ) : (
+              <>
+                <span className="hint">Presa</span>
+                <strong>
+                  {view.trickNo} / {view.tricksPerHand}
+                </strong>
+              </>
+            )}
           </div>
           <button type="button" className="btn small" aria-expanded={rulesOpen} onClick={onRules}>
             Regole
@@ -123,15 +138,19 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
       </section>
 
       <div className="gamegrid">
-        <div className={`board${sel ? ' picking' : ''}${last || snap.handHidden ? '' : ' slim'}`}>
-          <TableView
-            view={view}
-            names={names}
-            totals={match.totals}
-            anchor={anchor}
-            plays={plays}
-            winner={last ? last.winner : null}
-          />
+        <div className={`board${sel ? ' picking' : ''}${last || snap.handHidden || view.decision ? '' : ' slim'}`}>
+          {domino ? (
+            <DominoBoard domino={domino} factions={view.factions} players={view.players} names={names} turn={view.turn} />
+          ) : (
+            <TableView
+              view={view}
+              names={names}
+              totals={match.totals}
+              anchor={anchor}
+              plays={plays}
+              winner={last ? last.winner : null}
+            />
+          )}
 
           <div className="table-status" aria-live="polite">
             {last ? (
@@ -164,15 +183,19 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
                 <span className="hint">Mano privata</span>
                 <h2>Passa il dispositivo a {current}</h2>
                 <p>
-                  {view.plays.length === 0
-                    ? `${current} è primo di mano e può aprire con qualsiasi fazione.`
-                    : `Carte già sul tavolo: ${view.plays.length}. Fazione d’apertura: ${lead!.name}.`}{' '}
+                  {domino
+                    ? `Carte in tavola: ${placed}.`
+                    : view.plays.length === 0
+                      ? `${current} è primo di mano e apre la presa.`
+                      : `Carte già sul tavolo: ${view.plays.length}. Fazione d’apertura: ${lead!.name}.`}{' '}
                   Mostra la mano solo quando {current} ha il dispositivo.
                 </p>
                 <button type="button" className="btn primary" onClick={() => client.revealHand()}>
                   Mostra la mia mano
                 </button>
               </section>
+            ) : view.decision?.kind === 'trump' ? (
+              <div className="result">{decisionBox(view.decision)}</div>
             ) : (
               <>
                 <span className={`turn-pill${snap.canPlay ? ' mine' : ''}`}>
@@ -189,7 +212,7 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
               <span className="chip me-chip">
                 <span className="seat-avatar">{initials(names[anchor]!)}</span>
                 <span>
-                  <b>{names[anchor]}</b> · {match.totals[anchor]} pt · {plural(seat.tricks, 'presa', 'prese')} ·{' '}
+                  <b>{names[anchor]}</b> · {match.totals[anchor]} pt · {!domino && <>{plural(seat.tricks, 'presa', 'prese')} · </>}
                   {plural(seat.handCount, 'carta', 'carte')}
                   {seat.nextModifier !== 0 && ` · prossima carta ${signed(seat.nextModifier)}`}
                   {seat.protectedNext && ' · prossima carta protetta'}
@@ -231,7 +254,8 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
                       {i + 1}. {p.name}
                     </b>
                     <div className="hint">
-                      {plural(p.tricks, 'presa', 'prese')} · {p.handCount} in mano
+                      {!domino && <>{plural(p.tricks, 'presa', 'prese')} · </>}
+                      {p.handCount} in mano
                       {series && ` · questa mano ${signed(p.score)}`}
                       {p.nextModifier !== 0 && ` · prossima carta ${signed(p.nextModifier)}`}
                     </div>
@@ -241,23 +265,25 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
               );
             })}
           </section>
-          <section className="panel">
-            <h3>Cronologia</h3>
-            {view.history.length === 0 ? (
-              <p className="hint">Nessuna presa completata.</p>
-            ) : (
-              <div className="log">
-                {[...view.history].reverse().map((t) => (
-                  <div key={t.trickNo} className="logitem">
-                    <b>Presa {t.trickNo}</b> · {names[t.winner]}
-                    <div className="hint">
-                      {getCard(t.winningCardId).name} ({t.winningValue}) · {signed(t.contractDelta)} pt
+          {!domino && (
+            <section className="panel">
+              <h3>Cronologia</h3>
+              {view.history.length === 0 ? (
+                <p className="hint">Nessuna presa completata.</p>
+              ) : (
+                <div className="log">
+                  {[...view.history].reverse().map((t) => (
+                    <div key={t.trickNo} className="logitem">
+                      <b>Presa {t.trickNo}</b> · {names[t.winner]}
+                      <div className="hint">
+                        {getCard(t.winningCardId).name} ({t.winningValue}) · {signed(t.contractDelta)} pt
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
           <button type="button" className="btn danger wide" onClick={exit}>
             Torna alla preparazione
           </button>
@@ -277,6 +303,7 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
 
   function turnTitle(): string {
     if (snap.canDiscard) return 'Tocca a te · prima scarta una carta';
+    if (domino) return snap.canPlay ? 'Tocca a te · attacca una carta' : `Tocca a ${current}`;
     if (!snap.canPlay) return `Tocca a ${current}`;
     if (!lead) return 'Tocca a te · apri tu';
     if (!view.hand.some((id) => getCard(id).faction === view.leadFaction)) return `Tocca a te · non hai ${lead.name}`;
@@ -285,12 +312,23 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
 
   function turnHint(): string {
     if (snap.canDiscard) return 'Oblivion: scegli la carta da scartare, poi giochi. Faded One non si scarta.';
+    if (domino) {
+      const passed = domino.passed.map((p) => names[p]).join(', ');
+      const start = dominoStartValue(view.factions[0]!);
+      return `${passed ? `Passa: ${passed}. ` : ''}Si gioca un ${start} o una carta vicina a quelle in tavola della stessa fazione.`;
+    }
     if (!snap.canPlay) {
       if (!lead) return `${current} è primo di mano.`;
       return vigil ? `Vigil ha aperto la presa: chi ha ${lead.name} deve giocare la sua carta più alta.` : `Fazione d’apertura: ${lead.name}.`;
     }
-    if (!lead) return 'Sei primo di mano: puoi aprire con qualsiasi fazione.';
+    if (!lead) {
+      return legal.size < view.hand.length
+        ? 'Sei primo di mano: non puoi aprire con la fazione che nessuno ha ancora giocato.'
+        : 'Sei primo di mano: puoi aprire con qualsiasi fazione.';
+    }
     if (!view.hand.some((id) => getCard(id).faction === view.leadFaction)) {
+      if (legal.size < view.hand.length) return 'Alla prima presa non puoi scartare le carte che fanno penalità: gioca una di quelle sollevate.';
+      if (view.trump) return `Puoi giocare qualsiasi carta: la briscola ${getFaction(view.trump).name} batte la fazione d’apertura.`;
       return 'Puoi giocare qualsiasi carta, ma solo la fazione d’apertura può prendere.';
     }
     return vigil
@@ -302,9 +340,32 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
   function decisionBox(d: Decision) {
     const mine = d.player === perspective;
     const who = mine ? 'Tu' : names[d.player]!;
-    const cardName = getCard(d.cardId).name;
     const waiting = <p className="hint">{names[d.player]} sta decidendo…</p>;
     const deciderNote = !mine && <span className="hint decision-who">Decide {names[d.player]}.</span>;
+
+    if (d.kind === 'trump') {
+      return (
+        <div className="decision">
+          <p>
+            <b>Briscola:</b> {mine ? 'scegli' : `${who} sceglie`} la fazione che batte la fazione d’apertura.
+          </p>
+          {snap.canDecide ? (
+            <div className="controls">
+              {d.options.map((f) => (
+                <button key={f} type="button" className="btn" onClick={() => client.decide({ accept: true, faction: f })}>
+                  <span className="dot" style={{ '--faction': getFaction(f).color } as CSSProperties} />
+                  {getFaction(f).name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            waiting
+          )}
+        </div>
+      );
+    }
+
+    const cardName = getCard(d.cardId).name;
 
     if (d.kind === 'reversal') {
       const changes = d.deltas
@@ -430,7 +491,7 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
     const faction = getFaction(card.faction);
     const playable = snap.canPlay && legal.has(cardId);
     // Fury, Ashen, Shift e Archivist (anche copiate da Palimpsest): una scelta quando la giochi.
-    const choice = playChoice(view, card);
+    const choice = domino ? null : playChoice(view, card);
     const modifier = perspective === null ? 0 : view.players[perspective]!.nextModifier;
     const clampValue = (v: number) => Math.min(100, Math.max(0, v));
     const base = clampValue(card.value + modifier);
@@ -450,9 +511,15 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
         <span className="hint">
           {!snap.canPlay
             ? 'Potrai giocarla quando tocca a te.'
-            : vigil && card.faction === view.leadFaction
-              ? `Non puoi giocarla: Vigil ti obbliga a giocare la tua ${lead!.name} più alta.`
-              : `Non puoi giocarla: devi seguire ${lead!.name}.`}
+            : domino
+              ? 'Non puoi giocarla: non è vicina alle carte in tavola.'
+              : !lead
+                ? 'Non puoi aprire con questa fazione: nessuno l’ha ancora giocata.'
+                : vigil && card.faction === view.leadFaction
+                  ? `Non puoi giocarla: Vigil ti obbliga a giocare la tua ${lead.name} più alta.`
+                  : view.hand.some((id) => getCard(id).faction === view.leadFaction)
+                    ? `Non puoi giocarla: devi seguire ${lead.name}.`
+                    : 'Non puoi giocarla: alla prima presa non si scartano carte che fanno penalità.'}
         </span>
       );
     } else if (choice?.kind === 'shift') {

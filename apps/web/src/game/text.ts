@@ -22,9 +22,11 @@ export function contractTitle(view: PlayerView): string {
 
 export function contractDescription(view: PlayerView): string {
   const c = getContract(view.contract);
-  return contractNeedsTarget(c) && view.targetFaction
-    ? `${c.desc} Fazione bersaglio: ${getFaction(view.targetFaction).name}.`
-    : c.desc;
+  const extra = [
+    contractNeedsTarget(c) && view.targetFaction ? `Fazione bersaglio: ${getFaction(view.targetFaction).name}.` : '',
+    view.trump ? `Briscola: ${getFaction(view.trump).name}.` : '',
+  ];
+  return [c.desc, ...extra].filter(Boolean).join(' ');
 }
 
 /** Nome del Contratto di una mano, con la fazione bersaglio; l'icona la disegna ContractIcon. */
@@ -51,6 +53,8 @@ function filterText(filter: CardFilter, catalog: Catalog): string {
       return ` di valore ${filter.value} o meno`;
     case 'exactValue':
       return ` di valore ${filter.value}`;
+    case 'targetValue':
+      return ` di valore ${filter.value} della fazione bersaglio`;
     case 'hasPower':
       return ' con un potere';
     case 'card':
@@ -75,11 +79,18 @@ export function describeRule(rule: ScoringRule, catalog: Catalog = getCatalog())
   }
   const filter = rule.filter ?? { kind: 'any' };
   if (filter.kind === 'card') return `${points(rule.points)} a chi cattura ${cardName(catalog, filter.cardId)}${tricksText(rule)}`;
+  if (filter.kind === 'targetValue') return `${points(rule.points)} a chi cattura il ${filter.value} della fazione bersaglio${tricksText(rule)}`;
   return `${points(rule.points)} per ogni carta catturata${filterText(filter, catalog)}${tricksText(rule)}`;
 }
 
 export function describeScoring(contract: ContractDef, catalog: Catalog = getCatalog()): string {
-  return contract.rules.map((r) => describeRule(r, catalog)).join(' · ');
+  if (contract.mode === 'domino') return '−1 per ogni carta rimasta in mano · quei punti vanno a chi finisce per primo';
+  const extras = [
+    contract.trump ? 'briscola scelta dal primo di mano' : '',
+    contract.slam ? `${points(contract.slam)} a chi prende tutto` : '',
+    contract.limits ? 'limiti del King' : '',
+  ];
+  return [...contract.rules.map((r) => describeRule(r, catalog)), ...extras].filter(Boolean).join(' · ');
 }
 
 export function describeNote(note: TrickNote, names: readonly string[]): string {
@@ -140,5 +151,6 @@ export function describeTrick(trick: TrickResult, names: readonly string[]): str
   const name = names[trick.winner];
   // "Tu" è il nome di chi gioca senza account: la frase va alla seconda persona.
   const who = name === 'Tu' ? 'Prendi tu' : `${name} prende`;
-  return `${who} la presa ${trick.trickNo} con ${card.name} (${trick.winningValue}) · fazione d’apertura ${getFaction(trick.leadFaction).name}.`;
+  const how = card.faction === trick.leadFaction ? `fazione d’apertura ${getFaction(trick.leadFaction).name}` : `briscola, su fazione d’apertura ${getFaction(trick.leadFaction).name}`;
+  return `${who} la presa ${trick.trickNo} con ${card.name} (${trick.winningValue}) · ${how}.`;
 }

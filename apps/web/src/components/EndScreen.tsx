@@ -1,5 +1,5 @@
 import { cardMatches, getCard, getContract, getFaction, matchRanking, ruleApplies } from '@nexum/engine';
-import type { ContractDef, FactionId, MatchView, TrickResult } from '@nexum/engine';
+import type { ContractDef, FactionId, HandSummary, MatchView, TrickResult } from '@nexum/engine';
 import { describeScoring, handLabel as contractLabel, plural, signed } from '../game/text';
 import { askConfirm } from './ConfirmDialog';
 import { ContractIcon } from './Icon';
@@ -31,6 +31,13 @@ function trickDetail(t: TrickResult, contract: ContractDef, target?: FactionId):
   return `Carte che contano: ${shown.join(', ')}${more > 0 ? ` e altre ${more}` : ''}`;
 }
 
+/** Cappotto e Domino: la riga che spiega da dove arrivano i punti della mano. */
+function handNote(hand: HandSummary, contract: ContractDef, names: readonly string[]): string | null {
+  if (hand.slam !== undefined) return `Cappotto! ${names[hand.slam]} prende tutto e fa ${signed(contract.slam!)}.`;
+  if (hand.dominoWinner !== undefined) return `${names[hand.dominoWinner]} finisce le carte per primo e prende i punti di chi ne ha ancora.`;
+  return null;
+}
+
 /** Pausa tra due Contratti di una serie. */
 export function HandEndScreen({ match, names, me, onNext, onMenu }: ResultProps & { onNext(): void; onMenu(): void }) {
   const hand = match.completed.at(-1)!;
@@ -43,7 +50,9 @@ export function HandEndScreen({ match, names, me, onNext, onMenu }: ResultProps 
   const history = match.game.history;
   const tricks = me === null ? history : history.filter((t) => t.winner === me);
   // Punti arrivati dai poteri delle carte invece che dalle prese vinte.
-  const fromPowers = me === null ? 0 : hand.scores[me]! - tricks.reduce((sum, t) => sum + t.contractDelta, 0);
+  const fromContract = hand.slam === me && contract.slam !== undefined ? contract.slam : tricks.reduce((sum, t) => sum + t.contractDelta, 0);
+  const domino = contract.mode === 'domino';
+  const fromPowers = me === null || domino ? 0 : hand.scores[me]! - fromContract;
   const leave = () => {
     void askConfirm({
       title: 'Abbandonare la serie?',
@@ -143,7 +152,7 @@ export function HandEndScreen({ match, names, me, onNext, onMenu }: ResultProps 
                   )}
                 </span>
                 <span>
-                  {hand.tricks[pi]}
+                  {domino ? '–' : hand.tricks[pi]}
                   <span className="sr-only"> {hand.tricks[pi] === 1 ? 'presa' : 'prese'}</span>
                 </span>
                 <b className={tone(hand.scores[pi]!)}>
@@ -157,8 +166,9 @@ export function HandEndScreen({ match, names, me, onNext, onMenu }: ResultProps 
         </section>
 
         <section className="panel">
-          <h3>{me === null ? 'Prese della mano' : 'Le tue prese'}</h3>
-          {tricks.length === 0 ? (
+          <h3>{domino ? 'Com’è andata' : me === null ? 'Prese della mano' : 'Le tue prese'}</h3>
+          {handNote(hand, contract, names) && <p className="status good">{handNote(hand, contract, names)}</p>}
+          {domino ? null : tricks.length === 0 ? (
             <p className="hint">Nessuna presa vinta in questa mano.</p>
           ) : (
             <div className="log">
@@ -251,16 +261,22 @@ export function EndScreen({
         )}
       </p>
 
+      {match.completed.map((h, i) => {
+        const note = handNote(h, getContract(h.contract), names);
+        return note && <p key={i} className="status good">{note}</p>;
+      })}
+
       <div className="final-score">
         {order.map((pi, i) => {
           const tricks = match.completed.reduce((t, h) => t + h.tricks[pi]!, 0);
+          const onlyDomino = match.completed.every((h) => getContract(h.contract).mode === 'domino');
           return (
             <div key={pi} className={`score-row${pi === me ? ' me' : ''}`}>
               <div>
                 <b>
                   {i + 1}. {names[pi]}
                 </b>
-                <div className="hint">{plural(tricks, 'presa vinta', 'prese vinte')}</div>
+                {!onlyDomino && <div className="hint">{plural(tricks, 'presa vinta', 'prese vinte')}</div>}
               </div>
               <b>{match.totals[pi]} pt</b>
             </div>

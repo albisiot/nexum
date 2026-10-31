@@ -413,7 +413,7 @@ function FactionsStep({ v, set }: StepProps) {
 
       {needsTarget && (
         <label className="field target">
-          <span className="label">Fazione da evitare in “Non prendere una fazione”</span>
+          <span className="label">Fazione bersaglio dei Contratti che la chiedono</span>
           <Select
             value={v.targetFaction && v.factions.includes(v.targetFaction) ? v.targetFaction : ''}
             options={[{ value: '', label: 'Casuale' }, ...v.factions.map((f) => ({ value: f, label: getFaction(f).name }))]}

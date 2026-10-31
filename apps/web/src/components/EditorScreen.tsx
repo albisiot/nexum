@@ -32,6 +32,11 @@ const time = () => new Date().toLocaleTimeString('it-IT', { hour: '2-digit', min
 /** Valori proposti per le 13 carte di una fazione nuova. */
 const NEW_FACTION_VALUES = [97, 89, 81, 73, 65, 57, 50, 42, 34, 26, 18, 10, 2];
 
+function setFlag(contract: ContractDef, flag: 'trump' | 'limits', on: boolean) {
+  if (on) contract[flag] = true;
+  else delete contract[flag];
+}
+
 function errorText(error: unknown): string {
   const code = (error as { code?: string } | null)?.code ?? '';
   if (code === 'permission-denied') {
@@ -604,23 +609,71 @@ function ContractForm({
       </label>
 
       <h3 className="step">Regole di punteggio</h3>
-      <p className="hint">
-        Ogni regola assegna punti a chi vince una presa. I punti delle regole si sommano. Riassunto per i giocatori:{' '}
-        <b>{describeScoring(contract, draft) || '—'}</b>
-      </p>
-      {contract.rules.map((rule, i) => (
-        <RuleEditor
-          key={i}
-          draft={draft}
-          rule={rule}
-          onChange={(change) => edit((c) => change(c.rules[i]!))}
-          onRemove={() => edit((c) => c.rules.splice(i, 1))}
-        />
-      ))}
+      {contract.mode === 'domino' ? (
+        <p className="hint">
+          Il Domino non ha prese e il suo punteggio è fisso: <b>{describeScoring(contract, draft)}</b>
+        </p>
+      ) : (
+        <>
+          <p className="hint">
+            Ogni regola assegna punti a chi vince una presa. I punti delle regole si sommano. Riassunto per i giocatori:{' '}
+            <b>{describeScoring(contract, draft) || '—'}</b>
+          </p>
+          {contract.rules.map((rule, i) => (
+            <RuleEditor
+              key={i}
+              draft={draft}
+              rule={rule}
+              onChange={(change) => edit((c) => change(c.rules[i]!))}
+              onRemove={() => edit((c) => c.rules.splice(i, 1))}
+            />
+          ))}
+          <div className="contract-flags">
+            <label className="check">
+              <input type="checkbox" checked={!!contract.trump} onChange={(e) => edit((c) => setFlag(c, 'trump', e.target.checked))} />
+              <span>
+                <b>Briscola</b> scelta dal primo di mano
+              </span>
+            </label>
+            <label className="check">
+              <input type="checkbox" checked={!!contract.limits} onChange={(e) => edit((c) => setFlag(c, 'limits', e.target.checked))} />
+              <span>
+                <b>Limiti del King</b>: niente scarti di penalità alla prima presa, non si apre con il bersaglio finché non esce
+              </span>
+            </label>
+            <label className="check">
+              <input
+                type="checkbox"
+                checked={contract.slam !== undefined}
+                onChange={(e) =>
+                  edit((c) => {
+                    if (e.target.checked) c.slam = 13;
+                    else delete c.slam;
+                  })
+                }
+              />
+              <span>
+                <b>Cappotto</b>: chi prende tutto ciò che il Contratto penalizza riceve questi punti invece delle penalità
+              </span>
+              {contract.slam !== undefined && (
+                <input
+                  className="check-points"
+                  type="number"
+                  aria-label="Punti del cappotto"
+                  value={numValue(contract.slam)}
+                  onChange={(e) => edit((c) => (c.slam = parseInt(e.target.value, 10)))}
+                />
+              )}
+            </label>
+          </div>
+        </>
+      )}
       <div className="controls">
-        <button type="button" className="btn" onClick={() => edit((c) => c.rules.push({ points: -1, per: 'trick' }))}>
-          + Aggiungi regola
-        </button>
+        {contract.mode !== 'domino' && (
+          <button type="button" className="btn" onClick={() => edit((c) => c.rules.push({ points: -1, per: 'trick' }))}>
+            + Aggiungi regola
+          </button>
+        )}
         <button type="button" className="btn danger" onClick={remove}>
           Elimina questo Contratto
         </button>
@@ -629,7 +682,7 @@ function ContractForm({
   );
 }
 
-type FilterKey = 'any' | 'target' | 'faction' | 'minValue' | 'maxValue' | 'exactValue' | 'hasPower' | 'card';
+type FilterKey = 'any' | 'target' | 'faction' | 'minValue' | 'maxValue' | 'exactValue' | 'targetValue' | 'hasPower' | 'card';
 
 const FILTER_LABELS: Record<FilterKey, string> = {
   any: 'qualsiasi carta',
@@ -638,6 +691,7 @@ const FILTER_LABELS: Record<FilterKey, string> = {
   minValue: 'di valore … o più',
   maxValue: 'di valore … o meno',
   exactValue: 'di valore esattamente…',
+  targetValue: 'di valore esattamente… nella fazione bersaglio',
   hasPower: 'con un potere scritto',
   card: 'una carta precisa',
 };
@@ -670,6 +724,7 @@ function RuleEditor({
         minValue: { kind: 'minValue', value: 12 },
         maxValue: { kind: 'maxValue', value: 3 },
         exactValue: { kind: 'exactValue', value: 9 },
+        targetValue: { kind: 'targetValue', value: 13 },
         hasPower: { kind: 'hasPower' },
         card: { kind: 'card', cardId: draft.cards[0]?.id ?? '' },
       };
@@ -726,7 +781,7 @@ function RuleEditor({
               />
             </label>
           )}
-          {(rule.filter?.kind === 'minValue' || rule.filter?.kind === 'maxValue' || rule.filter?.kind === 'exactValue') && (
+          {(rule.filter?.kind === 'minValue' || rule.filter?.kind === 'maxValue' || rule.filter?.kind === 'exactValue' || rule.filter?.kind === 'targetValue') && (
             <label className="field points">
               <span className="label">Valore</span>
               <input
@@ -734,7 +789,7 @@ function RuleEditor({
                 value={numValue(rule.filter.value)}
                 onChange={(e) =>
                   onChange((r) => {
-                    if (r.filter?.kind === 'minValue' || r.filter?.kind === 'maxValue' || r.filter?.kind === 'exactValue') {
+                    if (r.filter?.kind === 'minValue' || r.filter?.kind === 'maxValue' || r.filter?.kind === 'exactValue' || r.filter?.kind === 'targetValue') {
                       r.filter.value = parseInt(e.target.value, 10);
                     }
                   })

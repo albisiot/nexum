@@ -31,6 +31,8 @@ export type CardFilter =
   | { kind: 'minValue'; value: number }
   | { kind: 'maxValue'; value: number }
   | { kind: 'exactValue'; value: number }
+  /** Una sola carta: quella di questo valore nella fazione bersaglio. */
+  | { kind: 'targetValue'; value: number }
   | { kind: 'hasPower' }
   | { kind: 'card'; cardId: CardId };
 
@@ -51,7 +53,16 @@ export interface ContractDef {
   name: string;
   icon: string;
   desc: string;
+  /** Può essere vuoto solo nel Domino, che ha un punteggio tutto suo. */
   rules: ScoringRule[];
+  /** Cappotto: chi prende tutto ciò che il Contratto penalizza riceve questi punti al posto delle penalità. */
+  slam?: number;
+  /** Limiti del King: alla prima presa niente scarti che fanno penalità, e non si apre con la fazione bersaglio finché non è uscita. */
+  limits?: boolean;
+  /** Briscola: chi è primo di mano sceglie una fazione che batte la fazione d'apertura. */
+  trump?: boolean;
+  /** Domino: niente prese, si attaccano le carte in tavola (vedi domino.ts). */
+  mode?: 'domino';
 }
 
 /** Tutte le fazioni, carte e Contratti del gioco: i dati che l'Editor modifica. */
@@ -178,7 +189,18 @@ export type Decision =
    * Black Echo, Echo Prime: riprendere in mano `cardId` scartando un'altra carta.
    * Mnemos: prendere in mano una delle carte `take`, scartando una carta.
    */
-  | { kind: 'recover'; player: number; cardId: CardId; power: PowerId; take: CardId[] };
+  | { kind: 'recover'; player: number; cardId: CardId; power: PowerId; take: CardId[] }
+  /** Briscola: a inizio mano chi è primo di mano sceglie la fazione tra `options`. */
+  | { kind: 'trump'; player: number; options: FactionId[] };
+
+/** Domino: per ogni fazione aperta, le posizioni della carta più bassa e più alta attaccate in tavola. */
+export interface DominoState {
+  table: Record<FactionId, { low: number; high: number }>;
+  /** Chi ha appena passato perché non poteva giocare. */
+  passed: number[];
+  /** Chi ha finito le carte per primo. */
+  winner: number | null;
+}
 
 /** Fine presa a tappe: recuperi, poi punti e poteri, poi Reversal. */
 export interface Resolution {
@@ -212,6 +234,12 @@ export interface GameState {
   decision: Decision | null;
   /** Presa conclusa ma non ancora chiusa; null quando si può passare alla successiva. */
   resolution: Resolution | null;
+  /** Briscola: la fazione scelta (null finché non è scelta, o se il Contratto non la prevede). */
+  trump: FactionId | null;
+  /** Solo nel Contratto Domino. */
+  domino: DominoState | null;
+  /** Cappotto: chi ha preso tutto ciò che il Contratto penalizza. */
+  slam: number | null;
 }
 
 export type Action =
@@ -224,8 +252,9 @@ export type Action =
   /**
    * Risponde alla decisione in sospeso. Reversal: `accept` = annulla i punti. Bersaglio: `target`.
    * Recupero: `accept` = recupera, `discard` = la carta da scartare, `take` = la carta presa (Mnemos).
+   * Briscola: `faction`.
    */
-  | { type: 'decide'; player: number; accept: boolean; target?: number; discard?: CardId; take?: CardId }
+  | { type: 'decide'; player: number; accept: boolean; target?: number; discard?: CardId; take?: CardId; faction?: FactionId }
   /** Oblivion: la carta scartata all'inizio del turno. */
   | { type: 'discard'; player: number; cardId: CardId };
 
@@ -258,6 +287,9 @@ export interface PlayerView {
   seen: SeenCard[];
   /** Carte che chi guarda può scartare adesso per Oblivion (vuoto se non deve scartare). */
   discardable: CardId[];
+  trump: FactionId | null;
+  domino: DominoState | null;
+  slam: number | null;
 }
 
 export interface PublicPlayer {

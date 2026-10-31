@@ -13,6 +13,37 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.26.0',
+    date: '2026-10-31',
+    title: 'Contratti dal King',
+    changes: [
+      {
+        type: 'new',
+        text: 'Nuovi Contratti: Non prendere 11 e 13, Non prendere i 12, Non prendere il 13 della fazione, Non prendere l’8 della fazione, Evita le ultime due e Più prese doppie.',
+      },
+      {
+        type: 'new',
+        text: 'Briscola: chi è primo di mano sceglie una fazione che batte la fazione d’apertura.',
+      },
+      {
+        type: 'new',
+        text: 'Domino: niente prese, si parte dai 7 e si attaccano le carte vicine. Chi finisce per primo prende i punti delle carte rimaste agli altri.',
+      },
+      {
+        type: 'new',
+        text: 'Cappotto: in Meno prese e Non prendere una fazione, chi prende tutto fa +13 invece delle penalità.',
+      },
+      {
+        type: 'change',
+        text: 'Limiti del King nei Contratti che penalizzano delle carte: alla prima presa niente scarti di penalità, e non si apre con la fazione bersaglio finché qualcuno non l’ha giocata.',
+      },
+      {
+        type: 'new',
+        text: 'Editor: regola sul numero nella fazione bersaglio, e nei Contratti le scelte Briscola, Limiti del King e Cappotto.',
+      },
+    ],
+  },
+  {
     version: '0.25.0',
     date: '2026-10-31',
     title: 'Finestre tutte nello stile del gioco',

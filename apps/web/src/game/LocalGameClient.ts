@@ -150,7 +150,7 @@ export class LocalGameClient implements GameClient {
       seats,
       perspective,
       handHidden,
-      canPlay: humanTurn && perspective === g.turn && !match.game.discardable.length,
+      canPlay: humanTurn && perspective === g.turn && !match.game.discardable.length && !g.decision,
       canDiscard: humanTurn && perspective === g.turn && match.game.discardable.length > 0,
       canDecide,
       decisionHand:

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_CATALOG,
+  contractNeedsTarget,
   contracts,
+  getContract,
   setCatalog,
   IllegalActionError,
   applyMatchAction,
@@ -83,8 +85,13 @@ describe('serie di Contratti', () => {
 describe('Contratti casuali', () => {
   it('esclude i Contratti che con i mazzi da 1 a 13 non possono assegnare punti', () => {
     const playable = playableContracts(['Custodes', 'Nullarii']);
-    expect(playable.sort()).toEqual(['avoidFaction', 'avoidHigh', 'avoidLow', 'avoidNine', 'chaos', 'last', 'last3', 'less', 'more']);
-    expect(contracts()).toHaveLength(11);
+    expect(playable.sort()).toEqual(
+      [
+        'avoidElevenThirteen', 'avoidFaction', 'avoidHigh', 'avoidLow', 'avoidNine', 'avoidTargetEight', 'avoidTargetThirteen', 'avoidTwelve',
+        'chaos', 'domino', 'last', 'last2', 'last3', 'less', 'more', 'moreDouble', 'trump',
+      ].sort(),
+    );
+    expect(contracts()).toHaveLength(19);
   });
 
   it('con carte adatte nei mazzi quei Contratti tornano', () => {
@@ -103,10 +110,10 @@ describe('Contratti casuali', () => {
       expect(new Set(hands.map((h) => h.contract)).size).toBe(5);
       expect(hands.some((h) => h.contract === 'unmade')).toBe(false);
       for (const h of hands) {
-        if (h.contract === 'avoidFaction') expect(factions).toContain(h.targetFaction);
+        if (contractNeedsTarget(getContract(h.contract))) expect(factions).toContain(h.targetFaction);
         else expect(h.targetFaction).toBeUndefined();
       }
     }
-    expect(randomHands(11, ['Custodes', 'Auguria'], rng)).toHaveLength(9);
+    expect(randomHands(19, ['Custodes', 'Auguria'], rng)).toHaveLength(17);
   });
 });

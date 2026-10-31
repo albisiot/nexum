@@ -81,6 +81,21 @@ const PATHS = {
       <path d="M12 8v7.5M9 12.5l3 3 3-3" />
     </>
   ),
+  briscola: (
+    <>
+      <rect x="5.5" y="3" width="13" height="18" rx="2.5" />
+      <path d="m12 7.5 1.4 2.9 3.1.4-2.3 2.2.6 3.1-2.8-1.5-2.8 1.5.6-3.1-2.3-2.2 3.1-.4Z" />
+    </>
+  ),
+  domino: (
+    <>
+      <rect x="7" y="2.5" width="10" height="19" rx="2.5" />
+      <path d="M7 12h10" />
+      <circle cx="12" cy="7.2" r="1" />
+      <circle cx="10" cy="16" r="1" />
+      <circle cx="14" cy="18" r="1" />
+    </>
+  ),
   'carta-nove': (
     <>
       <rect x="5.5" y="3" width="13" height="18" rx="2.5" />
@@ -249,6 +264,14 @@ const CONTRACT_ICONS: Partial<Record<string, IconName>> = {
   avoidHigh: 'carte-alte',
   avoidLow: 'carte-basse',
   avoidNine: 'carta-nove',
+  avoidElevenThirteen: 'carte-alte',
+  avoidTwelve: 'carte-alte',
+  avoidTargetThirteen: 'fazione',
+  avoidTargetEight: 'fazione',
+  last2: 'ultime-tre',
+  moreDouble: 'piu-prese',
+  trump: 'briscola',
+  domino: 'domino',
   unmade: 'the-unmade',
   last: 'ultima',
   last3: 'ultime-tre',

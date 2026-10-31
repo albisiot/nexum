@@ -25,6 +25,10 @@ export interface HandSummary {
   targetFaction?: FactionId;
   scores: number[];
   tricks: number[];
+  /** Cappotto: chi ha preso tutto ciò che il Contratto penalizza. */
+  slam?: number;
+  /** Domino: chi ha finito le carte per primo. */
+  dominoWinner?: number;
 }
 
 /** playing: mano in corso · handEnd: pausa tra due mani · matchEnd: serie conclusa. */
@@ -98,6 +102,8 @@ export function applyMatchAction(state: MatchState, action: MatchAction): MatchS
     scores: game.players.map((p) => p.score),
     tricks: game.players.map((p) => p.tricks),
   };
+  if (game.slam !== null) summary.slam = game.slam;
+  if (typeof game.domino?.winner === 'number') summary.dominoWinner = game.domino.winner;
   const last = state.handIndex === state.config.hands.length - 1;
   return { ...state, game, completed: [...state.completed, summary], phase: last ? 'matchEnd' : 'handEnd' };
 }

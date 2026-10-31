@@ -91,7 +91,7 @@ export function hasPowerText(card: CardDef): boolean {
 
 /** Il Contratto conta le carte della fazione bersaglio, che va scelta a inizio mano. */
 export function contractNeedsTarget(contract: ContractDef): boolean {
-  return contract.rules.some((r) => r.filter?.kind === 'faction' && r.filter.faction === 'target');
+  return contract.rules.some((r) => (r.filter?.kind === 'faction' && r.filter.faction === 'target') || r.filter?.kind === 'targetValue');
 }
 
 /** Fazione senza la quale la regola non assegna mai punti (null se funziona con qualsiasi mazzo). */
@@ -111,10 +111,12 @@ export function contractRequiredFactions(contract: ContractDef, catalog: Catalog
 
 /** Il Contratto ha senso con queste fazioni: almeno una regola può assegnare punti con le carte di quei mazzi. */
 export function contractPlayableWith(contract: ContractDef, factions: readonly FactionId[]): boolean {
+  if (contract.mode === 'domino') return factions.length > 0;
   return contract.rules.some((r) => {
     if (r.per === 'trick') return true;
     const filter = r.filter ?? { kind: 'any' };
     if (filter.kind === 'faction' && filter.faction === 'target') return factions.length > 0;
+    if (filter.kind === 'targetValue') return active.cards.some((c) => factions.includes(c.faction) && c.value === filter.value);
     return active.cards.some((c) => factions.includes(c.faction) && cardMatches(filter, c));
   });
 }
@@ -131,6 +133,8 @@ export function cardMatches(filter: CardFilter, card: CardDef, targetFaction?: F
       return card.value <= filter.value;
     case 'exactValue':
       return card.value === filter.value;
+    case 'targetValue':
+      return card.value === filter.value && card.faction === targetFaction;
     case 'hasPower':
       return hasPowerText(card);
     case 'card':
@@ -189,7 +193,10 @@ export function validateCatalog(catalog: Catalog): string[] {
     if (contractIds.has(k.id)) errors.push(`Il codice di Contratto “${k.id}” è usato due volte.`);
     contractIds.add(k.id);
     if (!k.name.trim()) errors.push(`Un Contratto (${k.id}) non ha nome.`);
-    if (!k.rules.length) errors.push(`Il Contratto “${label}” non ha regole di punteggio.`);
+    if (!k.rules.length && k.mode !== 'domino') errors.push(`Il Contratto “${label}” non ha regole di punteggio.`);
+    if (k.slam !== undefined && (!Number.isInteger(k.slam) || Math.abs(k.slam) > 50)) {
+      errors.push(`Nel Contratto “${label}” i punti del cappotto devono essere un intero tra −50 e 50.`);
+    }
     for (const r of k.rules) {
       if (!Number.isInteger(r.points) || r.points === 0 || Math.abs(r.points) > 50) {
         errors.push(`Nel Contratto “${label}” i punti di una regola devono essere un intero tra −50 e 50, diverso da 0.`);
@@ -202,7 +209,7 @@ export function validateCatalog(catalog: Catalog): string[] {
           errors.push(`Nel Contratto “${label}” una regola usa una fazione che non esiste.`);
         } else if (f.kind === 'card' && !cardIds.has(f.cardId)) {
           errors.push(`Nel Contratto “${label}” una regola usa una carta che non esiste.`);
-        } else if ((f.kind === 'minValue' || f.kind === 'maxValue' || f.kind === 'exactValue') && !Number.isInteger(f.value)) {
+        } else if ((f.kind === 'minValue' || f.kind === 'maxValue' || f.kind === 'exactValue' || f.kind === 'targetValue') && !Number.isInteger(f.value)) {
           errors.push(`Nel Contratto “${label}” una regola ha un valore non valido.`);
         }
       }

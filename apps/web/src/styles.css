@@ -206,6 +206,113 @@ h3 {
   flex: 1 1 auto;
 }
 
+/* Domino: una fila per fazione, dalla carta più bassa alla più alta. */
+.domino {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  background: var(--velvet);
+  border: 3px solid var(--felt-rim);
+  outline: 2px solid var(--gold);
+  outline-offset: -8px;
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+
+.domino-seats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 6px 0;
+}
+
+.domino-seat {
+  padding: 4px 10px;
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.domino-seat.turn {
+  background: var(--gold-light);
+}
+
+.domino-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 0 8px 8px;
+}
+
+.domino-row {
+  display: grid;
+  grid-template-columns: auto repeat(13, minmax(0, 1fr));
+  align-items: center;
+  gap: 3px;
+}
+
+.domino-row .dot {
+  margin-right: 3px;
+}
+
+.domino-slot {
+  display: grid;
+  place-items: center;
+  height: clamp(24px, 5vw, 38px);
+  border: 1.5px dashed rgba(255, 255, 255, 0.28);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.45);
+  font-size: clamp(9px, 2.4vw, 13px);
+  font-weight: 800;
+}
+
+.domino-slot.placed {
+  background: var(--faction);
+  border: 2px solid var(--ink);
+  color: #fff;
+  font-size: clamp(11px, 2.8vw, 16px);
+  font-weight: 900;
+}
+
+.domino-slot.placed.ink-dark {
+  color: var(--ink);
+}
+
+/* Scelte aggiuntive di un Contratto nell'Editor. */
+.contract-flags {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.check input[type='checkbox'] {
+  flex: none;
+  width: 20px;
+  min-height: 0;
+  height: 20px;
+  padding: 0;
+  accent-color: var(--gold);
+}
+
+.check .check-points {
+  flex: none;
+  width: 76px;
+  min-height: 36px;
+  padding: 4px 8px;
+}
+
 /* Elenco a tendina e scelta del colore, al posto di quelli del sistema. */
 .select {
   position: relative;

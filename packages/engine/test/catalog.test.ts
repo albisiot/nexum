@@ -148,11 +148,23 @@ describe('aggiornamenti delle carte', () => {
     const next = applyCatalogUpdates(ORIGINAL_CATALOG, CATALOG_UPDATES);
     const ids = next.contracts.map((k) => k.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids).toHaveLength(ORIGINAL_CATALOG.contracts.length + 1);
+    expect(ids).toHaveLength(ORIGINAL_CATALOG.contracts.length + 9);
     expect(next.contracts.map((k) => k.name).join(' ')).not.toMatch(/alte|basse/);
     expect(JSON.stringify(next.contracts)).not.toContain('"value":80');
     expect(getContract('avoidNine').rules[0]!.filter).toEqual({ kind: 'exactValue', value: 9 });
     expect(ORIGINAL_CATALOG.contracts.find((k) => k.id === 'avoidHigh')!.name).toBe('Non prendere carte alte');
+  });
+
+  it('i Contratti dal King non cambiano nome e punti dei Contratti già modificati', () => {
+    const published = applyCatalogUpdates(ORIGINAL_CATALOG, CATALOG_UPDATES.filter((u) => u.id !== 'contratti-king-2026-10-31'));
+    published.contracts.find((k) => k.id === 'avoidNine')!.rules[0]!.points = -2;
+    published.contracts.find((k) => k.id === 'less')!.name = 'Poche prese';
+    const next = applyCatalogUpdates(published, pendingCatalogUpdates(published));
+    const nine = next.contracts.find((k) => k.id === 'avoidNine')!;
+    const less = next.contracts.find((k) => k.id === 'less')!;
+    expect([nine.rules[0]!.points, nine.limits]).toEqual([-2, true]);
+    expect([less.name, less.slam]).toEqual(['Poche prese', 13]);
+    expect(validateCatalog(next)).toEqual([]);
   });
 
   it('le carte dei pacchetti non finiscono nei mazzi, ma si trovano per codice', () => {
