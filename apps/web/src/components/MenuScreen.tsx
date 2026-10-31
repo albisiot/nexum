@@ -5,13 +5,14 @@ import { Icon } from './Icon';
 
 interface Props {
   onPlay(mode: GameMode): void;
+  onOnline(): void;
   onRoadmap(): void;
   onPatchNotes(): void;
   /** Presente solo per l'account autorizzato a modificare carte e Contratti. */
   onEditor?: () => void;
 }
 
-export function MenuScreen({ onPlay, onRoadmap, onPatchNotes, onEditor }: Props) {
+export function MenuScreen({ onPlay, onOnline, onRoadmap, onPatchNotes, onEditor }: Props) {
   return (
     <section className="menu">
       <div className="menu-hero">
@@ -44,14 +45,12 @@ export function MenuScreen({ onPlay, onRoadmap, onPatchNotes, onEditor }: Props)
             <span className="menu-sub">Da 2 a 8 giocatori sullo stesso dispositivo</span>
           </span>
         </button>
-        <button type="button" className="menu-item" disabled>
+        <button type="button" className="menu-item" onClick={onOnline}>
           <span className="menu-icon">
             <Icon name="online" />
           </span>
           <span className="menu-text">
-            <span className="menu-title">
-              Gioca online <span className="soon">Prossimamente</span>
-            </span>
+            <span className="menu-title">Gioca online</span>
             <span className="menu-sub">Partite con gli amici, ognuno dal proprio dispositivo</span>
           </span>
         </button>

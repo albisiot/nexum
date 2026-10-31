@@ -35,6 +35,7 @@ export {
   cardMatches,
 } from './catalog';
 export { POWERS } from './powerList';
+export { botAction, canRequest, pendingSeat } from './arbiter';
 export { canPlaceDomino, dominoCards, dominoPlaced, dominoStartValue } from './domino';
 export {
   IllegalActionError,

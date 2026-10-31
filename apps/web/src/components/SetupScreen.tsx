@@ -148,9 +148,11 @@ interface Props {
   onChange(values: SetupValues): void;
   onStart(setup: MatchSetup): void;
   onBack(): void;
+  /** Online: chi è nella stanza. I posti rimasti li gioca la CPU. */
+  members?: string[];
 }
 
-export function SetupScreen({ values: v, onChange, onStart, onBack }: Props) {
+export function SetupScreen({ values: v, onChange, onStart, onBack, members }: Props) {
   const [step, setStep] = useState(0);
   const set = (patch: Partial<SetupValues>) => onChange({ ...v, ...patch });
   const go = (next: number) => {
@@ -162,7 +164,7 @@ export function SetupScreen({ values: v, onChange, onStart, onBack }: Props) {
   return (
     <section className="panel setup">
       <button type="button" className="back" onClick={() => (step === 0 ? onBack() : go(step - 1))}>
-        ← {step === 0 ? 'Menu principale' : 'Indietro'}
+        ← {step === 0 ? (members ? 'Torna alla stanza' : 'Menu principale') : 'Indietro'}
       </button>
 
       <ol className="steps" aria-label="Passaggi">
@@ -176,7 +178,7 @@ export function SetupScreen({ values: v, onChange, onStart, onBack }: Props) {
         ))}
       </ol>
 
-      {step === 0 && <PlayersStep v={v} set={set} />}
+      {step === 0 && <PlayersStep v={v} set={set} members={members} />}
       {step === 1 && <ContractsStep v={v} set={set} />}
       {step === 2 && <FactionsStep v={v} set={set} />}
 
@@ -200,15 +202,18 @@ interface StepProps {
   set(patch: Partial<SetupValues>): void;
 }
 
-function PlayersStep({ v, set }: StepProps) {
-  const counts = Array.from({ length: MAX_PLAYERS - MIN_PLAYERS + 1 }, (_, i) => i + MIN_PLAYERS);
+function PlayersStep({ v, set, members }: StepProps & { members?: string[] }) {
+  const humans = members?.length ?? 0;
+  const counts = Array.from({ length: MAX_PLAYERS - MIN_PLAYERS + 1 }, (_, i) => i + MIN_PLAYERS).filter((k) => k >= humans);
   return (
     <>
       <h2>In quanti giocate?</h2>
       <p className="hint">
-        {v.mode === 'solo'
-          ? 'Te compreso: gli altri posti sono gestiti dalla CPU.'
-          : 'Tutti sullo stesso dispositivo: ci si passa il telefono o il computer a turno.'}
+        {members
+          ? `Nella stanza: ${members.join(', ')}. Gli altri posti sono gestiti dalla CPU.`
+          : v.mode === 'solo'
+            ? 'Te compreso: gli altri posti sono gestiti dalla CPU.'
+            : 'Tutti sullo stesso dispositivo: ci si passa il telefono o il computer a turno.'}
       </p>
       <div className="count-picker" role="radiogroup" aria-label="Numero di giocatori">
         {counts.map((k) => (
@@ -221,7 +226,7 @@ function PlayersStep({ v, set }: StepProps) {
             onClick={() => set({ playerCount: k, factions: randomFactions(k, v.factions) })}
           >
             <b>{k}</b>
-            <span>{v.mode === 'solo' ? `tu + ${k - 1} CPU` : 'giocatori'}</span>
+            <span>{members ? (k > humans ? `${humans} + ${k - humans} CPU` : 'giocatori') : v.mode === 'solo' ? `tu + ${k - 1} CPU` : 'giocatori'}</span>
           </button>
         ))}
       </div>

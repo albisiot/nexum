@@ -11,6 +11,7 @@ class CatalogStore {
   private version = getCatalog().version;
   private pending: Catalog | null = null;
   private gameRunning = false;
+  private beforeOverride: Catalog | null = null;
   private readonly listeners = new Set<() => void>();
 
   constructor() {
@@ -42,8 +43,21 @@ class CatalogStore {
     this.apply();
   }
 
+  /** Una partita online usa il catalogo di chi ha creato la stanza, finché non finisce. */
+  override(catalog: Catalog): void {
+    this.beforeOverride ??= getCatalog();
+    this.gameRunning = true;
+    setCatalog(catalog);
+    this.version = getCatalog().version;
+    this.listeners.forEach((l) => l());
+  }
+
   setGameRunning(running: boolean): void {
     this.gameRunning = running;
+    if (!running && this.beforeOverride) {
+      this.pending ??= this.beforeOverride;
+      this.beforeOverride = null;
+    }
     this.apply();
   }
 

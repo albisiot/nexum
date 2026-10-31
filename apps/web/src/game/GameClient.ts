@@ -5,9 +5,11 @@ export type SeatKind = 'human' | 'cpu';
 export interface Seat {
   name: string;
   kind: SeatKind;
+  /** Online: l'account di chi siede a questo posto. */
+  uid?: string;
 }
 
-export type GameMode = 'solo' | 'local';
+export type GameMode = 'solo' | 'local' | 'online';
 
 export interface MatchSetup {
   mode: GameMode;
@@ -45,15 +47,20 @@ export interface ClientSnapshot {
   /** Recupero: le carte che chi decide può scartare (la sua mano: in pass-and-play va mostrata solo a lui). */
   decisionHand: CardId[];
   canContinue: boolean;
+  /** Online: quando scade il tempo per giocare, se tocca a questo giocatore. */
+  turnDeadline?: number | null;
+  /** Online: un avviso sullo stato della partita (connessione, arbitro assente). */
+  notice?: string;
 }
 
 /**
- * Confine tra interfaccia e partita. Oggi esiste solo LocalGameClient (motore nel browser);
- * per l'online basterà un OnlineGameClient che riceve le MatchView dal server
- * e invia le stesse azioni, senza toccare i componenti React.
+ * Confine tra interfaccia e partita: LocalGameClient ha il motore nel browser, online c'è OnlineHostClient
+ * per chi fa da arbitro e OnlineGuestClient per gli altri (online/OnlineClients.ts).
  */
 export interface GameClient {
   readonly setup: MatchSetup;
+  /** Online: cosa succede se si esce a partita in corso. */
+  readonly leaveNote?: string;
   getSnapshot(): ClientSnapshot;
   subscribe(listener: () => void): () => void;
   /** `option`: la scelta del potere della carta (Fury, Ashen, Shift, Archivist). */

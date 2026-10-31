@@ -13,6 +13,25 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.27.0',
+    date: '2026-10-31',
+    title: 'Partite online',
+    changes: [
+      {
+        type: 'new',
+        text: 'Gioca online: crea una stanza, condividi il codice o il link e giocate ognuno dal proprio dispositivo. Serve l’accesso con Google.',
+      },
+      {
+        type: 'new',
+        text: 'I posti vuoti li gioca la CPU. Chi non gioca entro 60 secondi viene sostituito dalla CPU per quel turno, così nessuno blocca la partita.',
+      },
+      {
+        type: 'new',
+        text: 'Chi crea la stanza fa da arbitro: se esce, la partita si ferma finché non rientra. Tutti possono rientrare con lo stesso codice.',
+      },
+    ],
+  },
+  {
     version: '0.26.0',
     date: '2026-10-31',
     title: 'Contratti dal King',

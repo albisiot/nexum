@@ -68,9 +68,17 @@ nella scheda **Regole**.
 3. **Ognuno vede solo la propria PlayerView.** `getView(state, seat)` toglie le mani altrui.
    L'interfaccia disegna solo PlayerView, quindi online nessuno potrà sbirciare le carte degli altri.
 4. **La CPU usa solo la PlayerView**, quindi non bara e può girare sia nel browser sia sul server.
-5. **L'interfaccia parla con un `GameClient`.** Oggi c'è `LocalGameClient` (motore nel browser);
-   per l'online basterà un `OnlineGameClient` che invia le azioni al server e riceve le PlayerView,
-   senza toccare i componenti React.
+5. **L'interfaccia parla con un `GameClient`.** `LocalGameClient` ha il motore nel browser; online c'è
+   `OnlineHostClient` per chi crea la stanza e fa da arbitro, `OnlineGuestClient` per gli altri.
+
+## Partite online
+
+Chi crea la stanza fa da arbitro: il suo browser applica le regole e pubblica su Firestore a ogni giocatore solo la
+propria vista (`apps/web/src/online`). Non serve un server, ma se l'arbitro esce la partita si ferma finché non rientra,
+e lui potrebbe leggere il proprio stato salvato. Per passare a un server basterà spostare l'arbitro: viste e mosse restano uguali.
+
+Per provare in locale, senza account: `http://localhost:5173/?fakeOnline=Anna` in una scheda e
+`http://localhost:5173/?fakeOnline=Bruno` in un'altra.
 
 ## Stato rispetto al simulatore v0.9
 

@@ -4,6 +4,7 @@ import type { FirebaseAuthApi } from './firebase';
 import { FIREBASE_CONFIG } from './firebaseConfig';
 
 export interface Account {
+  uid: string;
   name: string;
   firstName: string;
   email: string | null;
@@ -18,7 +19,7 @@ export type AuthState =
 
 function toAccount(user: User): Account {
   const name = user.displayName?.trim() || user.email?.split('@')[0] || 'Giocatore';
-  return { name, firstName: name.split(/\s+/)[0]!, email: user.email, photoUrl: user.photoURL };
+  return { uid: user.uid, name, firstName: name.split(/\s+/)[0]!, email: user.email, photoUrl: user.photoURL };
 }
 
 function errorMessage(error: unknown): string | undefined {

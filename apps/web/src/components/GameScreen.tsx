@@ -29,9 +29,21 @@ interface Props {
   client: GameClient;
   rulesOpen: boolean;
   onRules(): void;
-  onReplay(): void;
+  onReplay?: () => void;
   onExit(): void;
   onMenu(): void;
+}
+
+/** Online: negli ultimi secondi del proprio turno ricorda che poi gioca la CPU. */
+function TurnClock({ deadline }: { deadline: number }) {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const left = Math.max(0, Math.ceil((deadline - now) / 1000));
+  if (left > 20) return null;
+  return <p className="status warn">Ancora {plural(left, 'secondo', 'secondi')}, poi la CPU gioca al posto tuo.</p>;
 }
 
 export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMenu }: Props) {
@@ -50,14 +62,14 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
   }, [anchor]);
 
   const names = view.players.map((p) => p.name);
-  const me = client.setup.mode === 'solo' ? 0 : null;
+  const me = client.setup.mode === 'local' ? null : perspective;
   const series = match.hands.length > 1;
 
   if (match.phase === 'matchEnd') {
     return <EndScreen match={match} names={names} me={me} onReplay={onReplay} onExit={onExit} onMenu={onMenu} />;
   }
   if (match.phase === 'handEnd') {
-    return <HandEndScreen match={match} names={names} me={me} onNext={() => client.nextHand()} onMenu={onMenu} />;
+    return <HandEndScreen match={match} names={names} me={me} onNext={() => client.nextHand()} onMenu={onMenu} leaveNote={client.leaveNote} />;
   }
 
   const trickOver = view.phase === 'trickEnd';
@@ -91,13 +103,17 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
     setSelected(null);
   };
   const exit = () => {
-    void askConfirm({
-      title: 'Abbandonare la partita?',
-      text: 'Torni alla preparazione e la partita in corso va persa.',
-      confirm: 'Abbandona',
-      cancel: 'Continua a giocare',
-      danger: true,
-    }).then((ok) => {
+    void askConfirm(
+      client.leaveNote
+        ? { title: 'Uscire dalla partita?', text: client.leaveNote, confirm: 'Esci', cancel: 'Continua a giocare', danger: true }
+        : {
+            title: 'Abbandonare la partita?',
+            text: 'Torni alla preparazione e la partita in corso va persa.',
+            confirm: 'Abbandona',
+            cancel: 'Continua a giocare',
+            danger: true,
+          },
+    ).then((ok) => {
       if (ok) onExit();
     });
   };
@@ -153,6 +169,8 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
           )}
 
           <div className="table-status" aria-live="polite">
+            {snap.notice && <p className="status warn">{snap.notice}</p>}
+            {snap.turnDeadline && !snap.notice && <TurnClock key={snap.turnDeadline} deadline={snap.turnDeadline} />}
             {last ? (
               <div className="result">
                 <p>
@@ -177,6 +195,7 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
                     {view.trickNo >= view.tricksPerHand ? 'Vedi il risultato finale' : 'Presa successiva'}
                   </button>
                 )}
+                {client.setup.mode === 'online' && !view.decision && <span className="hint">Si prosegue da soli tra pochi secondi.</span>}
               </div>
             ) : snap.handHidden ? (
               <section className="pass-panel">
@@ -285,7 +304,7 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
             </section>
           )}
           <button type="button" className="btn danger wide" onClick={exit}>
-            Torna alla preparazione
+            {client.setup.mode === 'online' ? 'Esci dalla partita' : 'Torna alla preparazione'}
           </button>
         </aside>
       </div>

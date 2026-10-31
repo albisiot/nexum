@@ -1460,6 +1460,71 @@ input {
   color: var(--warn);
 }
 
+.status.bad {
+  color: var(--bad);
+}
+
+/* Gioco online: la stanza. */
+.online .step {
+  margin-top: 18px;
+}
+
+.room-join {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  max-width: 420px;
+}
+
+.room-join input {
+  font-weight: 800;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.room-code-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.room-code {
+  padding: 6px 16px;
+  background: var(--me);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  font-size: 30px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+.room-members {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.room-members li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--panel2);
+  border: 2px solid var(--line);
+  border-radius: 12px;
+}
+
+.room-members li.me {
+  background: var(--me);
+}
+
 .rules p {
   line-height: 1.55;
   margin: 0 0 10px;

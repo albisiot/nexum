@@ -42,12 +42,6 @@ export const ROADMAP: RoadmapItem[] = [
     text: 'Un album con tutte le carte che hai trovato, i loro poteri e quelle che ti mancano.',
   },
   {
-    icon: '🌐',
-    title: 'Gioca online',
-    status: 'planned',
-    text: 'Partite con gli amici, ognuno dal proprio dispositivo, in stanze private.',
-  },
-  {
     icon: '📊',
     title: 'Statistiche',
     status: 'idea',

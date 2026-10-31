@@ -34,12 +34,19 @@ function trickDetail(t: TrickResult, contract: ContractDef, target?: FactionId):
 /** Cappotto e Domino: la riga che spiega da dove arrivano i punti della mano. */
 function handNote(hand: HandSummary, contract: ContractDef, names: readonly string[]): string | null {
   if (hand.slam !== undefined) return `Cappotto! ${names[hand.slam]} prende tutto e fa ${signed(contract.slam!)}.`;
-  if (hand.dominoWinner !== undefined) return `${names[hand.dominoWinner]} finisce le carte per primo e prende i punti di chi ne ha ancora.`;
+  if (hand.dominoWinner !== undefined) return `${names[hand.dominoWinner]} finisce le carte prima di tutti e prende i punti di chi ne ha ancora.`;
   return null;
 }
 
 /** Pausa tra due Contratti di una serie. */
-export function HandEndScreen({ match, names, me, onNext, onMenu }: ResultProps & { onNext(): void; onMenu(): void }) {
+export function HandEndScreen({
+  match,
+  names,
+  me,
+  onNext,
+  onMenu,
+  leaveNote,
+}: ResultProps & { onNext(): void; onMenu(): void; leaveNote?: string }) {
   const hand = match.completed.at(-1)!;
   const contract = getContract(hand.contract);
   const next = match.hands[match.handIndex + 1]!;
@@ -55,9 +62,9 @@ export function HandEndScreen({ match, names, me, onNext, onMenu }: ResultProps 
   const fromPowers = me === null || domino ? 0 : hand.scores[me]! - fromContract;
   const leave = () => {
     void askConfirm({
-      title: 'Abbandonare la serie?',
-      text: 'Torni al menu e la serie in corso va persa.',
-      confirm: 'Abbandona',
+      title: leaveNote ? 'Uscire dalla partita?' : 'Abbandonare la serie?',
+      text: leaveNote ?? 'Torni al menu e la serie in corso va persa.',
+      confirm: leaveNote ? 'Esci' : 'Abbandona',
       cancel: 'Continua la serie',
       danger: true,
     }).then((ok) => {
@@ -232,7 +239,7 @@ export function EndScreen({
   onReplay,
   onExit,
   onMenu,
-}: ResultProps & { onReplay(): void; onExit(): void; onMenu(): void }) {
+}: ResultProps & { onReplay?: () => void; onExit(): void; onMenu(): void }) {
   const order = matchRanking(match.totals);
   const best = match.totals[order[0]!]!;
   const winners = order.filter((pi) => match.totals[pi] === best);
@@ -320,11 +327,13 @@ export function EndScreen({
       )}
 
       <div className="controls center">
-        <button type="button" className="btn primary" onClick={onReplay}>
-          {series ? 'Rigioca la stessa serie' : 'Rigioca questo Contratto'}
-        </button>
-        <button type="button" className="btn" onClick={onExit}>
-          Nuova partita
+        {onReplay && (
+          <button type="button" className="btn primary" onClick={onReplay}>
+            {series ? 'Rigioca la stessa serie' : 'Rigioca questo Contratto'}
+          </button>
+        )}
+        <button type="button" className={onReplay ? 'btn' : 'btn primary'} onClick={onExit}>
+          {onReplay ? 'Nuova partita' : 'Torna alla stanza'}
         </button>
         <button type="button" className="btn" onClick={onMenu}>
           Menu principale
