@@ -236,7 +236,7 @@ export function OnlineScreen({ invite, onEnter, onBack }: Props) {
         </button>
         <h2>Gioca online</h2>
         <p className="hint">Per giocare online serve l’accesso con Google: così gli altri vedono il tuo nome.</p>
-        <AccountPanel />
+        <AccountPanel required />
       </section>
     );
   }

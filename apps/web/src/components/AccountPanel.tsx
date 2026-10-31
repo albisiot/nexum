@@ -1,7 +1,7 @@
 import { authStore, useAuth } from '../auth/auth';
 
 /** Accesso facoltativo con Google, mostrato nel menu principale. */
-export function AccountPanel() {
+export function AccountPanel({ required }: { required?: boolean }) {
   const auth = useAuth();
 
   if (auth.status === 'disabled') return null;
@@ -38,7 +38,7 @@ export function AccountPanel() {
         </svg>
         Accedi con Google
       </button>
-      <span className="hint">Facoltativo: in partita userai il tuo nome.</span>
+      {!required && <span className="hint">Facoltativo: in partita userai il tuo nome.</span>}
       {auth.error && <span className="account-error">{auth.error}</span>}
     </div>
   );
