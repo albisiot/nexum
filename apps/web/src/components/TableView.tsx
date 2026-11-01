@@ -1,4 +1,5 @@
 import type { Play, PlayerView } from '@nexum/engine';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { plural, signed } from '../game/text';
 import { CardView } from './CardView';
@@ -22,6 +23,15 @@ const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x
 const CARD_TURN = [-2, -9, 4, 8, -5, 6, -4, 3];
 /** A fine presa la carta vincente si alza più vicina al centro: quanto resta della distanza dal centro del tavolo. */
 const TAKE_RING = 0.45;
+/** Quanto dura il volo del mucchio verso chi ha preso (come trick-fly in styles.css). */
+const FLY_MS = 450;
+
+/** Il mucchio di una presa finita, con le posizioni già calcolate: il posto in basso può cambiare alla presa dopo. */
+interface FlyingPile {
+  trickNo: number;
+  winner: number;
+  cards: { play: Play; style: CSSProperties }[];
+}
 
 /**
  * Angolo di ogni posto attorno al tavolo, in gradi (90 = in basso, 270 = in fondo).
@@ -202,8 +212,39 @@ export function TableView({ view, names, totals, anchor, plays, winner }: Props)
     // Dal lato lontano la carta in piedi andrebbe a coprire l'etichetta del posto: resta al centro del tavolo.
     const footV = foot.v > 0 ? foot.v * TAKE_RING : g.cardH * 0.12;
     const y = footV + (seat === winner ? -g.cardH / 2 : g.cardH * 0.1);
-    return { '--to-x': `${x - from.u}px`, '--to-y': `${y - from.v}px`, '--pile': order } as CSSProperties;
+    // Il mucchio esce dal tavolo verso il posto di chi ha preso.
+    const a = angles[slot(winner)]! * RAD;
+    const flyX = Math.cos(a) * (g.tw / 2 + g.rim);
+    const flyY = Math.sin(a) * (g.th / 2 + g.rim);
+    return {
+      '--to-x': `${x - from.u}px`,
+      '--to-y': `${y - from.v}px`,
+      '--fly-x': `${flyX - from.u}px`,
+      '--fly-y': `${flyY - from.v}px`,
+      '--pile': order,
+    } as CSSProperties;
   };
+
+  // Quando parte la presa successiva il mucchio di quella finita vola via, senza fermare il gioco.
+  const [flying, setFlying] = useState<FlyingPile | null>(null);
+  const pile = useRef<FlyingPile | null>(null);
+  if (winner !== null) {
+    pile.current = {
+      trickNo: view.trickNo,
+      winner,
+      cards: plays.map((play, order) => ({ play, style: { ...cardPlace(play.player), ...takeMove(play.player, order) } })),
+    };
+  }
+  useLayoutEffect(() => {
+    if (winner !== null || !pile.current) return;
+    setFlying(pile.current);
+    pile.current = null;
+  }, [winner]);
+  useEffect(() => {
+    if (!flying) return;
+    const timer = setTimeout(() => setFlying(null), FLY_MS);
+    return () => clearTimeout(timer);
+  }, [flying]);
 
   const plane: CSSProperties | undefined = g
     ? { left: g.cx - g.tw / 2, top: g.cy - g.th / 2, width: g.tw, height: g.th }
@@ -255,6 +296,18 @@ export function TableView({ view, names, totals, anchor, plays, winner }: Props)
                 )}
               </div>
             ))}
+            {flying?.cards.map(({ play, style }) =>
+              play.skipped ? null : (
+                <div
+                  key={`volo-${flying.trickNo}-${play.player}`}
+                  className={`table-card flying${flying.winner === play.player ? ' won' : ''}`}
+                  style={style}
+                  aria-hidden="true"
+                >
+                  <CardView cardId={play.cardId} final={play.final} mini />
+                </div>
+              ),
+            )}
           </div>
 
           {view.players.map((p, seat) => {

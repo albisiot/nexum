@@ -17,7 +17,7 @@ import {
   getFaction,
 } from '@nexum/engine';
 import type { CardId, DominoState, FactionId } from '@nexum/engine';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { useCatalogVersion } from '../catalog/store';
 import { describeScoring, signed } from '../game/text';
@@ -80,9 +80,29 @@ function FactionName({ faction }: { faction: FactionId }) {
   );
 }
 
+/** A presa decisa misura quanto deve spostarsi ogni carta per finire sotto la vincente: su schermi stretti il tavolo va a capo. */
+function useTakeMove(taking: boolean) {
+  const table = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const won = table.current?.querySelector('.winner .card-slot');
+    if (!taking || !table.current || !won) return;
+    const target = won.getBoundingClientRect();
+    table.current.querySelectorAll<HTMLElement>('.tut-play:not(.winner) .card-slot').forEach((slot, i) => {
+      const box = slot.getBoundingClientRect();
+      slot.style.setProperty('--to-x', `${target.left - box.left}px`);
+      slot.style.setProperty('--to-y', `${target.top - box.top}px`);
+      slot.style.setProperty('--pile', String(i));
+      slot.style.setProperty('--lean', `${i % 2 ? 6 : -6}deg`);
+      slot.style.setProperty('--spread', `${i % 2 ? 24 : -24}px`);
+    });
+  }, [taking]);
+  return table;
+}
+
 function TablePlays({ plays, winner }: { plays: readonly Play[]; winner?: Play }) {
+  const table = useTakeMove(!!winner);
   return (
-    <div className="tut-table">
+    <div ref={table} className={`tut-table${winner ? ' taking' : ''}`}>
       {plays.map((p) => (
         <div key={p.who} className={`tut-play${p === winner ? ' winner' : ''}`}>
           <span className="tut-who">{p.who}</span>
@@ -186,16 +206,19 @@ function WinnerQuiz({ plays, lead, trump, wrong, right }: QuizProps) {
   const [picked, setPicked] = useState<CardId | null>(null);
   const winner = trickWinner(plays, lead, trump);
   const solved = picked === winner.cardId;
+  const table = useTakeMove(solved);
   return (
     <>
-      <div className="tut-table">
+      <div ref={table} className={`tut-table${solved ? ' taking' : ''}`}>
         {plays.map((p) => (
           <button
             key={p.who}
             type="button"
             className={`tut-play tut-pick${solved && p === winner ? ' winner' : ''}${picked === p.cardId && !solved ? ' missed' : ''}`}
             aria-label={`${p.who}: ${cardName(p.cardId)}`}
-            onClick={() => setPicked(p.cardId)}
+            onClick={() => {
+              if (!solved) setPicked(p.cardId);
+            }}
           >
             <span className="tut-who">{p.who}</span>
             <Slot cardId={p.cardId} />

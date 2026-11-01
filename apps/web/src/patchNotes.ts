@@ -13,6 +13,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.35.0',
+    date: '2026-11-01',
+    title: 'Il mucchio vola da chi ha preso',
+    changes: [
+      {
+        type: 'new',
+        text: 'Quando parte la presa successiva, il mucchio di carte vola verso il posto di chi ha preso la presa.',
+      },
+      {
+        type: 'new',
+        text: 'Anche nel tutorial la carta che prende si alza e le altre le finiscono sotto.',
+      },
+    ],
+  },
+  {
     version: '0.34.0',
     date: '2026-11-01',
     title: 'Presa animata e logo scintillante',
