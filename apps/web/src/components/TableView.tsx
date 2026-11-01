@@ -20,6 +20,8 @@ const RAD = Math.PI / 180;
 const clamp = (x: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, x));
 /** Piccola rotazione fissa per posto: le carte sembrano appoggiate a mano. */
 const CARD_TURN = [-2, -9, 4, 8, -5, 6, -4, 3];
+/** A fine presa la carta vincente si alza più vicina al centro: quanto resta della distanza dal centro del tavolo. */
+const TAKE_RING = 0.45;
 
 /**
  * Angolo di ogni posto attorno al tavolo, in gradi (90 = in basso, 270 = in fondo).
@@ -169,20 +171,38 @@ export function TableView({ view, names, totals, anchor, plays, winner }: Props)
   const slot = (seat: number) => (seat - anchor + n) % n;
   const playing = winner === null && view.phase === 'playing';
 
+  /** Centro della carta di un posto sul piano del tavolo. */
+  const cardSpot = (seat: number, table: Geometry) => {
+    const a = angles[slot(seat)]! * RAD;
+    const ring = n < 6 ? 0.56 : table.phone ? 0.5 : 0.64;
+    return {
+      u: Math.cos(a) * ring * (table.tw / 2 - table.rim),
+      v: Math.sin(a) * ring * (table.th / 2 - table.rim),
+    };
+  };
+
   const cardPlace = (seat: number): CSSProperties => {
     if (!g) return {};
-    const r = slot(seat);
-    const a = angles[r]! * RAD;
-    const ring = n < 6 ? 0.56 : g.phone ? 0.5 : 0.64;
-    const u = Math.cos(a) * ring * (g.tw / 2 - g.rim);
-    const v = Math.sin(a) * ring * (g.th / 2 - g.rim);
+    const { u, v } = cardSpot(seat, g);
     return {
       left: g.tw / 2 + u - g.cardW / 2,
       top: g.th / 2 + v - g.cardH / 2,
       width: g.cardW,
       height: g.cardH,
-      '--turn': `${CARD_TURN[r % CARD_TURN.length]}deg`,
+      '--turn': `${CARD_TURN[slot(seat) % CARD_TURN.length]}deg`,
     } as CSSProperties;
+  };
+
+  /** Dove va ogni carta a fine presa: la vincente in piedi, le altre ammucchiate ai suoi piedi. */
+  const takeMove = (seat: number, order: number): CSSProperties => {
+    if (!g || winner === null) return {};
+    const from = cardSpot(seat, g);
+    const foot = cardSpot(winner, g);
+    const x = foot.u * TAKE_RING;
+    // Dal lato lontano la carta in piedi andrebbe a coprire l'etichetta del posto: resta al centro del tavolo.
+    const footV = foot.v > 0 ? foot.v * TAKE_RING : g.cardH * 0.12;
+    const y = footV + (seat === winner ? -g.cardH / 2 : g.cardH * 0.1);
+    return { '--to-x': `${x - from.u}px`, '--to-y': `${y - from.v}px`, '--pile': order } as CSSProperties;
   };
 
   const plane: CSSProperties | undefined = g
@@ -210,7 +230,7 @@ export function TableView({ view, names, totals, anchor, plays, winner }: Props)
           />
           <div
             className="table-plane"
-            style={{ ...plane, transform: `rotateX(${g.tilt}deg)`, '--card-w': `${g.cardW}px` } as CSSProperties}
+            style={{ ...plane, transform: `rotateX(${g.tilt}deg)`, '--card-w': `${g.cardW}px`, '--tilt': `${g.tilt}deg` } as CSSProperties}
           >
             <div className="table-felt" style={{ borderWidth: g.rim }} />
             <div className="table-mark" style={{ fontSize: Math.round(g.tw * 0.06) }} aria-hidden="true">
@@ -221,11 +241,11 @@ export function TableView({ view, names, totals, anchor, plays, winner }: Props)
                 La tua carta
               </div>
             )}
-            {plays.map((pl) => (
+            {plays.map((pl, order) => (
               <div
                 key={`${view.trickNo}-${pl.player}`}
-                className={`table-card${winner === pl.player ? ' won' : ''}`}
-                style={cardPlace(pl.player)}
+                className={`table-card${winner === pl.player ? ' won' : winner !== null ? ` taken${pl.skipped ? ' skipped' : ''}` : ''}`}
+                style={{ ...cardPlace(pl.player), ...takeMove(pl.player, order) }}
               >
                 <span className="sr-only">{names[pl.player]}: </span>
                 {pl.skipped ? (

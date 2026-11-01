@@ -13,6 +13,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.34.0',
+    date: '2026-11-01',
+    title: 'Presa animata e logo scintillante',
+    changes: [
+      {
+        type: 'new',
+        text: 'A fine presa la carta vincente si alza in piedi sul tavolo e tutte le altre finiscono ammucchiate ai suoi piedi, così si vede subito chi ha preso.',
+      },
+      {
+        type: 'new',
+        text: 'Nel menu principale un riflesso di luce attraversa il logo NEXUM e sulla corona compaiono delle scintille.',
+      },
+    ],
+  },
+  {
     version: '0.33.0',
     date: '2026-11-01',
     title: 'Tutorial',

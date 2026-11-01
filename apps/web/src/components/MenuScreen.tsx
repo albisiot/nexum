@@ -25,8 +25,16 @@ export function MenuScreen({ onPlay, onOnline, onTutorial, onShop,onCollection, 
         <svg className="menu-crown" viewBox="0 0 24 24" width="56" height="56" aria-hidden="true">
           <path d="M3 8l4.5 4L12 5l4.5 7L21 8l-2 10H5Z" fill="var(--gold)" stroke="var(--ink)" strokeWidth="1.75" strokeLinejoin="round" />
           <path d="M5 21h14" fill="none" stroke="var(--ink)" strokeWidth="1.75" strokeLinecap="round" />
+          <path className="menu-spark" d="M3 3.2Q3 6 5.8 6Q3 6 3 8.8Q3 6 .2 6Q3 6 3 3.2Z" />
+          <path className="menu-spark" d="M12 .2Q12 3 14.8 3Q12 3 12 5.8Q12 3 9.2 3Q12 3 12 .2Z" />
+          <path className="menu-spark" d="M21 3.2Q21 6 23.8 6Q21 6 21 8.8Q21 6 18.2 6Q21 6 21 3.2Z" />
         </svg>
-        <h1 className="menu-logo">NEXUM</h1>
+        <h1 className="menu-logo">
+          NEXUM
+          <span className="menu-logo-shine" aria-hidden="true">
+            NEXUM
+          </span>
+        </h1>
         <p>Gioco di carte trick-taking a Contratti</p>
       </div>
 

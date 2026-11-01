@@ -941,11 +941,78 @@ h3 {
   padding-left: 0.08em;
   color: var(--ink);
   text-shadow: 5px 5px 0 var(--gold);
+  position: relative;
+  display: inline-block;
+}
+
+/* Copia del logo sopra l'originale: il riflesso non può stare sul testo che ha l'ombra. */
+.menu-logo-shine {
+  position: absolute;
+  inset: 0;
+  padding-left: inherit;
+  color: transparent;
+  text-shadow: none;
+  background: linear-gradient(105deg, transparent 42%, var(--gold-light) 50%, transparent 58%) no-repeat;
+  background-size: 300% 100%;
+  background-position: 130% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  pointer-events: none;
+  animation: logo-shine 7s ease-in-out 1s infinite;
+}
+
+@keyframes logo-shine {
+  0% {
+    background-position: 130% 0;
+  }
+  22%,
+  100% {
+    background-position: -30% 0;
+  }
 }
 
 .menu-crown {
   display: block;
   margin: 0 auto 6px;
+  overflow: visible;
+}
+
+.menu-spark {
+  fill: var(--gold);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: crown-spark 4.2s ease-in-out infinite;
+}
+
+.menu-spark:nth-of-type(2) {
+  animation-delay: 1.4s;
+}
+
+.menu-spark:nth-of-type(3) {
+  animation-delay: 2.8s;
+}
+
+@keyframes crown-spark {
+  0%,
+  28%,
+  100% {
+    opacity: 0;
+    transform: scale(0.2) rotate(0deg);
+  }
+  14% {
+    opacity: 1;
+    transform: scale(1) rotate(45deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-logo-shine {
+    display: none;
+  }
+  .menu-spark {
+    animation: none;
+  }
 }
 
 .menu-hero p {
@@ -2312,6 +2379,10 @@ input {
   transform-origin: 50% 50%;
 }
 
+.table-plane {
+  transform-style: preserve-3d;
+}
+
 .table-under {
   border-radius: 50%;
   background: var(--table-under);
@@ -2359,6 +2430,21 @@ input {
 
 .table-card.won {
   z-index: 1;
+  animation:
+    card-drop 0.28s ease-out both,
+    trick-stand 0.45s cubic-bezier(0.3, 1.3, 0.5, 1) 0.6s forwards;
+}
+
+.table-card.taken {
+  animation:
+    card-drop 0.28s ease-out both,
+    trick-gather 0.4s ease-in-out calc(0.95s + var(--pile) * 0.07s) forwards;
+}
+
+.table-card.taken.skipped {
+  animation:
+    card-drop 0.28s ease-out both,
+    trick-skip-out 0.3s ease-out 0.95s forwards;
 }
 
 .table-card.won .card {
@@ -2396,6 +2482,34 @@ input {
   to {
     opacity: 1;
     transform: rotate(var(--turn));
+  }
+}
+
+/* La vincente ruota sul lato basso contro l'inclinazione del tavolo: resta di fronte a chi guarda. */
+@keyframes trick-stand {
+  from {
+    transform-origin: 50% 50%;
+    transform: translate(0, 0) translateZ(0) rotateX(0deg) rotate(var(--turn));
+  }
+  to {
+    transform-origin: 50% 100%;
+    transform: translate(var(--to-x), var(--to-y)) translateZ(10px) rotateX(calc(var(--tilt) * -1)) rotate(0deg);
+  }
+}
+
+@keyframes trick-gather {
+  from {
+    transform: translate(0, 0) translateZ(0) rotate(var(--turn));
+  }
+  to {
+    transform: translate(var(--to-x), var(--to-y)) translateZ(calc(var(--pile) * 1px + 1px)) rotate(var(--turn));
+  }
+}
+
+@keyframes trick-skip-out {
+  to {
+    opacity: 0;
+    transform: rotate(var(--turn)) scale(0.9);
   }
 }
 
@@ -2982,7 +3096,10 @@ input {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .table-card {
+  .table-card,
+  .table-card.won,
+  .table-card.taken,
+  .table-card.taken.skipped {
     animation: none;
   }
   .fan-card,
