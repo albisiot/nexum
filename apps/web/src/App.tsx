@@ -14,6 +14,7 @@ import { RoadmapScreen } from './components/RoadmapScreen';
 import { RulesPanel } from './components/RulesPanel';
 import { SetupScreen, defaultSetup, sanitizeSetup } from './components/SetupScreen';
 import { ShopScreen } from './components/ShopScreen';
+import { Tutorial, tutorialSeen } from './components/Tutorial';
 import type { SetupValues } from './components/SetupScreen';
 import type { GameClient, GameMode, MatchSetup } from './game/GameClient';
 import { LocalGameClient } from './game/LocalGameClient';
@@ -31,6 +32,8 @@ export function App() {
   const [setupValues, setSetupValues] = useState<SetupValues>(defaultSetup);
   const [client, setClient] = useState<GameClient | null>(null);
   const [showRules, setShowRules] = useState(false);
+  // Si apre da solo alla prima visita; chi arriva da un invito entra prima nella stanza e lo vedrà la volta dopo.
+  const [showTutorial, setShowTutorial] = useState(() => !INVITE && !tutorialSeen());
   const auth = useAuth();
   const catalogVersion = useCatalogVersion();
   const canEdit = isEditor(auth) || DEV_EDITOR;
@@ -90,7 +93,7 @@ export function App() {
         </button>
       </header>
 
-      {showRules && <RulesPanel />}
+      {showRules && <RulesPanel onTutorial={client?.setup.mode === 'online' ? undefined : () => setShowTutorial(true)} />}
 
       {client ? (
         <GameScreen
@@ -129,11 +132,25 @@ export function App() {
         <MenuScreen
           onPlay={choose}
           onOnline={() => go('online')}
+          onTutorial={() => setShowTutorial(true)}
           onShop={() => go('shop')}
           onCollection={() => go('collection')}
           onRoadmap={() => go('roadmap')}
           onPatchNotes={() => go('patchNotes')}
           onEditor={canEdit ? () => go('editor') : undefined}
+        />
+      )}
+      {showTutorial && (
+        <Tutorial
+          onClose={() => setShowTutorial(false)}
+          onPlay={
+            onMenu
+              ? () => {
+                  setShowTutorial(false);
+                  choose('solo');
+                }
+              : undefined
+          }
         />
       )}
       <ConfirmHost />

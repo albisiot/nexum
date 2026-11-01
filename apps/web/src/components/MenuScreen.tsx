@@ -7,6 +7,7 @@ import { Icon } from './Icon';
 interface Props {
   onPlay(mode: GameMode): void;
   onOnline(): void;
+  onTutorial(): void;
   onShop(): void;
   onCollection(): void;
   onRoadmap(): void;
@@ -15,7 +16,7 @@ interface Props {
   onEditor?: () => void;
 }
 
-export function MenuScreen({ onPlay, onOnline, onShop, onCollection, onRoadmap, onPatchNotes, onEditor }: Props) {
+export function MenuScreen({ onPlay, onOnline, onTutorial, onShop,onCollection, onRoadmap, onPatchNotes, onEditor }: Props) {
   const profile = useProfile();
   const ready = profile.status === 'ready' ? profile.profile : null;
   return (
@@ -57,6 +58,15 @@ export function MenuScreen({ onPlay, onOnline, onShop, onCollection, onRoadmap, 
           <span className="menu-text">
             <span className="menu-title">Gioca online</span>
             <span className="menu-sub">Partite con gli amici, ognuno dal proprio dispositivo</span>
+          </span>
+        </button>
+        <button type="button" className="menu-item" onClick={onTutorial}>
+          <span className="menu-icon">
+            <Icon name="tutorial" />
+          </span>
+          <span className="menu-text">
+            <span className="menu-title">Tutorial</span>
+            <span className="menu-sub">Impara a giocare passo per passo, con delle prove</span>
           </span>
         </button>
         <button type="button" className="menu-item" onClick={onShop}>

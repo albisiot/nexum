@@ -13,6 +13,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.33.0',
+    date: '2026-11-01',
+    title: 'Tutorial',
+    changes: [
+      {
+        type: 'new',
+        text: 'Nuovo tutorial: spiega passo per passo prese, Contratti, Briscola, Domino, punteggio, modi di gioco e monete, con delle prove da fare direttamente sulle carte.',
+      },
+      {
+        type: 'new',
+        text: 'Il tutorial si apre da solo la prima volta che entri nel gioco. Puoi rivederlo quando vuoi dal menu principale o dal pannello Regole.',
+      },
+    ],
+  },
+  {
     version: '0.32.0',
     date: '2026-10-31',
     title: 'CPU di livelli diversi',

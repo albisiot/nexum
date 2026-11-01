@@ -206,6 +206,387 @@ h3 {
   flex: 1 1 auto;
 }
 
+/* Tutorial: una finestra sopra allo schermo, a tutta pagina sul telefono. */
+.tutorial {
+  width: min(760px, calc(100vw - 32px));
+  height: min(820px, calc(100dvh - 32px));
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  overflow: hidden;
+  color: var(--text);
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+.tutorial::backdrop {
+  background: rgba(28, 35, 64, 0.55);
+}
+
+.tut-frame {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tut-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+}
+
+.tut-chapters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tut-chapters .chip-option {
+  min-height: 36px;
+  padding: 5px 11px;
+  font-size: 13px;
+}
+
+.tut-head .btn {
+  flex: none;
+}
+
+.tut-progress {
+  flex: none;
+  height: 8px;
+  background: var(--inset);
+  border-block: 2px solid var(--line);
+  box-sizing: content-box;
+}
+
+.tut-progress span {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+  transition: width 0.2s ease-out;
+}
+
+.tut-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px;
+}
+
+.tut-content > h2 {
+  margin: 2px 0 12px;
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.tut-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  line-height: 1.55;
+}
+
+.tut-body > * {
+  max-width: 100%;
+  margin: 0;
+}
+
+.tut-body > :not(.btn) {
+  width: 100%;
+}
+
+.tut-body h3 {
+  margin: 4px 0 -6px;
+}
+
+.tut-body ul,
+.tut-body ol {
+  padding-left: 22px;
+}
+
+.tut-body li + li {
+  margin-top: 6px;
+}
+
+.tut-note {
+  padding: 10px 12px;
+  background: var(--inset);
+  border-radius: 12px;
+  font-size: 14px;
+}
+
+.tut-foot {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 16px;
+  border-top: 2px solid var(--line);
+}
+
+.tut-faction {
+  white-space: nowrap;
+}
+
+.tut-factions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 14px;
+}
+
+.tut-body .card-slot,
+.tut-body .card-slot .card {
+  --card-w: clamp(58px, 16vw, 92px);
+}
+
+.tut-row,
+.tut-hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.tut-table {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 10px;
+  background: var(--velvet);
+  border: 3px solid var(--felt-rim);
+  outline: 2px solid var(--gold);
+  outline-offset: -8px;
+  border-radius: 18px;
+}
+
+.tut-play {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: none;
+  border: 0;
+  color: #ffffff;
+}
+
+.tut-who {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.tut-play.winner .card {
+  box-shadow: 0 0 0 3px var(--gold-light);
+}
+
+.tut-play.missed .card {
+  filter: saturate(0.25) brightness(0.72);
+}
+
+.tut-takes {
+  padding: 1px 8px;
+  background: var(--gold-light);
+  border: 1.5px solid var(--ink);
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.tut-pick:hover .card,
+.tut-pick:focus-visible .card {
+  box-shadow: 0 0 0 3px var(--gold-light);
+}
+
+.tut-prompt {
+  font-weight: 800;
+  text-align: center;
+}
+
+.tut-feedback {
+  padding: 10px 12px;
+  border: 2px solid currentColor;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tut-card {
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 12px;
+  transform: translateY(-6px);
+  transition: transform 0.12s ease-out;
+}
+
+.tut-hand {
+  padding-top: 18px;
+}
+
+.tut-card.invalid {
+  transform: none;
+}
+
+.tut-card.invalid .card {
+  filter: saturate(0.25) brightness(0.72);
+}
+
+.tut-card.selected {
+  transform: translateY(-18px);
+}
+
+.tut-card.selected .card {
+  box-shadow:
+    0 0 0 3px var(--gold-light),
+    3px 3px 0 3px var(--ink);
+}
+
+.tut-card.invalid.selected {
+  transform: translateY(-6px);
+}
+
+.tut-card.invalid.selected .card {
+  box-shadow: 0 0 0 2px var(--line);
+}
+
+.tut-card:focus-visible {
+  outline: 3px solid var(--info);
+  outline-offset: 2px;
+}
+
+.tut-domino {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 10px;
+  background: var(--velvet);
+  border: 3px solid var(--felt-rim);
+  outline: 2px solid var(--gold);
+  outline-offset: -8px;
+  border-radius: 18px;
+}
+
+.tut-domino-row {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+}
+
+.tut-body .tut-domino .card-slot,
+.tut-body .tut-domino .card-slot .card {
+  --card-w: clamp(44px, 11vw, 60px);
+}
+
+.tut-deltas {
+  padding: 0 !important;
+  list-style: none;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.tut-deltas li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 !important;
+  padding: 7px 12px;
+  font-size: 14px;
+}
+
+.tut-deltas li + li {
+  border-top: 2px solid var(--line-soft);
+}
+
+.tut-contracts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 8px;
+  padding: 0 !important;
+  list-style: none;
+}
+
+.tut-contracts li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 !important;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+}
+
+.tut-contracts .contract-score {
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.tut-rules li::marker {
+  font-weight: 900;
+  color: var(--gold-text);
+}
+
+.tut-map {
+  counter-reset: zone;
+  padding: 0 !important;
+  list-style: none;
+}
+
+.tut-map li {
+  counter-increment: zone;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 !important;
+  padding: 8px 12px 8px 46px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.tut-map li::before {
+  content: counter(zone);
+  position: absolute;
+  left: 6px;
+  top: 8px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: var(--gold);
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  font-weight: 900;
+}
+
+@media (max-width: 580px) {
+  .tutorial {
+    width: 100vw;
+    height: 100dvh;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .tut-chapters .chip-option {
+    padding: 4px 8px;
+    font-size: 12px;
+  }
+}
+
 /* Domino: una fila per fazione, dalla carta più bassa alla più alta. */
 .domino {
   display: flex;

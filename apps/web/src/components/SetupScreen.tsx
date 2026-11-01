@@ -69,7 +69,7 @@ const randomFactions = (n: number, keep: FactionId[] = []): FactionId[] => {
 
 /** Toglie dalle scelte fazioni e Contratti che non esistono più nel catalogo (dopo una pubblicazione). */
 /** I Contratti che con i mazzi attuali possono assegnare punti: gli altri restano nel catalogo ma non si propongono. */
-function offeredContracts() {
+export function offeredContracts() {
   return contracts().filter((c) => contractPlayableWith(c, factionIds()));
 }
 

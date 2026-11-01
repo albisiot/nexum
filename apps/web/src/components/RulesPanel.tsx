@@ -1,4 +1,9 @@
-export function RulesPanel() {
+interface Props {
+  /** Assente nelle partite online: lì il tempo del turno scorre anche durante il tutorial. */
+  onTutorial?: () => void;
+}
+
+export function RulesPanel({ onTutorial }: Props) {
   return (
     <section className="panel rules">
       <h2>Regole base</h2>
@@ -30,6 +35,11 @@ export function RulesPanel() {
       <p className="hint">
         Le carte con i poteri non sono nei mazzi delle fazioni: si trovano nei pacchetti del negozio e per ora servono alla collezione. Le monete si guadagnano vincendo: 5 per ogni Contratto, più 25 per una partita a più Contratti.
       </p>
+      {onTutorial && (
+        <button type="button" className="btn small" onClick={onTutorial}>
+          Rivedi il tutorial
+        </button>
+      )}
     </section>
   );
 }
