@@ -12,20 +12,22 @@ import {
   playChoice,
   sortHand,
 } from '@nexum/engine';
-import type { CardId, Decision } from '@nexum/engine';
+import type { CardId, Decision, PlayerView } from '@nexum/engine';
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { GameClient } from '../game/GameClient';
 import { contractDescription, contractTitle, describeNote, describeScoring, describeTrick, plural, signed } from '../game/text';
 import { useGame } from '../game/useGame';
 import { profileStore } from '../shop/profile';
+import { canVibrate, playSound, setPrefs, useFeedbackPrefs, vibrate } from '../game/feedback';
 import { handFresh } from '../game/intro';
 import { askConfirm } from './ConfirmDialog';
 import { ContractIntro, useContractIntro } from './ContractIntro';
+import type { IntroPhase } from './ContractIntro';
 import { EndScreen, HandEndScreen } from './EndScreen';
 import { HandFan } from './HandFan';
 import { DominoBoard } from './DominoBoard';
-import { ContractIcon } from './Icon';
+import { ContractIcon, Icon } from './Icon';
 import { Select } from './Select';
 import { TableView, initials } from './TableView';
 
@@ -50,6 +52,37 @@ function TurnClock({ deadline }: { deadline: number }) {
   return <p className="status warn">Ancora {plural(left, 'secondo', 'secondi')}, poi la CPU gioca al posto tuo.</p>;
 }
 
+/** Suoni e vibrazione per ciò che succede al tavolo. `bottom` è il posto disegnato in basso: le sue prese suonano diverse. */
+function useTableFeedback(view: PlayerView, bottom: number, canPlay: boolean, intro: IntroPhase | null) {
+  const last = view.phase === 'trickEnd' ? view.lastTrick : null;
+  const count = (last ? last.plays : view.plays).length;
+  const seen = useRef({ trick: view.trickNo, count });
+  useEffect(() => {
+    const before = seen.current;
+    seen.current = { trick: view.trickNo, count };
+    if (count > (before.trick === view.trickNo ? before.count : 0)) playSound('card');
+  }, [view.trickNo, count]);
+
+  // Quando la carta vincente si è alzata.
+  const winner = last?.winner ?? null;
+  useEffect(() => {
+    if (winner === null) return;
+    const timer = setTimeout(() => playSound(winner === bottom ? 'takeMine' : 'take'), 650);
+    return () => clearTimeout(timer);
+  }, [view.trickNo, winner, bottom]);
+
+  const myTurn = canPlay && intro === null;
+  useEffect(() => {
+    if (!myTurn) return;
+    playSound('turn');
+    vibrate(40);
+  }, [myTurn]);
+
+  useEffect(() => {
+    if (intro) playSound(intro === 'show' ? 'intro' : 'deal');
+  }, [intro]);
+}
+
 export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMenu }: Props) {
   const snap = useGame(client);
   const { match, view, perspective } = snap;
@@ -69,6 +102,8 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
   const me = client.setup.mode === 'local' ? null : perspective;
   const series = match.hands.length > 1;
   const intro = useContractIntro(client, match.handIndex, match.phase === 'playing' && handFresh(view));
+  useTableFeedback(view, anchor, snap.canPlay || snap.canDiscard, intro.phase);
+  const prefs = useFeedbackPrefs();
 
   // Le monete: si incassano appena un Contratto o la partita è vinta, una volta sola anche rientrando.
   const rewards = me === null ? [] : matchRewards(match, me);
@@ -163,6 +198,33 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
                   {view.trickNo} / {view.tricksPerHand}
                 </strong>
               </>
+            )}
+          </div>
+          <div className="feedback-toggles">
+            <button
+              type="button"
+              className="btn small icon-toggle"
+              aria-pressed={prefs.sound}
+              aria-label="Suoni"
+              data-tip={prefs.sound ? 'Togli i suoni' : 'Attiva i suoni'}
+              onClick={() => setPrefs({ sound: !prefs.sound })}
+            >
+              <Icon name={prefs.sound ? 'suono' : 'muto'} size={18} />
+            </button>
+            {canVibrate && (
+              <button
+                type="button"
+                className="btn small icon-toggle"
+                aria-pressed={prefs.vibrate}
+                aria-label="Vibrazione"
+                data-tip={prefs.vibrate ? 'Togli la vibrazione' : 'Vibra quando tocca a te'}
+                onClick={() => {
+                  setPrefs({ vibrate: !prefs.vibrate });
+                  if (!prefs.vibrate) vibrate(40);
+                }}
+              >
+                <Icon name={prefs.vibrate ? 'vibrazione' : 'senza-vibrazione'} size={18} />
+              </button>
             )}
           </div>
           <button type="button" className="btn small" aria-expanded={rulesOpen} onClick={onRules}>

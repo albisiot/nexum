@@ -2426,6 +2426,23 @@ input {
   align-self: center;
 }
 
+.feedback-toggles {
+  display: flex;
+  align-self: center;
+  gap: 6px;
+}
+
+.icon-toggle {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  padding: 0;
+}
+
+.icon-toggle[aria-pressed='false'] {
+  color: var(--muted);
+}
+
 .board.picking .table-status > .hint,
 .board.picking .hand-head > .hint {
   visibility: hidden;

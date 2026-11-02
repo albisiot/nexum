@@ -1,6 +1,8 @@
 import { cardMatches, getCard, getContract, getFaction, matchRanking, ruleApplies } from '@nexum/engine';
 import type { ContractDef, FactionId, HandSummary, MatchView, TrickResult } from '@nexum/engine';
+import { useEffect } from 'react';
 import type { CSSProperties } from 'react';
+import { playSound } from '../game/feedback';
 import { describeScoring, handLabel as contractLabel, plural, signed } from '../game/text';
 import { useProfile } from '../shop/profile';
 import { askConfirm } from './ConfirmDialog';
@@ -23,6 +25,17 @@ function CoinNote({ coins }: { coins: number }) {
 }
 
 const tone = (n: number) => (n > 0 ? 'good' : n < 0 ? 'bad' : undefined);
+
+/** All'apertura della schermata: la fanfara se si festeggia, poi le monete se ne sono arrivate. */
+function useEndSounds(party: boolean, coins: number) {
+  useEffect(() => {
+    if (party) playSound('win');
+    if (!coins) return;
+    const timer = setTimeout(() => playSound('coins'), party ? 700 : 200);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+}
 
 /** Che cosa conta di una presa per il Contratto: le carte che fanno punti, o la fazione d'apertura. */
 function trickDetail(t: TrickResult, contract: ContractDef, target?: FactionId): string {
@@ -105,6 +118,7 @@ export function HandEndScreen({
   const fromContract = hand.slam === me && contract.slam !== undefined ? contract.slam : tricks.reduce((sum, t) => sum + t.contractDelta, 0);
   const domino = contract.mode === 'domino';
   const fromPowers = me === null || domino ? 0 : hand.scores[me]! - fromContract;
+  useEndSounds(false, coins);
   const leave = () => {
     void askConfirm({
       title: leaveNote ? 'Uscire dalla partita?' : 'Abbandonare la serie?',
@@ -301,6 +315,7 @@ export function EndScreen({
         : `${names[winners[0]!]} vince ${series ? 'la serie' : 'il Contratto'}`;
   // Si festeggia se vinci tu da solo; in pass-and-play (me === null) vince sempre qualcuno davanti allo schermo.
   const party = me === null ? winners.length === 1 : winners.length === 1 && winners[0] === me;
+  useEndSounds(party, coins);
 
   return (
     <section className="panel end">

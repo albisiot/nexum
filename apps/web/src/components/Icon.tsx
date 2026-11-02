@@ -53,6 +53,32 @@ const PATHS = {
     </>
   ),
 
+  // in partita
+  suono: (
+    <>
+      <path d="M3.5 9.5H7L11.5 5.5v13L7 14.5H3.5Z" />
+      <path d="M15 9.2a4 4 0 0 1 0 5.6M17.8 6.5a7.8 7.8 0 0 1 0 11" />
+    </>
+  ),
+  muto: (
+    <>
+      <path d="M3.5 9.5H7L11.5 5.5v13L7 14.5H3.5Z" />
+      <path d="M15.5 9.5l5 5M20.5 9.5l-5 5" />
+    </>
+  ),
+  vibrazione: (
+    <>
+      <rect x="8" y="3.5" width="8" height="17" rx="2" />
+      <path d="M4.5 9v6M19.5 9v6M2 10.5v3M22 10.5v3" />
+    </>
+  ),
+  'senza-vibrazione': (
+    <>
+      <rect x="8" y="3.5" width="8" height="17" rx="2" />
+      <path d="M3.5 3.5l17 17" />
+    </>
+  ),
+
   // Contratti: quelli "non prendere" partono tutti dalla stessa carta (13 × 18, raggio 2,5)
   'piu-prese': (
     <>

@@ -13,6 +13,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.38.0',
+    date: '2026-11-02',
+    title: 'Suoni e vibrazione',
+    changes: [
+      {
+        type: 'new',
+        text: 'Il gioco ha i suoi suoni: carte giocate, prese, distribuzione, il tuo turno, monete e vittoria. Si tolgono e si rimettono con il pulsante dell’altoparlante, accanto a Regole.',
+      },
+      {
+        type: 'new',
+        text: 'Sui telefoni che lo supportano, il telefono vibra quando tocca a te. Anche la vibrazione ha il suo pulsante per toglierla.',
+      },
+    ],
+  },
+  {
     version: '0.37.0',
     date: '2026-11-02',
     title: 'Punti, turni e coriandoli',
