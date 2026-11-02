@@ -1,5 +1,6 @@
 import { cardMatches, getCard, getContract, getFaction, matchRanking, ruleApplies } from '@nexum/engine';
 import type { ContractDef, FactionId, HandSummary, MatchView, TrickResult } from '@nexum/engine';
+import type { CSSProperties } from 'react';
 import { describeScoring, handLabel as contractLabel, plural, signed } from '../game/text';
 import { useProfile } from '../shop/profile';
 import { askConfirm } from './ConfirmDialog';
@@ -39,6 +40,39 @@ function trickDetail(t: TrickResult, contract: ContractDef, target?: FactionId):
   const shown = counted.slice(0, 3).map((card) => `${card.name} (${card.value})`);
   const more = counted.length - shown.length;
   return `Carte che contano: ${shown.join(', ')}${more > 0 ? ` e altre ${more}` : ''}`;
+}
+
+const CONFETTI_COLORS = ['var(--gold)', 'var(--gold-light)', '#e5484d', '#3b82f6', '#22a06b', '#ffffff'];
+
+/** Coriandoli che cadono una volta sola. Posizioni e tempi variano col numero del pezzo, senza caso: restano fermi tra un render e l'altro. */
+function Confetti() {
+  return (
+    <div className="confetti" aria-hidden="true">
+      {Array.from({ length: 70 }, (_, i) => {
+        // Un numero tra 0 e 1 che cambia molto da un pezzo all'altro e da una proprietà all'altra.
+        const r = (k: number) => {
+          const s = Math.sin(i * 12.9898 + k * 78.233) * 43758.5453;
+          return s - Math.floor(s);
+        };
+        return (
+          <span
+            key={i}
+            style={
+              {
+                '--x': `${r(1) * 100}%`,
+                '--w': `${6 + r(2) * 6}px`,
+                '--c': CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+                '--t': `${2.4 + r(3) * 1.8}s`,
+                '--delay': `${r(4) * 0.9}s`,
+                '--drift': `${(r(5) - 0.5) * 160}px`,
+                '--spin': `${(r(6) - 0.5) * 900}deg`,
+              } as CSSProperties
+            }
+          />
+        );
+      })}
+    </div>
+  );
 }
 
 /** Cappotto e Domino: la riga che spiega da dove arrivano i punti della mano. */
@@ -265,9 +299,12 @@ export function EndScreen({
           ? 'Hai vinto la serie!'
           : 'Hai vinto il Contratto!'
         : `${names[winners[0]!]} vince ${series ? 'la serie' : 'il Contratto'}`;
+  // Si festeggia se vinci tu da solo; in pass-and-play (me === null) vince sempre qualcuno davanti allo schermo.
+  const party = me === null ? winners.length === 1 : winners.length === 1 && winners[0] === me;
 
   return (
     <section className="panel end">
+      {party && <Confetti />}
       <span className="hint">{series ? `Serie di ${match.hands.length} Contratti terminata` : 'Contratto terminato'}</span>
       <h2>{title}</h2>
       <p className="hint">

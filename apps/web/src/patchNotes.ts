@@ -13,6 +13,25 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.37.0',
+    date: '2026-11-02',
+    title: 'Punti, turni e coriandoli',
+    changes: [
+      {
+        type: 'new',
+        text: 'A fine presa i punti del Contratto (+1, −2…) salgono dal posto di chi l’ha presa.',
+      },
+      {
+        type: 'new',
+        text: 'Il posto di chi deve giocare ha un alone dorato che pulsa, e quando tocca a te un lampo scorre sulle carte che puoi giocare.',
+      },
+      {
+        type: 'new',
+        text: 'Coriandoli quando vinci la partita.',
+      },
+    ],
+  },
+  {
     version: '0.36.0',
     date: '2026-11-02',
     title: 'Presentazione del Contratto',

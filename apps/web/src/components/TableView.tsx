@@ -19,6 +19,8 @@ interface Props {
   winner: number | null;
   /** Inizio del Contratto: mentre lo si presenta i posti sono senza carte, poi le carte vengono distribuite. */
   intro?: IntroPhase | null;
+  /** Punti del Contratto per chi ha preso la presa appena conclusa: salgono dal suo posto. */
+  gain?: number | null;
 }
 
 const RAD = Math.PI / 180;
@@ -219,7 +221,7 @@ function DealCards({ g, width, n, anchor, leader, angles }: { g: Geometry; width
   );
 }
 
-export function TableView({ view, names, totals, anchor, plays, winner, intro = null }: Props) {
+export function TableView({ view, names, totals, anchor, plays, winner, intro = null, gain = null }: Props) {
   const [ref, width] = useElementWidth<HTMLDivElement>();
   const n = view.players.length;
   const g = width > 0 ? geometry(width, n) : null;
@@ -401,6 +403,24 @@ export function TableView({ view, names, totals, anchor, plays, winner, intro = 
               </div>
             );
           })}
+
+          {winner !== null && gain ? (
+            <div
+              key={`punti-${view.trickNo}`}
+              className={`trick-gain ${gain > 0 ? 'good' : 'bad'}`}
+              style={
+                winner === anchor
+                  ? { left: g.cx, top: g.height - 24 }
+                  : (() => {
+                      const box = seatBox(g, angles[slot(winner)]!, width);
+                      return { left: box.left + g.seatW / 2, top: box.top + 8 };
+                    })()
+              }
+              aria-hidden="true"
+            >
+              {signed(gain)}
+            </div>
+          ) : null}
 
           {intro === 'deal' && <DealCards g={g} width={width} n={n} anchor={anchor} leader={view.leader} angles={angles} />}
         </>

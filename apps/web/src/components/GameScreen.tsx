@@ -184,6 +184,8 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
               plays={plays}
               winner={last ? last.winner : null}
               intro={intro.phase}
+              // Con un recupero in sospeso i punti si contano dopo.
+              gain={last && view.decision?.kind !== 'recover' ? last.contractDelta : null}
             />
           )}
 

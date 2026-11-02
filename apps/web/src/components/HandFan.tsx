@@ -45,6 +45,7 @@ export function HandFan({ cards, hiddenCount, legal, canPlay, selected, onPick, 
       height: cardH,
       marginLeft: -cardW / 2,
       zIndex: raised ? 99 : k,
+      '--k': k,
     } as CSSProperties;
   };
 
