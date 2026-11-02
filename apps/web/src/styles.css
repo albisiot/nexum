@@ -2492,6 +2492,151 @@ input {
   animation: trick-fly-won 0.45s ease-in forwards;
 }
 
+/* Inizio del Contratto: posti e mano restano vuoti finché le carte non arrivano. */
+.table-stage.intro-show .seat .backs,
+.game.intro-show .hand-area,
+.game.intro-show .table-status {
+  opacity: 0;
+}
+
+.table-stage.intro-deal .seat .backs {
+  animation: dealt-in 0.3s ease-out 1.05s both;
+}
+
+.game.intro-deal .hand-area,
+.game.intro-deal .table-status {
+  animation: dealt-in 0.4s ease-out 1s both;
+}
+
+@keyframes dealt-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+
+.deal-deck,
+.deal-card {
+  position: absolute;
+  z-index: 3;
+  border-radius: 6px;
+  pointer-events: none;
+}
+
+.deal-deck {
+  box-shadow: 2px 2px 0 var(--ink), 4px 4px 0 var(--gold);
+  animation: deal-deck 1.5s ease-out forwards;
+}
+
+.deal-card {
+  opacity: 0;
+  animation: deal-fly 0.38s cubic-bezier(0.3, 0.7, 0.4, 1) forwards;
+}
+
+@keyframes deal-deck {
+  0% {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+  12%,
+  78% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes deal-fly {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--spin)) scale(0.7);
+  }
+}
+
+/* Il riquadro che presenta il Contratto. */
+.contract-intro {
+  width: min(460px, calc(100vw - 32px));
+  margin: auto;
+  padding: 24px 22px 20px;
+  color: var(--text);
+  text-align: center;
+  animation: intro-pop 0.4s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+
+.contract-intro[open] {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.contract-intro::backdrop {
+  background: rgba(28, 35, 64, 0.55);
+}
+
+.contract-intro h2 {
+  margin: 0;
+  font-size: clamp(24px, 6vw, 32px);
+}
+
+.contract-intro .pill {
+  margin-top: 0;
+}
+
+.contract-intro p {
+  margin: 4px 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.contract-intro .btn {
+  margin-top: 6px;
+}
+
+.contract-intro-icon {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border: 2px solid var(--ink);
+  border-radius: 50%;
+  background: var(--gold-light);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-size: 34px;
+}
+
+/* Il tempo che manca alla distribuzione. */
+.contract-intro-bar {
+  align-self: stretch;
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: linear-gradient(var(--gold), var(--gold)) no-repeat left / 0% 100%, var(--inset);
+  animation: intro-bar var(--intro-ms) linear forwards;
+}
+
+@keyframes intro-pop {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.92);
+  }
+}
+
+@keyframes intro-bar {
+  to {
+    background-size: 100% 100%, auto;
+  }
+}
+
 .table-card.won .card {
   box-shadow:
     0 0 0 3px var(--gold-light),
@@ -3171,6 +3316,9 @@ input {
   }
   .table-card.flying {
     display: none;
+  }
+  .contract-intro {
+    animation: none;
   }
   .tut-table.taking .card-slot {
     animation: none;

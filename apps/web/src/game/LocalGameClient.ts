@@ -23,6 +23,8 @@ export class LocalGameClient implements GameClient {
   private revealedFor: number | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
   private disposed = false;
+  /** Si sta presentando il Contratto: la CPU aspetta beginHand. */
+  private introPending = true;
   private readonly listeners = new Set<() => void>();
   private readonly cpuRng: Rng;
 
@@ -72,7 +74,14 @@ export class LocalGameClient implements GameClient {
   nextHand(): void {
     if (this.state.phase !== 'handEnd') return;
     this.revealedFor = null;
+    this.introPending = true;
     this.apply({ type: 'nextHand' });
+  }
+
+  beginHand(): void {
+    if (!this.introPending) return;
+    this.introPending = false;
+    this.update();
   }
 
   revealHand(): void {
@@ -103,7 +112,7 @@ export class LocalGameClient implements GameClient {
   /** La CPU gioca quando tocca a lei (scartando prima, se deve) e prende le decisioni che le spettano. */
   private scheduleCpu(): void {
     const g = this.state.game;
-    if (this.disposed || this.timer || this.state.phase !== 'playing') return;
+    if (this.disposed || this.timer || this.introPending || this.state.phase !== 'playing') return;
     const decider = g.decision?.player;
     const seat = decider ?? (g.phase === 'playing' ? g.turn : null);
     if (seat === null || this.setup.seats[seat]?.kind !== 'cpu') return;

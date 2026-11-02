@@ -13,6 +13,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.36.0',
+    date: '2026-11-02',
+    title: 'Presentazione del Contratto',
+    changes: [
+      {
+        type: 'new',
+        text: 'All’inizio di ogni Contratto compare una schermata che lo presenta a tutti: nome, punteggio e regole. Poi le carte vengono distribuite ai giocatori e solo allora si comincia a giocare.',
+      },
+      {
+        type: 'new',
+        text: 'Contro la CPU e in multiplayer locale la presentazione si può chiudere prima con “Si parte”. Online dura qualche secondo per tutti e la partita parte insieme per ognuno.',
+      },
+    ],
+  },
+  {
     version: '0.35.0',
     date: '2026-11-01',
     title: 'Il mucchio vola da chi ha preso',

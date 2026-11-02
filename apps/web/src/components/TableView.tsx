@@ -1,8 +1,10 @@
 import type { Play, PlayerView } from '@nexum/engine';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { INTRO_DEAL_MS } from '../game/intro';
 import { plural, signed } from '../game/text';
 import { CardView } from './CardView';
+import type { IntroPhase } from './ContractIntro';
 import { useElementWidth } from './useElementWidth';
 
 interface Props {
@@ -15,6 +17,8 @@ interface Props {
   plays: readonly Play[];
   /** Chi ha preso la presa appena conclusa, altrimenti null. */
   winner: number | null;
+  /** Inizio del Contratto: mentre lo si presenta i posti sono senza carte, poi le carte vengono distribuite. */
+  intro?: IntroPhase | null;
 }
 
 const RAD = Math.PI / 180;
@@ -25,6 +29,9 @@ const CARD_TURN = [-2, -9, 4, 8, -5, 6, -4, 3];
 const TAKE_RING = 0.45;
 /** Quanto dura il volo del mucchio verso chi ha preso (come trick-fly in styles.css). */
 const FLY_MS = 450;
+/** Distribuzione: giri di carte mostrati (non tutte e 13) e durata del volo di una carta (come deal-fly in styles.css). */
+const DEAL_ROUNDS = 5;
+const DEAL_FLY_MS = 380;
 
 /** Il mucchio di una presa finita, con le posizioni già calcolate: il posto in basso può cambiare alla presa dopo. */
 interface FlyingPile {
@@ -172,7 +179,47 @@ export function CardBacks({ count, className = '' }: { count: number; className?
   );
 }
 
-export function TableView({ view, names, totals, anchor, plays, winner }: Props) {
+/** Le carte coperte che dal centro del tavolo volano a turno verso ogni posto, a partire da chi apre. */
+function DealCards({ g, width, n, anchor, leader, angles }: { g: Geometry; width: number; n: number; anchor: number; leader: number; angles: number[] }) {
+  const from = g.project(0, 0);
+  const w = Math.round(g.cardW * 0.5);
+  const h = Math.round(w * 1.45);
+  const target = (seat: number) => {
+    const r = (seat - anchor + n) % n;
+    if (r === 0) return { x: g.cx, y: g.height + h };
+    const box = seatBox(g, angles[r]!, width);
+    return { x: box.left + g.seatW / 2, y: box.top + (g.density === 'full' ? 14 : g.seatH / 2) };
+  };
+  const total = DEAL_ROUNDS * n;
+  const stagger = (INTRO_DEAL_MS - DEAL_FLY_MS - 220) / total;
+  const box: CSSProperties = { left: from.x - w / 2, top: from.y - h / 2, width: w, height: h };
+  return (
+    <div className="deal" aria-hidden="true">
+      <span className="deal-deck card-back" style={box} />
+      {Array.from({ length: total }, (_, i) => {
+        const seat = (leader + i) % n;
+        const to = target(seat);
+        return (
+          <span
+            key={i}
+            className="deal-card card-back"
+            style={
+              {
+                ...box,
+                '--dx': `${to.x - from.x}px`,
+                '--dy': `${to.y - from.y}px`,
+                '--spin': `${(i % 2 ? 1 : -1) * (8 + (i % 5) * 4)}deg`,
+                animationDelay: `${Math.round(i * stagger)}ms`,
+              } as CSSProperties
+            }
+          />
+        );
+      })}
+    </div>
+  );
+}
+
+export function TableView({ view, names, totals, anchor, plays, winner, intro = null }: Props) {
   const [ref, width] = useElementWidth<HTMLDivElement>();
   const n = view.players.length;
   const g = width > 0 ? geometry(width, n) : null;
@@ -254,7 +301,7 @@ export function TableView({ view, names, totals, anchor, plays, winner }: Props)
   return (
     <div
       ref={ref}
-      className={`table-stage${g?.phone ? ' phone' : ''}`}
+      className={`table-stage${g?.phone ? ' phone' : ''}${intro ? ` intro-${intro}` : ''}`}
       style={
         g
           ? { height: g.height, perspective: `${g.perspective}px`, perspectiveOrigin: `50% ${g.originY}px` }
@@ -354,6 +401,8 @@ export function TableView({ view, names, totals, anchor, plays, winner }: Props)
               </div>
             );
           })}
+
+          {intro === 'deal' && <DealCards g={g} width={width} n={n} anchor={anchor} leader={view.leader} angles={angles} />}
         </>
       )}
     </div>

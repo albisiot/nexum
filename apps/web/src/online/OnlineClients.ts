@@ -13,6 +13,7 @@ import {
 } from '@nexum/engine';
 import type { CardId, MatchAction, MatchState, Rng } from '@nexum/engine';
 import type { ClientSnapshot, DecisionAnswer, GameClient, MatchSetup } from '../game/GameClient';
+import { INTRO_MS, handFresh } from '../game/intro';
 import { fakeIdentity, roomErrorText } from './backend';
 import type { RemoteAction, RoomBackend } from './backend';
 
@@ -66,6 +67,8 @@ export class OnlineHostClient implements GameClient {
   private lastViews: Record<string, string> = {};
   private timer: ReturnType<typeof setTimeout> | null = null;
   private deadline: number | null = null;
+  /** Quando finisce la presentazione del Contratto in corso, che tutti vedono sul proprio schermo. */
+  private intro: { hand: number; ends: number } | null = null;
   private publishing = false;
   private dirty = false;
   private notice: string | undefined;
@@ -120,6 +123,8 @@ export class OnlineHostClient implements GameClient {
   nextHand(): void {
     if (this.state.phase === 'handEnd') this.apply({ type: 'nextHand' });
   }
+
+  beginHand(): void {}
 
   revealHand(): void {}
 
@@ -177,6 +182,12 @@ export class OnlineHostClient implements GameClient {
         if (!this.disposed) step();
       }, ms);
     };
+    const intro = this.introLeft();
+    if (intro > 0) {
+      // Finita la presentazione si riparte da qui, e il tempo del primo turno conta solo da allora.
+      run(intro, () => this.afterChange());
+      return;
+    }
     const seat = pendingSeat(this.state);
     if (seat !== null) {
       const human = this.setup.seats[seat]?.kind === 'human';
@@ -188,6 +199,14 @@ export class OnlineHostClient implements GameClient {
     } else if (this.state.phase === 'handEnd') {
       run(HAND_END_MS, () => this.tryApply({ type: 'nextHand' }));
     }
+  }
+
+  /** Millisecondi che mancano alla fine della presentazione, se la mano non è ancora cominciata. */
+  private introLeft(): number {
+    if (this.state.phase !== 'playing' || !handFresh(this.state.game)) return 0;
+    const hand = this.state.handIndex;
+    if (this.intro?.hand !== hand) this.intro = { hand, ends: Date.now() + INTRO_MS };
+    return Math.max(0, this.intro.ends - Date.now());
   }
 
   private buildSnapshot(): ClientSnapshot {
@@ -322,6 +341,8 @@ export class OnlineGuestClient implements GameClient {
   nextHand(): void {
     if (this.snapshot.match.phase === 'handEnd') this.send({ type: 'nextHand' });
   }
+
+  beginHand(): void {}
 
   revealHand(): void {}
 

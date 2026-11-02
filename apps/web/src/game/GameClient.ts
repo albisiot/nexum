@@ -73,6 +73,11 @@ export interface GameClient {
   decide(answer: DecisionAnswer): void;
   nextTrick(): void;
   nextHand(): void;
+  /**
+   * Fine della presentazione del Contratto: in locale la CPU aspetta questo per muovere.
+   * Online non serve: chi fa da arbitro aspetta da sé lo stesso tempo per tutti.
+   */
+  beginHand(): void;
   revealHand(): void;
   dispose(): void;
 }

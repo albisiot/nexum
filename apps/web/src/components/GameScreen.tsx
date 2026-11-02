@@ -19,7 +19,9 @@ import type { GameClient } from '../game/GameClient';
 import { contractDescription, contractTitle, describeNote, describeScoring, describeTrick, plural, signed } from '../game/text';
 import { useGame } from '../game/useGame';
 import { profileStore } from '../shop/profile';
+import { handFresh } from '../game/intro';
 import { askConfirm } from './ConfirmDialog';
+import { ContractIntro, useContractIntro } from './ContractIntro';
 import { EndScreen, HandEndScreen } from './EndScreen';
 import { HandFan } from './HandFan';
 import { DominoBoard } from './DominoBoard';
@@ -66,6 +68,7 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
   const names = view.players.map((p) => p.name);
   const me = client.setup.mode === 'local' ? null : perspective;
   const series = match.hands.length > 1;
+  const intro = useContractIntro(client, match.handIndex, match.phase === 'playing' && handFresh(view));
 
   // Le monete: si incassano appena un Contratto o la partita è vinta, una volta sola anche rientrando.
   const rewards = me === null ? [] : matchRewards(match, me);
@@ -131,9 +134,11 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
     });
   };
 
+  // Durante la presentazione e la distribuzione non si tocca niente.
+  const busy = intro.phase !== null;
   return (
-    <main className="game">
-      <section className="panel contract-head">
+    <main className={`game${intro.phase ? ` intro-${intro.phase}` : ''}`}>
+      <section className="panel contract-head" inert={busy}>
         <div>
           <span className="hint">{series ? `Contratto ${match.handIndex + 1} di ${match.hands.length}` : 'Contratto'}</span>
           <h2>
@@ -166,7 +171,7 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
         </div>
       </section>
 
-      <div className="gamegrid">
+      <div className="gamegrid" inert={busy}>
         <div className={`board${sel ? ' picking' : ''}${last || snap.handHidden || view.decision ? '' : ' slim'}`}>
           {domino ? (
             <DominoBoard domino={domino} factions={view.factions} players={view.players} names={names} turn={view.turn} />
@@ -178,6 +183,7 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
               anchor={anchor}
               plays={plays}
               winner={last ? last.winner : null}
+              intro={intro.phase}
             />
           )}
 
@@ -321,6 +327,15 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
           </button>
         </aside>
       </div>
+
+      {intro.phase === 'show' && (
+        <ContractIntro
+          view={view}
+          label={series ? `Contratto ${match.handIndex + 1} di ${match.hands.length}` : 'Contratto'}
+          online={client.setup.mode === 'online'}
+          onSkip={intro.skip}
+        />
+      )}
     </main>
   );
 
