@@ -13,6 +13,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.41.2',
+    date: '2026-11-03',
+    title: 'Fine partita senza scorrere',
+    changes: [
+      {
+        type: 'change',
+        text: 'Anche la schermata di fine partita sta tutta nello schermo e non scorre: il vincitore in alto, i pulsanti per rigiocare sempre in fondo. Se classifica e punti di ogni Contratto non ci stanno, scorrono dentro il riquadro.',
+      },
+    ],
+  },
+  {
     version: '0.41.1',
     date: '2026-11-03',
     title: 'La partita sta ferma',

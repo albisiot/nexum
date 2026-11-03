@@ -2699,12 +2699,14 @@ input {
    "tira per aggiornare" su Android. Lo stesso mentre è aperta una finestra (tutorial, Regole, Impostazioni…):
    la pagina sotto resta ferma. Dentro i pannelli lunghi (Info, Regole, tutorial) si scorre ancora. */
 html:has(.app > .game),
+html:has(.app > .end),
 html:has(dialog[open]) {
   overflow: hidden;
   overscroll-behavior: none;
 }
 
-body:has(.app > .game) {
+body:has(.app > .game),
+body:has(.app > .end) {
   min-height: 0;
   overflow: hidden;
   overscroll-behavior: none;
@@ -4288,8 +4290,50 @@ body:has(.app > .game) {
   margin-bottom: 8px;
 }
 
+/* Fine partita: sta tutta nello schermo come la partita. Titolo in alto, pulsanti in fondo; classifica e punti
+   per Contratto in mezzo, e se non ci stanno scorrono lì dentro. */
+.app:has(> .end) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app:has(> .end) > .top {
+  display: none;
+}
+
 .end {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 760px;
+  min-height: 0;
+  margin: auto;
   text-align: center;
+}
+
+.end-head,
+.end-actions {
+  flex: none;
+}
+
+.end-head p {
+  margin: 4px 0 0;
+}
+
+.end-body {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 580px) {
+  .end-actions .btn {
+    flex: 1 1 40%;
+  }
+  .end-actions .btn.primary {
+    flex-basis: 100%;
+  }
 }
 
 .final-score {

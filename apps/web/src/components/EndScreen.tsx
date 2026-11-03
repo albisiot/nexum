@@ -320,80 +320,85 @@ export function EndScreen({
   return (
     <section className="panel end">
       {party && <Confetti />}
-      <span className="hint">{series ? `Serie di ${match.hands.length} Contratti terminata` : 'Contratto terminato'}</span>
-      <h2>{title}</h2>
-      <p className="hint">
-        {series ? (
-          'Vince chi ha più punti sommando tutti i Contratti.'
-        ) : (
-          <>
-            <ContractIcon contract={getContract(match.hands[0]!.contract)} size={16} /> {contractLabel(match.hands[0]!)} · vince
-            chi chiude con il punteggio più alto.
-          </>
-        )}
-      </p>
+      <header className="end-head">
+        <span className="hint">{series ? `Serie di ${match.hands.length} Contratti terminata` : 'Contratto terminato'}</span>
+        <h2>{title}</h2>
+        <p className="hint">
+          {series ? (
+            'Vince chi ha più punti sommando tutti i Contratti.'
+          ) : (
+            <>
+              <ContractIcon contract={getContract(match.hands[0]!.contract)} size={16} /> {contractLabel(match.hands[0]!)} · vince
+              chi chiude con il punteggio più alto.
+            </>
+          )}
+        </p>
+      </header>
 
-      {match.completed.map((h, i) => {
-        const note = handNote(h, getContract(h.contract), names);
-        return note && <p key={i} className="status good">{note}</p>;
-      })}
-
-      <CoinNote coins={coins} />
-
-      <div className="final-score">
-        {order.map((pi, i) => {
-          const tricks = match.completed.reduce((t, h) => t + h.tricks[pi]!, 0);
-          const onlyDomino = match.completed.every((h) => getContract(h.contract).mode === 'domino');
-          return (
-            <div key={pi} className={`score-row${pi === me ? ' me' : ''}`}>
-              <div>
-                <b>
-                  {i + 1}. {names[pi]}
-                </b>
-                {!onlyDomino && <div className="hint">{plural(tricks, 'presa vinta', 'prese vinte')}</div>}
-              </div>
-              <b>{match.totals[pi]} pt</b>
-            </div>
-          );
+      {/* La pagina non scorre: se classifica e punti per Contratto non ci stanno, scorrono qui dentro. */}
+      <div className="end-body">
+        {match.completed.map((h, i) => {
+          const note = handNote(h, getContract(h.contract), names);
+          return note && <p key={i} className="status good">{note}</p>;
         })}
-      </div>
 
-      {series && (
-        <div className="breakdown-wrap">
-          <table className="breakdown">
-            <thead>
-              <tr>
-                <th>Contratto</th>
-                {order.map((pi) => (
-                  <th key={pi}>{names[pi]}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {match.completed.map((h, i) => (
-                <tr key={i}>
-                  <td>
-                    {i + 1}. <ContractIcon contract={getContract(h.contract)} size={16} /> {contractLabel(h)}
-                  </td>
+        <CoinNote coins={coins} />
+
+        <div className="final-score">
+          {order.map((pi, i) => {
+            const tricks = match.completed.reduce((t, h) => t + h.tricks[pi]!, 0);
+            const onlyDomino = match.completed.every((h) => getContract(h.contract).mode === 'domino');
+            return (
+              <div key={pi} className={`score-row${pi === me ? ' me' : ''}`}>
+                <div>
+                  <b>
+                    {i + 1}. {names[pi]}
+                  </b>
+                  {!onlyDomino && <div className="hint">{plural(tricks, 'presa vinta', 'prese vinte')}</div>}
+                </div>
+                <b>{match.totals[pi]} pt</b>
+              </div>
+            );
+          })}
+        </div>
+
+        {series && (
+          <div className="breakdown-wrap">
+            <table className="breakdown">
+              <thead>
+                <tr>
+                  <th>Contratto</th>
                   {order.map((pi) => (
-                    <td key={pi}>{signed(h.scores[pi]!)}</td>
+                    <th key={pi}>{names[pi]}</th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <td>Totale</td>
-                {order.map((pi) => (
-                  <td key={pi}>{match.totals[pi]}</td>
+              </thead>
+              <tbody>
+                {match.completed.map((h, i) => (
+                  <tr key={i}>
+                    <td>
+                      {i + 1}. <ContractIcon contract={getContract(h.contract)} size={16} /> {contractLabel(h)}
+                    </td>
+                    {order.map((pi) => (
+                      <td key={pi}>{signed(h.scores[pi]!)}</td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      )}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td>Totale</td>
+                  {order.map((pi) => (
+                    <td key={pi}>{match.totals[pi]}</td>
+                  ))}
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+      </div>
 
-      <div className="controls center">
+      <div className="controls center end-actions">
         {onReplay && (
           <button type="button" className="btn primary" onClick={onReplay}>
             {series ? 'Rigioca la stessa serie' : 'Rigioca questo Contratto'}
