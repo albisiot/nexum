@@ -13,6 +13,41 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.40.0',
+    date: '2026-11-03',
+    title: 'Il tavolo sta tutto nello schermo',
+    changes: [
+      {
+        type: 'change',
+        text: 'In partita la pagina non scorre più, su telefono, tablet e computer: in alto c’è una barra sottile con il Contratto e la presa, al centro il tavolo si adatta allo spazio libero e in fondo la tua mano resta sempre visibile.',
+      },
+      {
+        type: 'new',
+        text: 'Il pulsante Info apre classifica, prese (con l’ultima presa carta per carta), Contratto e regole. Sul telefono il pannello sale dal basso, sul computer si apre di lato. Sui computer grandi classifica e prese restano anche accanto al tavolo.',
+      },
+      {
+        type: 'new',
+        text: 'Il menu ☰ raccoglie suoni, vibrazione, Regole ed “Esci dalla partita”.',
+      },
+      {
+        type: 'change',
+        text: 'L’esito della presa e le scelte da fare (Briscola, Reversal, recupero…) compaiono in alto sul tavolo, senza spingere giù la mano.',
+      },
+      {
+        type: 'change',
+        text: 'Con 6 giocatori o più sul telefono, ogni avversario ha un’etichetta piccola con iniziali e punti, che non copre più il tavolo.',
+      },
+      {
+        type: 'change',
+        text: 'Nel gioco sullo stesso dispositivo, “Passa il dispositivo a…” ora copre tutto lo schermo: chi riceve il telefono non vede la mano di chi ha appena giocato.',
+      },
+      {
+        type: 'change',
+        text: 'Le Regole si aprono in una finestra, divise in sezioni che si aprono e si chiudono.',
+      },
+    ],
+  },
+  {
     version: '0.39.0',
     date: '2026-11-03',
     title: 'Dai un nome alla CPU',

@@ -2,6 +2,7 @@ import { getCard, getFaction } from '@nexum/engine';
 import type { CardId } from '@nexum/engine';
 import type { CSSProperties, ReactNode } from 'react';
 import { CardView } from './CardView';
+import { useViewportHeight } from './useElementSize';
 import { useElementWidth } from './useElementWidth';
 
 interface Props {
@@ -23,8 +24,10 @@ const RAD = Math.PI / 180;
 /** Mano a ventaglio: le carte si sovrappongono quanto serve per stare nello schermo. */
 export function HandFan({ cards, hiddenCount, legal, canPlay, selected, onPick, onClear, children }: Props) {
   const [ref, width] = useElementWidth<HTMLDivElement>();
+  const screenH = useViewportHeight();
   const phone = width < 640;
-  const cardW = phone ? 70 : 96;
+  // Sugli schermi bassi le carte si rimpiccioliscono: tavolo e mano devono stare entrambi nello schermo.
+  const cardW = Math.max(48, Math.min(phone ? 70 : 96, Math.round(screenH * 0.125)));
   const cardH = Math.round(cardW * 1.45);
   const count = cards.length || hiddenCount;
   const mid = (count - 1) / 2;
@@ -32,6 +35,8 @@ export function HandFan({ cards, hiddenCount, legal, canPlay, selected, onPick, 
   const spill = cardH * Math.sin(mid * turn * RAD);
   const step = count > 1 ? Math.min(phone ? 40 : 62, (width - cardW - 2 * spill - 8) / (count - 1)) : 0;
   const drop = phone ? 8 : 18;
+  // Le carte ai lati scendono e ruotano: lo spazio sotto il ventaglio le tiene tutte dentro lo schermo.
+  const sink = Math.max(8, Math.ceil(drop + (cardW / 2) * Math.sin(mid * turn * RAD)) + 4);
   // Il valore sta nella striscia che resta scoperta: si rimpicciolisce quando le carte sono tante.
   const index = Math.round(Math.min(cardW * 0.36, Math.max(13, step - 8)));
 
@@ -53,7 +58,7 @@ export function HandFan({ cards, hiddenCount, legal, canPlay, selected, onPick, 
     <div
       ref={ref}
       className={`hand-fan${phone ? ' phone' : ''}`}
-      style={{ height: cardH + drop + 48, '--card-w': `${cardW}px`, '--index': `${index}px` } as CSSProperties}
+      style={{ height: cardH + sink + 40, '--card-w': `${cardW}px`, '--index': `${index}px`, '--sink': `${sink}px` } as CSSProperties}
       onKeyDown={(e) => e.key === 'Escape' && onClear()}
     >
       {children}

@@ -627,7 +627,10 @@ h3 {
 .domino {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
   padding: 14px;
   background: var(--velvet);
   border: 3px solid var(--felt-rim);
@@ -661,6 +664,7 @@ h3 {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  min-height: 0;
   padding: 0 8px 8px;
 }
 
@@ -678,7 +682,7 @@ h3 {
 .domino-slot {
   display: grid;
   place-items: center;
-  height: clamp(24px, 5vw, 38px);
+  height: clamp(20px, min(6vw, 4.4dvh), 38px);
   border: 1.5px dashed rgba(255, 255, 255, 0.28);
   border-radius: 6px;
   color: rgba(255, 255, 255, 0.45);
@@ -917,7 +921,6 @@ h3 {
   vertical-align: -0.2em;
 }
 
-.contract-head h2 .icon,
 .hand-end-head h2 .icon,
 /* Coriandoli quando vinci: cadono una volta sola, sopra a tutto ma senza bloccare i tocchi. */
 .confetti {
@@ -2239,40 +2242,172 @@ input {
   background: var(--me);
 }
 
+.rules details {
+  border-bottom: 2px solid var(--line-soft);
+}
+
+.rules summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 2px;
+  font-size: 15px;
+  font-weight: 900;
+  list-style: none;
+  cursor: pointer;
+}
+
+.rules summary::-webkit-details-marker {
+  display: none;
+}
+
+.rules summary::after {
+  content: '+';
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  background: var(--panel2);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.rules details[open] > summary::after {
+  content: '−';
+  background: var(--gold-light);
+}
+
 .rules p {
   line-height: 1.55;
-  margin: 0 0 10px;
+  margin: 0 0 12px;
+}
+
+.rules > .btn {
+  margin-top: 16px;
 }
 
 /* ---------- tavolo ---------- */
 
+/* La partita sta tutta nello schermo, senza scorrimento: barra in alto, tavolo al centro, mano in fondo. */
 .game {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  padding: 0 16px 6px;
 }
 
-.contract-head {
+.game-bar {
+  flex: none;
   display: flex;
-  justify-content: space-between;
-  gap: 12px;
   align-items: center;
+  gap: 8px;
+  padding: 8px 0;
 }
 
-.contract-head h2 {
-  margin: 3px 0 4px;
-  font-size: 23px;
+.bar-contract {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin-right: auto;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  padding: 4px 12px 4px 9px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
+  color: var(--text);
+  text-align: left;
 }
 
-.contract-head h2 .pill {
-  margin: 0 0 0 8px;
-  vertical-align: 3px;
+.bar-contract:hover {
+  background: var(--panel2);
 }
 
-.contract-head p {
-  margin: 0;
+.bar-contract > .icon,
+.bar-contract > .icon-emoji {
+  flex: none;
+}
+
+.bar-contract-name {
+  flex: 0 1 auto;
+  min-width: 4em;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.bar-series {
+  flex: none;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--inset);
   color: var(--muted);
-  line-height: 1.45;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* Se manca spazio si accorcia prima la fazione, poi il nome del Contratto. */
+.bar-faction {
+  flex: 0 20 auto;
+  /* Il pallino della fazione resta sempre visibile. */
+  min-width: 20px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bar-count {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 44px;
+  line-height: 1.15;
+}
+
+.bar-count > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bar-count b {
+  font-size: 17px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.bar-info {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-inline: 10px;
+}
+
+.game-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
 }
 
 .phase {
@@ -2338,6 +2473,10 @@ input {
   background: var(--me);
 }
 
+.result > .decision:first-child {
+  margin-top: 0;
+}
+
 .decision .controls {
   align-items: center;
   margin-top: 8px;
@@ -2389,47 +2528,71 @@ input {
   color: var(--muted);
 }
 
-.pass-panel {
-  border: 2px solid var(--ink);
-  background: var(--me);
-  box-shadow: var(--shadow);
-  border-radius: 16px;
-  padding: 18px;
+/* Pass-and-play: tra un turno e l'altro uno schermo intero copre il tavolo e la mano. */
+.sheet.pass-sheet {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: radial-gradient(circle at top, #fffdf6 0, var(--me) 55%, var(--gold-light) 100%);
+}
+
+.sheet.pass-sheet[open] {
+  justify-content: center;
+  align-items: center;
+}
+
+.pass-sheet::backdrop {
+  background: var(--ink);
+}
+
+.pass-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 520px;
+  padding: 24px;
   text-align: center;
 }
 
-.pass-panel p {
-  margin: 0 auto 14px;
-  max-width: 680px;
+.pass-screen h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 900;
+}
+
+.pass-screen p {
+  margin: 0;
   color: var(--muted);
   line-height: 1.5;
 }
 
+.pass-screen .btn.primary {
+  min-width: 240px;
+  min-height: 54px;
+  font-size: 17px;
+}
+
 /* ---------- tavolo 3D ---------- */
 
+/* In partita la pagina è alta quanto lo schermo e non scorre. */
+body:has(.app > .game) {
+  min-height: 0;
+}
+
 .app:has(> .game) {
-  max-width: 1440px;
+  max-width: none;
+  height: 100dvh;
+  padding: 0;
+  overflow: hidden;
 }
 
 .app:has(> .game) > .top {
   display: none;
-}
-
-.contract-side {
-  flex: none;
-  display: flex;
-  align-items: stretch;
-  gap: 10px;
-}
-
-.contract-side .btn {
-  align-self: center;
-}
-
-.feedback-toggles {
-  display: flex;
-  align-self: center;
-  gap: 6px;
 }
 
 .icon-toggle {
@@ -2443,21 +2606,30 @@ input {
   color: var(--muted);
 }
 
-.board.picking .table-status > .hint,
-.board.picking .hand-head > .hint {
+.board.picking .hand-hint {
   visibility: hidden;
 }
 
 .board {
   display: flex;
   flex-direction: column;
-  gap: 10px;
   min-width: 0;
+  min-height: 0;
+}
+
+/* Il tavolo (o il Domino) riempie lo spazio tra la barra e la mano. */
+.table-area {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .table-stage {
-  position: relative;
-  min-height: 240px;
+  position: absolute;
+  inset: 0;
   overflow-x: clip;
 }
 
@@ -2547,7 +2719,7 @@ input {
 /* Inizio del Contratto: posti e mano restano vuoti finché le carte non arrivano. */
 .table-stage.intro-show .seat .backs,
 .game.intro-show .hand-area,
-.game.intro-show .table-status {
+.game.intro-show .table-overlay {
   opacity: 0;
 }
 
@@ -2556,7 +2728,7 @@ input {
 }
 
 .game.intro-deal .hand-area,
-.game.intro-deal .table-status {
+.game.intro-deal .table-overlay {
   animation: dealt-in 0.4s ease-out 1s both;
 }
 
@@ -2947,12 +3119,12 @@ input {
 .seat.mini {
   align-items: center;
   text-align: center;
-  gap: 3px;
+  gap: 0;
 }
 
 .seat.mini .seat-row {
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .seat.mini .seat-avatar {
@@ -2961,9 +3133,20 @@ input {
   font-size: 11px;
 }
 
-.seat.mini .seat-text b {
-  max-width: 70px;
-  font-size: 9.5px;
+.seat-points {
+  padding: 0 5px;
+  border: 1.5px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 14px;
+  white-space: nowrap;
+}
+
+.seat.mini.current .seat-points,
+.seat.mini.won .seat-points {
+  background: var(--gold-light);
 }
 
 
@@ -3034,42 +3217,86 @@ input {
   right: 50px;
 }
 
-/* esito sotto il tavolo */
-
-.table-status {
+/* Esito della presa, decisioni e avvisi: riquadri in alto sul tavolo, la mano resta libera. */
+.table-overlay {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  z-index: 30;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  min-height: 62px;
+  width: min(600px, calc(100% - 16px));
+  max-height: calc(100% - 8px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: none;
+}
+
+.table-overlay > * {
+  pointer-events: auto;
+}
+
+.table-overlay .status {
+  margin: 0;
+  padding: 6px 12px;
+  border: 2px solid var(--line);
+  border-radius: 999px;
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
   text-align: center;
 }
 
-.table-status .hint {
-  max-width: 520px;
-}
-
-.table-status .result,
-.table-status .pass-panel {
+.table-overlay .result {
   width: 100%;
-  max-width: 640px;
+  padding: 10px 12px;
+  font-size: 13px;
+  text-align: left;
+  animation: overlay-in 0.2s ease-out both;
 }
 
-.table-status .result {
-  text-align: left;
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+.result-next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+}
+
+.result-next p {
+  margin: 0;
+  font-weight: 800;
+}
+
+.result > .hint {
+  margin-top: 4px;
 }
 
 .turn-pill {
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  padding: 8px 14px;
+  min-width: 0;
+  padding: 7px 14px;
   border: 2px solid var(--line);
   border-radius: 999px;
   background: var(--panel);
   box-shadow: var(--shadow-sm);
   font-size: 13px;
   font-weight: 800;
+}
+
+.turn-pill.idle {
+  visibility: hidden;
 }
 
 .turn-pill.mine {
@@ -3282,14 +3509,8 @@ input {
 
 /* ---------- mano e colonna laterale ---------- */
 
-.gamegrid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 310px;
-  gap: 14px;
-  align-items: start;
-}
-
 .hand-area {
+  flex: none;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -3301,6 +3522,17 @@ input {
   align-items: center;
   justify-content: space-between;
   gap: 6px 12px;
+}
+
+.hand-hint {
+  /* Sempre alto due righe: il tavolo non cambia misura da un turno all'altro. */
+  min-height: 2.8em;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 .me-chip {
@@ -3331,7 +3563,7 @@ input {
 .fan-card {
   position: absolute;
   left: 50%;
-  bottom: 8px;
+  bottom: var(--sink, 8px);
   display: flex;
   padding: 0;
   border: 0;
@@ -3459,10 +3691,422 @@ input {
   }
 }
 
+/* Classifica e prese accanto al tavolo: solo sui computer grandi (come SIDEBAR_QUERY in InfoPanel.tsx). */
 .sidebar {
+  display: none;
+}
+
+@media (min-width: 1200px) and (min-height: 640px) {
+  .game-body {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    min-height: 0;
+    padding: 0 4px 8px 0;
+  }
+}
+
+.sidebar .panel {
+  padding: 12px 14px;
+}
+
+.side-standings {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.side-log {
+  flex: 1 1 0;
+  min-height: 96px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+}
+
+.side-log .log,
+.sheet-body .log {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.standings .score-row {
+  padding: 7px 10px;
+  margin-bottom: 6px;
+}
+
+.standings .score-row > b {
+  flex: none;
+  white-space: nowrap;
+}
+
+.score-row.turn {
+  box-shadow: inset 4px 0 0 var(--gold);
+}
+
+/* Finestre della partita: Info, menu ☰, Regole e passaggio del telefono (Sheet.tsx). */
+.sheet {
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  overflow: hidden;
+  color: var(--text);
+  background: var(--panel);
+  border: 2px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.sheet[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet::backdrop {
+  background: rgba(28, 35, 64, 0.45);
+}
+
+.sheet-frame {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 2px solid var(--line);
+}
+
+.sheet-head h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 20px;
+}
+
+.sheet-head .icon-toggle {
+  flex: none;
+}
+
+.sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 16px 20px;
+}
+
+.sheet-body > h3 {
+  margin: 4px 0 10px;
+  font-size: 16px;
+}
+
+/* Info: sale dal basso sul telefono, si apre di lato sul computer. */
+.info-sheet {
+  width: 100%;
+  max-height: 86dvh;
+  margin: auto 0 0;
+  border-width: 2px 0 0;
+  border-radius: 20px 20px 0 0;
+  box-shadow: none;
+  animation: sheet-up 0.22s ease-out;
+}
+
+@media (min-width: 700px) {
+  .info-sheet {
+    width: min(420px, 92vw);
+    height: 100%;
+    max-height: none;
+    margin: 0 0 0 auto;
+    border-width: 0 0 0 2px;
+    border-radius: 0;
+    animation-name: sheet-side;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes sheet-side {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+.info-tabs {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: auto;
+  gap: 2px;
+  padding: 3px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--inset);
+}
+
+.info-tab {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 6px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--muted);
+  font-size: clamp(12px, 3.3vw, 14px);
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.info-tab[aria-selected='true'] {
+  background: var(--gold-light);
+  color: var(--ink);
+  box-shadow: 0 0 0 2px var(--line);
+}
+
+.last-trick {
+  margin-bottom: 18px;
+  padding: 12px;
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel2);
+}
+
+.last-trick h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+
+.last-trick p {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.trick-plays {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 10px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.trick-plays li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 4.5em;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--panel);
+  font-size: 13px;
+}
+
+.trick-plays li.won {
+  border-color: var(--ink);
+  background: var(--me);
+}
+
+.trick-play-who {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 800;
+}
+
+.trick-play-card {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.trick-play-value {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.trick-notes {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.contract-info h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+  font-size: 20px;
+}
+
+.contract-info p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.contract-info h4 {
+  margin: 16px 0 6px;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.contract-info ul {
+  margin: 0;
+  padding-left: 20px;
+  line-height: 1.55;
+}
+
+.series-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.series-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border: 1.5px solid var(--line-soft);
+  border-radius: 10px;
+  background: var(--panel2);
+  font-size: 14px;
+}
+
+.series-list li > span:first-of-type {
+  flex: 1 1 auto;
+}
+
+.series-list li.done {
+  color: var(--muted);
+}
+
+.series-list li.current {
+  border-color: var(--ink);
+  background: var(--me);
+  font-weight: 800;
+}
+
+/* Il menu ☰: si apre sotto il pulsante, in alto a destra. */
+.menu-sheet {
+  width: min(300px, calc(100% - 24px));
+  margin: 54px max(12px, calc((100% - 1440px) / 2 + 16px)) auto auto;
+  border-radius: 16px;
+  animation: menu-pop 0.16s ease-out;
+}
+
+.menu-sheet::backdrop {
+  background: rgba(28, 35, 64, 0.2);
+}
+
+@keyframes menu-pop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+}
+
+.menu-sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+}
+
+.menu-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--text);
+  font-weight: 800;
+  text-align: left;
+}
+
+.menu-row > span:first-of-type {
+  flex: 1 1 auto;
+}
+
+.menu-row:hover,
+.menu-row:focus-visible {
+  background: var(--inset);
+  outline: none;
+}
+
+.menu-row[aria-checked='false'] .icon {
+  color: var(--muted);
+}
+
+.menu-row.danger {
+  margin-top: 4px;
+  border-top: 2px solid var(--line-soft);
+  border-radius: 0 0 12px 12px;
+  color: var(--bad);
+}
+
+.menu-state {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* Regole: una finestra al centro, a tutta larghezza sul telefono. */
+.rules-sheet {
+  width: min(640px, calc(100% - 32px));
+  max-height: min(86dvh, 780px);
+  margin: auto;
+  border-radius: 18px;
+}
+
+@media (max-width: 580px) {
+  .rules-sheet {
+    width: 100%;
+    max-height: 92dvh;
+    margin: auto 0 0;
+    border-width: 2px 0 0;
+    border-radius: 20px 20px 0 0;
+    box-shadow: none;
+    animation: sheet-up 0.22s ease-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet,
+  .table-overlay .result {
+    animation: none;
+  }
 }
 
 .score-row,
@@ -3490,6 +4134,10 @@ input {
 .log {
   max-height: 260px;
   overflow: auto;
+}
+
+.sidebar h3 {
+  margin-bottom: 8px;
 }
 
 .end {
@@ -3726,29 +4374,11 @@ input {
   margin-top: 0;
 }
 
-/* Su schermi larghi la riga "Tu" sale accanto al turno, così la mano entra nello schermo. */
-@media (min-width: 1200px) {
-  .board.slim .hand-area {
-    margin-top: -48px;
-  }
-  .hand-head {
-    align-items: flex-end;
-    pointer-events: none;
-  }
-  .hand-head > .hint {
-    max-width: 250px;
-    text-align: right;
-  }
-}
-
 /* ---------- schermi stretti ---------- */
 
 @media (max-width: 940px) {
   .faction-picker {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .gamegrid {
-    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -3781,26 +4411,6 @@ input {
   .grid2 {
     grid-template-columns: 1fr;
   }
-  .contract-side {
-    flex-direction: column;
-    gap: 6px;
-  }
-  .contract-head {
-    align-items: flex-start;
-    padding: 12px 14px;
-  }
-  .contract-head h2 {
-    font-size: 19px;
-  }
-  .contract-head h2 .pill {
-    display: flex;
-    width: fit-content;
-    margin: 6px 0 0;
-    border-radius: 12px;
-  }
-  .contract-head p {
-    font-size: 13px;
-  }
   .phase {
     min-width: 0;
     padding: 8px 10px;
@@ -3810,9 +4420,47 @@ input {
   }
 }
 
+/* Telefono: tavolo e mano da bordo a bordo, testi più compatti. */
 @media (max-width: 640px) {
-  .table-stage,
-  .hand-fan {
-    margin-inline: -16px;
+  .game {
+    padding: 0 0 4px;
+  }
+  .game-bar {
+    gap: 6px;
+    padding: 6px 10px;
+  }
+  .bar-contract {
+    padding-inline: 8px 10px;
+  }
+  .bar-contract-name {
+    font-size: 14px;
+  }
+  .hand-head,
+  .hand-hint,
+  .seen-box {
+    margin-inline: 10px;
+  }
+  .pick-hint {
+    display: none;
+  }
+  .turn-pill {
+    padding: 6px 11px;
+    font-size: 12.5px;
+  }
+  .me-chip {
+    padding-block: 3px;
+    font-size: 11.5px;
+  }
+  /* Le iniziali bastano: il nome è in Info. */
+  .me-name {
+    display: none;
+  }
+}
+
+/* Telefoni stretti: nella barra restano nome del Contratto e pallino della fazione, il resto è in Info. */
+@media (max-width: 420px) {
+  .bar-series,
+  .bar-faction-name {
+    display: none;
   }
 }

@@ -78,6 +78,26 @@ const PATHS = {
       <path d="M3.5 3.5l17 17" />
     </>
   ),
+  info: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5.5M12 7.5v.01" />
+    </>
+  ),
+  menu: <path d="M4 6.5h16M4 12h16M4 17.5h16" />,
+  regole: (
+    <>
+      <path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H18v15H6.5A1.5 1.5 0 0 0 5 19.5Z" />
+      <path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H18v-3M9 7.5h5.5M9 11h5.5" />
+    </>
+  ),
+  esci: (
+    <>
+      <path d="M14 4.5h3.5a1.5 1.5 0 0 1 1.5 1.5v12a1.5 1.5 0 0 1-1.5 1.5H14" />
+      <path d="M10 8l-4 4 4 4M6 12h9" />
+    </>
+  ),
+  chiudi: <path d="M6 6l12 12M18 6L6 18" />,
 
   // Contratti: quelli "non prendere" partono tutti dalla stessa carta (13 × 18, raggio 2,5)
   'piu-prese': (

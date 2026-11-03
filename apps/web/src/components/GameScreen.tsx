@@ -1,5 +1,6 @@
 import {
   POWERS,
+  contractNeedsTarget,
   dominoStartValue,
   getCard,
   getContract,
@@ -7,7 +8,6 @@ import {
   hasPowerText,
   isPowerImplemented,
   leadPower,
-  matchRanking,
   matchRewards,
   playChoice,
   sortHand,
@@ -16,10 +16,10 @@ import type { CardId, Decision, PlayerView } from '@nexum/engine';
 import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { GameClient } from '../game/GameClient';
-import { contractDescription, contractTitle, describeNote, describeScoring, describeTrick, plural, signed } from '../game/text';
+import { contractDescription, contractTitle, describeNote, describeTrick, plural, signed } from '../game/text';
 import { useGame } from '../game/useGame';
 import { profileStore } from '../shop/profile';
-import { canVibrate, playSound, setPrefs, useFeedbackPrefs, vibrate } from '../game/feedback';
+import { playSound, vibrate } from '../game/feedback';
 import { handFresh } from '../game/intro';
 import { askConfirm } from './ConfirmDialog';
 import { ContractIntro, useContractIntro } from './ContractIntro';
@@ -27,14 +27,20 @@ import type { IntroPhase } from './ContractIntro';
 import { EndScreen, HandEndScreen } from './EndScreen';
 import { HandFan } from './HandFan';
 import { DominoBoard } from './DominoBoard';
+import { GameMenu } from './GameMenu';
 import { ContractIcon, Icon } from './Icon';
+import { InfoPanel, SIDEBAR_QUERY, Standings, TrickLog } from './InfoPanel';
+import type { InfoTab } from './InfoPanel';
 import { Select } from './Select';
+import { Sheet } from './Sheet';
 import { TableView, initials } from './TableView';
 
 interface Props {
   client: GameClient;
-  rulesOpen: boolean;
+  /** Apre la finestra Regole. */
   onRules(): void;
+  /** Assente online: lì il tempo del turno scorre anche durante il tutorial. */
+  onTutorial?: () => void;
   onReplay?: () => void;
   onExit(): void;
   onMenu(): void;
@@ -83,7 +89,7 @@ function useTableFeedback(view: PlayerView, bottom: number, canPlay: boolean, in
   }, [intro]);
 }
 
-export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMenu }: Props) {
+export function GameScreen({ client, onRules, onTutorial, onReplay, onExit, onMenu }: Props) {
   const snap = useGame(client);
   const { match, view, perspective } = snap;
   const [selected, setSelected] = useState<CardId | null>(null);
@@ -91,6 +97,9 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
   const [borrow, setBorrow] = useState<number | null>(null);
   const [take, setTake] = useState<CardId | null>(null);
   const [shownDecision, setShownDecision] = useState<string | null>(null);
+  // Le finestre della barra in alto: Info (con la scheda aperta) e il menu ☰.
+  const [info, setInfo] = useState<InfoTab | null>(null);
+  const [menu, setMenu] = useState(false);
   // In basso siede chi ha il dispositivo; tra un turno e l'altro resta l'ultimo giocatore umano.
   const lastAnchor = useRef(Math.max(0, client.setup.seats.findIndex((s) => s.kind === 'human')));
   const anchor = perspective ?? (snap.handHidden ? view.turn : lastAnchor.current);
@@ -103,7 +112,6 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
   const series = match.hands.length > 1;
   const intro = useContractIntro(client, match.handIndex, match.phase === 'playing' && handFresh(view));
   useTableFeedback(view, anchor, snap.canPlay || snap.canDiscard, intro.phase);
-  const prefs = useFeedbackPrefs();
 
   // Le monete: si incassano appena un Contratto o la partita è vinta, una volta sola anche rientrando.
   const rewards = me === null ? [] : matchRewards(match, me);
@@ -171,164 +179,145 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
 
   // Durante la presentazione e la distribuzione non si tocca niente.
   const busy = intro.phase !== null;
+  // Pass-and-play: tra un turno e l'altro lo schermo intero copre tutto, mano compresa.
+  const passing = snap.handHidden && !last && !busy;
+  const contract = getContract(view.contract);
+  const target = contractNeedsTarget(contract) && view.targetFaction ? getFaction(view.targetFaction) : null;
+  const trump = view.trump ? getFaction(view.trump) : null;
+  // Sui computer grandi classifica e prese sono già accanto al tavolo: Info si apre sul Contratto.
+  const openInfo = (tab?: InfoTab) => setInfo(tab ?? (matchMedia(SIDEBAR_QUERY).matches ? 'contratto' : 'classifica'));
+
   return (
     <main className={`game${intro.phase ? ` intro-${intro.phase}` : ''}`}>
-      <section className="panel contract-head" inert={busy}>
-        <div>
-          <span className="hint">{series ? `Contratto ${match.handIndex + 1} di ${match.hands.length}` : 'Contratto'}</span>
-          <h2>
-            <ContractIcon contract={getContract(view.contract)} /> {contractTitle(view)}{' '}
-            <span className="pill">{describeScoring(getContract(view.contract))}</span>
-          </h2>
-          <p>{contractDescription(view)}</p>
-        </div>
-        <div className="contract-side">
-          <div className="phase">
-            {domino ? (
-              <>
-                <span className="hint">In tavola</span>
-                <strong>
-                  {placed} / {view.factions.length * 13}
-                </strong>
-              </>
-            ) : (
-              <>
-                <span className="hint">Presa</span>
-                <strong>
-                  {view.trickNo} / {view.tricksPerHand}
-                </strong>
-              </>
-            )}
-          </div>
-          <div className="feedback-toggles">
-            <button
-              type="button"
-              className="btn small icon-toggle"
-              aria-pressed={prefs.sound}
-              aria-label="Suoni"
-              data-tip={prefs.sound ? 'Togli i suoni' : 'Attiva i suoni'}
-              onClick={() => setPrefs({ sound: !prefs.sound })}
-            >
-              <Icon name={prefs.sound ? 'suono' : 'muto'} size={18} />
-            </button>
-            {canVibrate && (
-              <button
-                type="button"
-                className="btn small icon-toggle"
-                aria-pressed={prefs.vibrate}
-                aria-label="Vibrazione"
-                data-tip={prefs.vibrate ? 'Togli la vibrazione' : 'Vibra quando tocca a te'}
-                onClick={() => {
-                  setPrefs({ vibrate: !prefs.vibrate });
-                  if (!prefs.vibrate) vibrate(40);
-                }}
-              >
-                <Icon name={prefs.vibrate ? 'vibrazione' : 'senza-vibrazione'} size={18} />
-              </button>
-            )}
-          </div>
-          <button type="button" className="btn small" aria-expanded={rulesOpen} onClick={onRules}>
-            Regole
-          </button>
-        </div>
-      </section>
-
-      <div className="gamegrid" inert={busy}>
-        <div className={`board${sel ? ' picking' : ''}${last || snap.handHidden || view.decision ? '' : ' slim'}`}>
-          {domino ? (
-            <DominoBoard domino={domino} factions={view.factions} players={view.players} names={names} turn={view.turn} />
-          ) : (
-            <TableView
-              view={view}
-              names={names}
-              totals={match.totals}
-              anchor={anchor}
-              plays={plays}
-              winner={last ? last.winner : null}
-              intro={intro.phase}
-              // Con un recupero in sospeso i punti si contano dopo.
-              gain={last && view.decision?.kind !== 'recover' ? last.contractDelta : null}
-            />
+      <header className="game-bar">
+        <button
+          type="button"
+          className="bar-contract"
+          aria-haspopup="dialog"
+          aria-label={`${series ? `Contratto ${match.handIndex + 1} di ${match.hands.length}` : 'Contratto'}: ${contractDescription(view)} Apri i dettagli.`}
+          onClick={() => openInfo('contratto')}
+        >
+          <ContractIcon contract={contract} size={20} />
+          <b className="bar-contract-name">{contractTitle(view)}</b>
+          {series && (
+            <span className="bar-series">
+              {match.handIndex + 1}/{match.hands.length}
+            </span>
           )}
+          {target && (
+            <span className="bar-faction">
+              <span className="dot" style={{ '--faction': target.color } as CSSProperties} />
+              <span className="bar-faction-name">{target.name}</span>
+            </span>
+          )}
+          {trump && (
+            <span className="bar-faction">
+              <span className="dot" style={{ '--faction': trump.color } as CSSProperties} />
+              <span className="bar-faction-name">Briscola {trump.name}</span>
+            </span>
+          )}
+        </button>
+        <span className="bar-count">
+          <span>{domino ? 'In tavola' : 'Presa'}</span>
+          <b>{domino ? `${placed}/${view.factions.length * 13}` : `${view.trickNo}/${view.tricksPerHand}`}</b>
+        </span>
+        <button type="button" className="btn small bar-info" aria-haspopup="dialog" onClick={() => openInfo()}>
+          <Icon name="info" size={18} />
+          Info
+        </button>
+        <button type="button" className="btn small icon-toggle" aria-label="Menu" aria-haspopup="dialog" onClick={() => setMenu(true)}>
+          <Icon name="menu" size={20} />
+        </button>
+      </header>
 
-          <div className="table-status" aria-live="polite">
-            {snap.notice && <p className="status warn">{snap.notice}</p>}
-            {snap.turnDeadline && !snap.notice && <TurnClock key={snap.turnDeadline} deadline={snap.turnDeadline} />}
-            {last ? (
-              <div className="result">
-                <p>
-                  <b>{describeTrick(last, names)}</b>
-                </p>
-                {view.decision?.kind === 'recover' ? (
-                  <p className="hint">I punti del Contratto si contano dopo il recupero.</p>
-                ) : (
-                  <p className={last.contractDelta >= 0 ? 'good' : 'bad'}>Contratto: {signed(last.contractDelta)}</p>
-                )}
-                {last.notes.length > 0 && (
-                  <ul>
-                    {last.notes.map((note, i) => (
-                      <li key={i}>{describeNote(note, names)}</li>
-                    ))}
-                  </ul>
-                )}
-                {view.decision ? (
-                  decisionBox(view.decision)
-                ) : (
-                  <button type="button" className="btn primary" onClick={() => client.nextTrick()}>
-                    {view.trickNo >= view.tricksPerHand ? 'Vedi il risultato finale' : 'Presa successiva'}
-                  </button>
-                )}
-                {client.setup.mode === 'online' && !view.decision && <span className="hint">Si prosegue da soli tra pochi secondi.</span>}
-              </div>
-            ) : snap.handHidden ? (
-              <section className="pass-panel">
-                <span className="hint">Mano privata</span>
-                <h2>Passa il dispositivo a {current}</h2>
-                <p>
-                  {domino
-                    ? `Carte in tavola: ${placed}.`
-                    : view.plays.length === 0
-                      ? `${current} è primo di mano e apre la presa.`
-                      : `Carte già sul tavolo: ${view.plays.length}. Fazione d’apertura: ${lead!.name}.`}{' '}
-                  Mostra la mano solo quando {current} ha il dispositivo.
-                </p>
-                <button type="button" className="btn primary" onClick={() => client.revealHand()}>
-                  Mostra la mia mano
-                </button>
-              </section>
-            ) : view.decision?.kind === 'trump' ? (
-              <div className="result">{decisionBox(view.decision)}</div>
+      <div className="game-body" inert={busy}>
+        <div className={`board${sel ? ' picking' : ''}`}>
+          <div className="table-area">
+            {domino ? (
+              <DominoBoard domino={domino} factions={view.factions} players={view.players} names={names} turn={view.turn} />
             ) : (
-              <>
-                <span className={`turn-pill${snap.canPlay ? ' mine' : ''}`}>
-                  {lead && <span className="dot" style={{ '--faction': lead.color } as CSSProperties} />}
-                  {turnTitle()}
-                </span>
-                <span className="hint">{turnHint()}</span>
-              </>
+              <TableView
+                view={view}
+                names={names}
+                totals={match.totals}
+                anchor={anchor}
+                plays={plays}
+                winner={last ? last.winner : null}
+                intro={intro.phase}
+                // Con un recupero in sospeso i punti si contano dopo.
+                gain={last && view.decision?.kind !== 'recover' ? last.contractDelta : null}
+              />
             )}
+
+            {/* Esito della presa e decisioni: in alto sul tavolo, la mano resta libera. */}
+            <div className="table-overlay" aria-live="polite">
+              {snap.notice && <p className="status warn">{snap.notice}</p>}
+              {snap.turnDeadline && !snap.notice && <TurnClock key={snap.turnDeadline} deadline={snap.turnDeadline} />}
+              {last ? (
+                <div className="result">
+                  <p>
+                    <b>{describeTrick(last, names)}</b>
+                  </p>
+                  {last.notes.length > 0 && (
+                    <ul>
+                      {last.notes.map((note, i) => (
+                        <li key={i}>{describeNote(note, names)}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <div className="result-next">
+                    {view.decision?.kind === 'recover' ? (
+                      <p className="hint">I punti del Contratto si contano dopo il recupero.</p>
+                    ) : (
+                      <p className={last.contractDelta >= 0 ? 'good' : 'bad'}>Contratto: {signed(last.contractDelta)}</p>
+                    )}
+                    {!view.decision && (
+                      <button type="button" className="btn primary" onClick={() => client.nextTrick()}>
+                        {view.trickNo >= view.tricksPerHand ? 'Vedi il risultato finale' : 'Presa successiva'}
+                      </button>
+                    )}
+                  </div>
+                  {client.setup.mode === 'online' && !view.decision && <span className="hint">Si prosegue da soli tra pochi secondi.</span>}
+                  {view.decision && decisionBox(view.decision)}
+                </div>
+              ) : (
+                !snap.handHidden && view.decision?.kind === 'trump' && <div className="result">{decisionBox(view.decision)}</div>
+              )}
+            </div>
           </div>
 
           <div className="hand-area">
+            {/* A fine presa turno e suggerimento restano al loro posto, nascosti: il tavolo non si sposta. */}
             <div className="hand-head">
+              <span className={`turn-pill${snap.canPlay || snap.canDiscard ? ' mine' : ''}${last ? ' idle' : ''}`} aria-hidden={!!last}>
+                {lead && <span className="dot" style={{ '--faction': lead.color } as CSSProperties} />}
+                {turnTitle()}
+              </span>
               <span className="chip me-chip">
                 <span className="seat-avatar">{initials(names[anchor]!)}</span>
                 <span>
-                  <b>{names[anchor]}</b> · {match.totals[anchor]} pt · {!domino && <>{plural(seat.tricks, 'presa', 'prese')} · </>}
-                  {plural(seat.handCount, 'carta', 'carte')}
+                  <span className="me-name">
+                    <b>{names[anchor]}</b> ·{' '}
+                  </span>
+                  {match.totals[anchor]} pt
+                  {!domino && <> · {plural(seat.tricks, 'presa', 'prese')}</>}
                   {seat.nextModifier !== 0 && ` · prossima carta ${signed(seat.nextModifier)}`}
                   {seat.protectedNext && ' · prossima carta protetta'}
                   {seat.mustDiscard > 0 && ' · prima di giocare scarti una carta'}
                 </span>
               </span>
-              {perspective !== null && !trickOver && (
-                <span className="hint">
+            </div>
+            <p className="hint hand-hint">
+              {!last && turnHint()}
+              {!last && perspective !== null && (snap.canPlay || snap.canDiscard) && (
+                <span className="pick-hint">
+                  {' '}
                   {snap.canDiscard
                     ? 'Scegli la carta da scartare, poi sceglila di nuovo per scartarla.'
                     : 'Scegli una carta per leggerne il potere, sceglila di nuovo per giocarla.'}
                 </span>
               )}
-            </div>
+            </p>
             {view.seen.length > 0 && <p className="seen-box">{seenText()}</p>}
             <HandFan
               cards={perspective === null ? [] : hand}
@@ -344,53 +333,70 @@ export function GameScreen({ client, rulesOpen, onRules, onReplay, onExit, onMen
           </div>
         </div>
 
-        <aside className="sidebar">
-          <section className="panel">
+        {/* Sui computer grandi classifica e prese restano accanto al tavolo; altrove si aprono da Info. */}
+        <aside className="sidebar" aria-label="Classifica e prese">
+          <section className="panel side-standings">
             <h3>{series ? 'Classifica della serie' : 'Classifica'}</h3>
-            {matchRanking(match.totals).map((pi, i) => {
-              const p = view.players[pi]!;
-              return (
-                <div key={pi} className={`score-row${pi === perspective ? ' me' : ''}`}>
-                  <div>
-                    <b>
-                      {i + 1}. {p.name}
-                    </b>
-                    <div className="hint">
-                      {!domino && <>{plural(p.tricks, 'presa', 'prese')} · </>}
-                      {p.handCount} in mano
-                      {series && ` · questa mano ${signed(p.score)}`}
-                      {p.nextModifier !== 0 && ` · prossima carta ${signed(p.nextModifier)}`}
-                    </div>
-                  </div>
-                  <b>{match.totals[pi]} pt</b>
-                </div>
-              );
-            })}
+            <Standings match={match} view={view} perspective={perspective} />
           </section>
           {!domino && (
-            <section className="panel">
-              <h3>Cronologia</h3>
-              {view.history.length === 0 ? (
-                <p className="hint">Nessuna presa completata.</p>
-              ) : (
-                <div className="log">
-                  {[...view.history].reverse().map((t) => (
-                    <div key={t.trickNo} className="logitem">
-                      <b>Presa {t.trickNo}</b> · {names[t.winner]}
-                      <div className="hint">
-                        {getCard(t.winningCardId).name} ({t.winningValue}) · {signed(t.contractDelta)} pt
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <section className="panel side-log">
+              <h3>Prese</h3>
+              <TrickLog history={view.history} names={names} />
             </section>
           )}
-          <button type="button" className="btn danger wide" onClick={exit}>
-            {client.setup.mode === 'online' ? 'Esci dalla partita' : 'Torna alla preparazione'}
-          </button>
         </aside>
       </div>
+
+      {passing && (
+        <Sheet className="pass-sheet" label="Passa il dispositivo">
+          <div className="pass-screen">
+            <span className="hint">Mano privata</span>
+            <h2>Passa il dispositivo a {current}</h2>
+            <p>
+              {domino
+                ? `Carte in tavola: ${placed}.`
+                : view.plays.length === 0
+                  ? `${current} è primo di mano e apre la presa.`
+                  : `Carte già sul tavolo: ${view.plays.length}. Fazione d’apertura: ${lead!.name}.`}{' '}
+              Mostra la mano solo quando {current} ha il dispositivo.
+            </p>
+            <button type="button" className="btn primary" autoFocus onClick={() => client.revealHand()}>
+              Mostra la mia mano
+            </button>
+            <button type="button" className="btn small danger" onClick={exit}>
+              Esci dalla partita
+            </button>
+          </div>
+        </Sheet>
+      )}
+
+      {info && (
+        <InfoPanel
+          tab={info}
+          names={names}
+          match={match}
+          view={view}
+          perspective={perspective}
+          onTab={setInfo}
+          onClose={() => setInfo(null)}
+          onTutorial={onTutorial}
+        />
+      )}
+
+      {menu && (
+        <GameMenu
+          onClose={() => setMenu(false)}
+          onRules={() => {
+            setMenu(false);
+            onRules();
+          }}
+          onExit={() => {
+            setMenu(false);
+            exit();
+          }}
+        />
+      )}
 
       {intro.phase === 'show' && (
         <ContractIntro

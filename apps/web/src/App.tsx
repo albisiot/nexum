@@ -11,7 +11,7 @@ import { MenuScreen } from './components/MenuScreen';
 import { OnlineScreen } from './components/OnlineScreen';
 import { PatchNotesScreen } from './components/PatchNotesScreen';
 import { RoadmapScreen } from './components/RoadmapScreen';
-import { RulesPanel } from './components/RulesPanel';
+import { RulesDialog } from './components/RulesPanel';
 import { SetupScreen, defaultSetup, sanitizeSetup } from './components/SetupScreen';
 import { ShopScreen } from './components/ShopScreen';
 import { Tutorial, tutorialSeen } from './components/Tutorial';
@@ -77,10 +77,12 @@ export function App() {
   };
 
   const onMenu = (screen === 'menu' || (screen === 'editor' && !canEdit)) && !client;
+  // Nelle partite online il tempo del turno scorre anche durante il tutorial.
+  const openTutorial = client?.setup.mode === 'online' ? undefined : () => setShowTutorial(true);
 
   return (
     <div className="app">
-      {/* Durante le prese la testata è nascosta dal CSS: "Regole" passa nel riquadro del Contratto. */}
+      {/* Durante le prese la testata è nascosta dal CSS: "Regole" passa nel menu ☰ e in Info. */}
       <header className={`top${onMenu ? ' top-menu' : ''}`}>
         {!onMenu && (
           <div className="brand">
@@ -88,19 +90,19 @@ export function App() {
             <p>Trick-taking a Contratti · mazzo comune · 13 carte a giocatore</p>
           </div>
         )}
-        <button type="button" className="btn" aria-expanded={showRules} onClick={() => setShowRules((s) => !s)}>
+        <button type="button" className="btn" aria-haspopup="dialog" onClick={() => setShowRules(true)}>
           Regole
         </button>
       </header>
 
-      {showRules && <RulesPanel onTutorial={client?.setup.mode === 'online' ? undefined : () => setShowTutorial(true)} />}
+      {showRules && <RulesDialog onTutorial={openTutorial} onClose={() => setShowRules(false)} />}
 
       {client ? (
         <GameScreen
           key={client.setup.seed}
           client={client}
-          rulesOpen={showRules}
-          onRules={() => setShowRules((s) => !s)}
+          onRules={() => setShowRules(true)}
+          onTutorial={openTutorial}
           onReplay={
             client.setup.mode === 'online'
               ? undefined

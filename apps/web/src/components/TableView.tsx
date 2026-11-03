@@ -5,7 +5,7 @@ import { INTRO_DEAL_MS } from '../game/intro';
 import { plural, signed } from '../game/text';
 import { CardView } from './CardView';
 import type { IntroPhase } from './ContractIntro';
-import { useElementWidth } from './useElementWidth';
+import { useElementSize } from './useElementSize';
 
 interface Props {
   view: PlayerView;
@@ -62,6 +62,7 @@ interface Geometry {
   density: Density;
   tilt: number;
   perspective: number;
+  /** Dove finisce il disegno del tavolo, dall'alto del riquadro: sotto c'è la mano. */
   height: number;
   originY: number;
   cx: number;
@@ -79,32 +80,52 @@ interface Geometry {
 }
 
 /**
- * Misure del tavolo per una data larghezza. La prospettiva è calcolata qui, così i posti
+ * Misure del tavolo per il riquadro che lo contiene (`width` × `avail`). La prospettiva è calcolata qui, così i posti
  * (disegnati piatti, per restare nitidi) cadono esattamente sul bordo del piano inclinato.
+ * Il tavolo è largo quanto può; se in altezza non ci sta si restringe, se avanza spazio si fa più profondo
+ * (fino a un limite) e quel che resta lo lascia sopra e sotto, in parti uguali.
  */
-function geometry(width: number, n: number): Geometry {
+function geometry(width: number, avail: number, n: number): Geometry {
   const phone = width < 640;
   const density: Density = phone && n >= 6 ? 'mini' : 'full';
   const tilt = phone ? 46 : 50;
   const perspective = phone ? 900 : 1400;
-  const tw = Math.round(phone ? Math.min(width - 16, 440) : Math.min(width * 0.62, 760));
-  const th = Math.round(tw * (phone ? 0.78 : 0.48));
   const rim = phone ? 9 : 14;
   const depth = phone ? 14 : 24;
-  const lift = th / 2 + (phone ? 120 : 170);
-  const cardW = Math.round(clamp(tw * (phone ? 0.165 : 0.115), 44, 96) * (n >= 6 ? 0.86 : 1));
-  const cardH = Math.round(cardW * 1.45);
-  const seatW = density === 'mini' ? 70 : phone ? 124 : 170;
-  const seatH = density === 'mini' ? 52 : phone ? 84 : 104;
-
+  const seatW = density === 'mini' ? 46 : phone ? 124 : 170;
+  const seatH = density === 'mini' ? 50 : phone ? 84 : 104;
+  // Profondità del tavolo rispetto alla larghezza: la minima, e la massima se c'è spazio in altezza (tablet in verticale).
+  const [flat, deep] = phone ? [0.78, 1] : [0.48, avail > width ? 1 : 0.7];
   const t = tilt * RAD;
-  const rel = (u: number, v: number) => {
-    const k = perspective / (perspective - v * Math.sin(t));
-    return { x: u * k, y: -lift + (v * Math.cos(t) + lift) * k };
+
+  const layout = (tw: number, ratio: number) => {
+    const th = Math.round(tw * ratio);
+    const lift = th / 2 + (phone ? 120 : 170);
+    const rel = (u: number, v: number) => {
+      const k = perspective / (perspective - v * Math.sin(t));
+      return { x: u * k, y: -lift + (v * Math.cos(t) + lift) * k };
+    };
+    // Dall'alto del disegno al centro del tavolo, e dal centro al fondo:
+    // sotto il bordo vicino si vede solo lo spessore del tavolo, che in prospettiva sporge di circa depth·sin(t).
+    const above = seatH + 6 - rel(0, -(th / 2 + seatGap(phone))).y;
+    const below = rel(0, th / 2).y + depth * Math.sin(t) * 1.2 + 8;
+    return { tw, th, lift, rel, above, below, ratio, fits: above + below <= avail };
   };
-  const cy = Math.round(seatH + 6 - rel(0, -(th / 2 + seatGap(phone))).y);
-  // Sotto il bordo vicino si vede solo lo spessore del tavolo, che in prospettiva sporge di circa depth·sin(t).
-  const height = Math.round(cy + rel(0, th / 2).y + depth * Math.sin(t) * 1.2 + 8);
+
+  // Con 6 giocatori o più le etichette laterali stanno ai lati del tavolo, non sopra il bordo.
+  let fit = layout(Math.round(phone ? Math.min(width - (density === 'mini' ? 56 : 16), 440) : Math.min(width * 0.62, 1000)), flat);
+  while (!fit.fits && fit.tw > 180) fit = layout(Math.round(fit.tw * 0.96), flat);
+  while (fit.fits && fit.ratio < deep) {
+    const deeper = layout(fit.tw, Math.min(deep, fit.ratio + 0.02));
+    if (!deeper.fits) break;
+    fit = deeper;
+  }
+  const { tw, th, lift, rel } = fit;
+  const cy = Math.round(Math.max(0, (avail - fit.above - fit.below) / 2) + fit.above);
+  const height = Math.round(cy + fit.below);
+  // Su un tavolo profondo anche le carte giocate sono più grandi.
+  const cardW = Math.round(clamp(Math.max(tw * (phone ? 0.165 : 0.115), th * 0.16), 44, 96) * (n >= 6 ? 0.86 : 1));
+  const cardH = Math.round(cardW * 1.45);
   const cx = width / 2;
 
   return {
@@ -151,10 +172,11 @@ function seatBox(g: Geometry, angle: number, width: number): { left: number; top
   const gap = seatGap(g.phone);
   const p = g.project(c * (g.tw / 2 + gap), s * (g.th / 2 + gap));
   if (g.phone) {
-    const out = g.density === 'full' ? 0.3 : 0;
+    // Le etichette piccole dei posti ai lati stanno accanto al bordo, a metà altezza, non sopra.
+    const mini = g.density === 'mini';
     return {
-      left: clamp(p.x - g.seatW / 2 + c * g.seatW * out, 4, width - g.seatW - 4),
-      top: p.y - g.seatH,
+      left: clamp(p.x - g.seatW / 2 + c * g.seatW * (mini ? 0.5 : 0.3), 2, width - g.seatW - 2),
+      top: p.y - g.seatH * (mini ? 1 - Math.abs(c) / 2 : 1),
     };
   }
   return {
@@ -222,9 +244,9 @@ function DealCards({ g, width, n, anchor, leader, angles }: { g: Geometry; width
 }
 
 export function TableView({ view, names, totals, anchor, plays, winner, intro = null, gain = null }: Props) {
-  const [ref, width] = useElementWidth<HTMLDivElement>();
+  const [ref, { width, height }] = useElementSize<HTMLDivElement>();
   const n = view.players.length;
-  const g = width > 0 ? geometry(width, n) : null;
+  const g = width > 0 && height > 0 ? geometry(width, height, n) : null;
   const angles = seatAngles(n);
   /** Posizione relativa a chi guarda: 0 = in basso, poi in ordine di gioco. */
   const slot = (seat: number) => (seat - anchor + n) % n;
@@ -304,11 +326,7 @@ export function TableView({ view, names, totals, anchor, plays, winner, intro = 
     <div
       ref={ref}
       className={`table-stage${g?.phone ? ' phone' : ''}${intro ? ` intro-${intro}` : ''}`}
-      style={
-        g
-          ? { height: g.height, perspective: `${g.perspective}px`, perspectiveOrigin: `50% ${g.originY}px` }
-          : undefined
-      }
+      style={g ? { perspective: `${g.perspective}px`, perspectiveOrigin: `50% ${g.originY}px` } : undefined}
       role="group"
       aria-label="Tavolo"
     >
@@ -389,14 +407,20 @@ export function TableView({ view, names, totals, anchor, plays, winner, intro = 
                       </span>
                     )}
                   </span>
-                  <span className="seat-text">
-                    <b>{names[seat]}</b>
-                    {g.density === 'full' && (
+                  {g.density === 'full' ? (
+                    <span className="seat-text">
+                      <b>{names[seat]}</b>
                       <span>
                         {totals[seat]} pt · {plural(p.tricks, 'presa', 'prese')}
                       </span>
-                    )}
-                  </span>
+                    </span>
+                  ) : (
+                    // Con tanti giocatori sul telefono: solo iniziali e punti, il resto è in Info.
+                    <span className="seat-points">
+                      <span className="sr-only">{names[seat]}: </span>
+                      {totals[seat]} pt
+                    </span>
+                  )}
                 </div>
                 {status && g.density === 'full' && <span className={`tag${won || current ? ' gold' : ''}`}>{status}</span>}
                 {status && g.density === 'mini' && <span className="sr-only">{status}</span>}
