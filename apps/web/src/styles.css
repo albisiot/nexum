@@ -29,6 +29,19 @@
   --font: 'Rubik Variable', Rubik, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color-scheme: light;
   scrollbar-color: var(--line) var(--inset);
+  /* Spazio da lasciare vuoto ai bordi dello schermo: zero ovunque tranne su iPhone e iPad (vedi sotto). */
+  --edge-top: 0px;
+  --edge-bottom: 0px;
+}
+
+/* Safari su iPhone e iPad (iOS 26) sfuma tutto ciò che sta vicino al bordo alto dello schermo, e non si può
+   spegnere: i pulsanti scendono di quel tanto che basta. In basso si lascia libera la linea della Home.
+   -webkit-touch-callout esiste solo su iOS, così Android e i computer non perdono spazio. */
+@supports (-webkit-touch-callout: none) {
+  :root {
+    --edge-top: calc(env(safe-area-inset-top, 0px) + 24px);
+    --edge-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 * {
@@ -61,7 +74,7 @@ h3 {
 .app {
   max-width: 1220px;
   margin: 0 auto;
-  padding: 16px;
+  padding: calc(16px + var(--edge-top)) 16px calc(16px + var(--edge-bottom));
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -612,6 +625,7 @@ h3 {
   .tutorial {
     width: 100vw;
     height: 100dvh;
+    padding: var(--edge-top) 0 var(--edge-bottom);
     border: 0;
     border-radius: 0;
     box-shadow: none;
@@ -2301,7 +2315,7 @@ input {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  padding: 0 16px 6px;
+  padding: var(--edge-top) 16px calc(6px + var(--edge-bottom));
 }
 
 .game-bar {
@@ -3802,7 +3816,7 @@ body:has(.app > .game) {
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 14px 16px 20px;
+  padding: 14px 16px calc(20px + var(--edge-bottom));
 }
 
 .sheet-body > h3 {
@@ -3813,7 +3827,7 @@ body:has(.app > .game) {
 /* Info: sale dal basso sul telefono, si apre di lato sul computer. */
 .info-sheet {
   width: 100%;
-  max-height: 86dvh;
+  max-height: min(86dvh, calc(100dvh - var(--edge-top) - 16px));
   margin: auto 0 0;
   border-width: 2px 0 0;
   border-radius: 20px 20px 0 0;
@@ -3827,6 +3841,7 @@ body:has(.app > .game) {
     height: 100%;
     max-height: none;
     margin: 0 0 0 auto;
+    padding-top: var(--edge-top);
     border-width: 0 0 0 2px;
     border-radius: 0;
     animation-name: sheet-side;
@@ -4018,7 +4033,7 @@ body:has(.app > .game) {
 /* Il menu ☰: si apre sotto il pulsante, in alto a destra. */
 .menu-sheet {
   width: min(300px, calc(100% - 24px));
-  margin: 54px max(12px, calc((100% - 1440px) / 2 + 16px)) auto auto;
+  margin: calc(54px + var(--edge-top)) max(12px, calc((100% - 1440px) / 2 + 16px)) auto auto;
   border-radius: 16px;
   animation: menu-pop 0.16s ease-out;
 }
@@ -4093,7 +4108,7 @@ body:has(.app > .game) {
 @media (max-width: 580px) {
   .rules-sheet {
     width: 100%;
-    max-height: 92dvh;
+    max-height: min(92dvh, calc(100dvh - var(--edge-top) - 16px));
     margin: auto 0 0;
     border-width: 2px 0 0;
     border-radius: 20px 20px 0 0;
@@ -4383,9 +4398,6 @@ body:has(.app > .game) {
 }
 
 @media (max-width: 580px) {
-  .app {
-    padding: 16px;
-  }
   .standings-head,
   .standings-row {
     grid-template-columns: minmax(0, 1fr) 36px 56px 56px;
@@ -4423,7 +4435,7 @@ body:has(.app > .game) {
 /* Telefono: tavolo e mano da bordo a bordo, testi più compatti. */
 @media (max-width: 640px) {
   .game {
-    padding: 0 0 4px;
+    padding: var(--edge-top) 0 calc(4px + var(--edge-bottom));
   }
   .game-bar {
     gap: 6px;

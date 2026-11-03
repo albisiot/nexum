@@ -13,6 +13,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.40.1',
+    date: '2026-11-03',
+    title: 'Barra nitida su iPhone',
+    changes: [
+      {
+        type: 'fix',
+        text: 'Su iPhone e iPad Safari sfuma tutto ciò che sta vicino al bordo alto dello schermo, e la barra in alto della partita risultava sfocata. Ora la barra e i pulsanti in alto delle altre schermate stanno un po’ più in basso, fuori dalla sfumatura.',
+      },
+      {
+        type: 'fix',
+        text: 'Su iPhone la mano e i pannelli che salgono dal basso lasciano libera la linea della Home.',
+      },
+    ],
+  },
+  {
     version: '0.40.0',
     date: '2026-11-03',
     title: 'Il tavolo sta tutto nello schermo',
