@@ -986,10 +986,6 @@ h3 {
   font-weight: 800;
 }
 
-.top-menu {
-  justify-content: flex-end;
-}
-
 .back {
   border: 0;
   background: none;
@@ -1008,13 +1004,25 @@ h3 {
 
 /* ---------- menu principale ---------- */
 
+/* Il menu sta in uno schermo, anche su un telefono piccolo (375×667): niente testata ("Regole" è tra i link in
+   fondo) e spazi che si stringono con l'altezza. Se proprio non ci sta (telefono in orizzontale) la pagina scorre. */
+body:has(.app > .menu) {
+  min-height: 0;
+}
+
+.app:has(> .menu) {
+  min-height: 100dvh;
+}
+
 .menu {
+  flex: 1 0 auto;
   width: 100%;
   max-width: 520px;
-  margin: 4vh auto 0;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  justify-content: center;
+  gap: clamp(12px, 2.6dvh, 28px);
 }
 
 .menu-hero {
@@ -1023,7 +1031,8 @@ h3 {
 
 .menu-logo {
   margin: 0;
-  font-size: clamp(44px, 12vw, 72px);
+  font-size: clamp(38px, min(12vw, 8dvh), 72px);
+  line-height: 1.1;
   font-weight: 900;
   letter-spacing: 0.08em;
   padding-left: 0.08em;
@@ -1061,7 +1070,9 @@ h3 {
 
 .menu-crown {
   display: block;
-  margin: 0 auto 6px;
+  width: clamp(34px, 6.5dvh, 56px);
+  height: auto;
+  margin: 0 auto 4px;
   overflow: visible;
 }
 
@@ -1104,7 +1115,7 @@ h3 {
 }
 
 .menu-hero p {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
   color: var(--muted);
 }
 
@@ -1190,27 +1201,33 @@ h3 {
 .menu-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
+}
+
+.menu-item,
+.menu-tile {
+  color: var(--text);
+  background: var(--panel);
+  border: 2px solid var(--line);
+  box-shadow: var(--shadow);
+  transition: transform 0.14s, box-shadow 0.14s;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   width: 100%;
-  min-height: 76px;
-  padding: 14px 18px;
+  min-height: 64px;
+  padding: 9px 16px;
   text-align: left;
-  color: var(--text);
-  background: var(--panel);
-  border: 2px solid var(--line);
   border-radius: 16px;
-  box-shadow: var(--shadow);
-  transition: transform 0.14s, box-shadow 0.14s;
 }
 
 .menu-item:not(:disabled):hover,
-.menu-item:not(:disabled):focus-visible {
+.menu-item:not(:disabled):focus-visible,
+.menu-tile:hover,
+.menu-tile:focus-visible {
   transform: translate(-2px, -2px);
   box-shadow: 6px 6px 0 var(--ink);
 }
@@ -1238,6 +1255,11 @@ h3 {
   border: 2px solid var(--line);
 }
 
+.menu-icon {
+  width: 42px;
+  height: 42px;
+}
+
 .menu-item.featured .menu-icon {
   color: var(--gold-light);
   background: var(--velvet);
@@ -1246,49 +1268,188 @@ h3 {
 .menu-text {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
   min-width: 0;
 }
 
 .menu-title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 900;
 }
 
 .menu-sub {
-  font-size: 13px;
+  font-size: 12.5px;
   color: var(--muted);
   line-height: 1.35;
 }
 
-.soon {
-  display: inline-block;
-  margin-left: 6px;
-  vertical-align: 2px;
-  font-size: 10px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--ink);
-  background: var(--gold-light);
-  border: 2px solid var(--ink);
-  border-radius: 999px;
-  padding: 1px 7px;
+/* "Contro la CPU" con accanto la partita che parte con un tocco. */
+.menu-split {
+  display: flex;
+  gap: 10px;
 }
 
-.menu-footer {
+.menu-split > .menu-item:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.menu-item.menu-quick {
+  flex: none;
+  width: 92px;
+  min-height: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px;
   text-align: center;
-  font-size: 12px;
-  color: var(--muted);
-  margin: 0;
 }
 
-.menu-footer a {
-  color: var(--muted);
+.menu-quick .icon {
+  width: 20px;
+  height: 20px;
+  color: var(--gold-text);
 }
 
-.menu-item.editor-entry {
-  border-style: dashed;
+.menu-quick-label {
+  font-size: 12.5px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.menu-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.menu-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-width: 0;
+  padding: 9px 6px;
+  text-align: center;
+  border-radius: 14px;
+}
+
+.menu-tile .icon {
+  margin-bottom: 2px;
+  color: var(--gold-text);
+}
+
+.menu-tile-title {
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.menu-tile-sub {
+  max-width: 100%;
+  font-size: 11.5px;
+  line-height: 1.3;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menu-links {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0 2px;
+}
+
+.menu-links > button,
+.menu-links > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 8px;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  background: none;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.menu-links > button:hover,
+.menu-links > button:focus-visible,
+.menu-links > a:hover,
+.menu-links > a:focus-visible {
+  color: var(--gold-text);
+}
+
+.menu-links > .editor-entry {
+  border: 2px dashed var(--line-soft);
+}
+
+.menu-version {
+  padding: 0 6px;
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  font-size: 11px;
+}
+
+/* L'accesso in una riga sola, o due se non ci sta. */
+.menu .account {
+  padding: 8px 12px;
+}
+
+.menu .account .avatar {
+  width: 34px;
+  height: 34px;
+}
+
+.menu .account.signed-out {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 12px;
+}
+
+.menu .google-btn {
+  min-height: 38px;
+  padding: 6px 14px;
+}
+
+/* Schermi bassi (telefoni piccoli, portatili): via il motto sotto il logo, tutto un po' più stretto. */
+@media (max-height: 740px) {
+  .menu {
+    gap: clamp(10px, 1.8dvh, 28px);
+  }
+  .menu-hero p {
+    display: none;
+  }
+  .menu-crown {
+    width: 38px;
+  }
+  .menu-list,
+  .menu-split,
+  .menu-tiles {
+    gap: 8px;
+  }
+  .menu-item {
+    min-height: 58px;
+    padding-block: 6px;
+  }
+  .menu-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .menu-tile {
+    padding-block: 6px;
+  }
+  .menu .account {
+    padding-block: 6px;
+  }
+  .menu .google-btn {
+    min-height: 36px;
+  }
 }
 
 /* ---------- editor ---------- */
@@ -1761,15 +1922,47 @@ textarea {
 
 /* ---------- preparazione ---------- */
 
-.setup > .hint {
-  margin: 0 0 14px;
+/* Sta tutta nello schermo: indietro e passaggi in alto, i pulsanti per andare avanti e per iniziare sempre in
+   fondo al riquadro. Il riquadro è alto quanto il passaggio; se non ci sta, il passaggio scorre lì dentro. */
+.app:has(> .setup) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.setup {
+  flex: 0 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.setup-head,
+.setup > .step-controls {
+  flex: none;
+}
+
+/* Sul telefono la testata resta su una riga: più spazio al passaggio. */
+@media (max-width: 580px) {
+  .app:has(> .setup) .brand p {
+    display: none;
+  }
+}
+
+.setup-body {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Spazio per l'ombra delle scelte selezionate, che altrimenti verrebbe tagliata. */
+  margin: 0 -8px;
+  padding: 0 8px 6px;
 }
 
 .steps {
   list-style: none;
   display: flex;
   gap: 6px;
-  margin: 4px 0 18px;
+  margin: 0 0 14px;
   padding: 0;
 }
 
@@ -1926,7 +2119,7 @@ textarea {
 
 .step-controls {
   justify-content: flex-end;
-  margin-top: 22px;
+  margin-top: 0;
   padding-top: 14px;
   border-top: 1px solid var(--line);
 }
@@ -2376,7 +2569,8 @@ input {
   display: none;
 }
 
-.rules summary::after {
+.rules summary::after,
+.hand-tricks > summary::after {
   content: '+';
   flex: none;
   display: grid;
@@ -2390,7 +2584,8 @@ input {
   line-height: 1;
 }
 
-.rules details[open] > summary::after {
+.rules details[open] > summary::after,
+.hand-tricks[open] > summary::after {
   content: '−';
   background: var(--gold-light);
 }
@@ -2701,6 +2896,7 @@ input {
 html:has(.app > .game),
 html:has(.app > .end),
 html:has(.app > .hand-end),
+html:has(.app > .setup),
 html:has(dialog[open]) {
   overflow: hidden;
   overscroll-behavior: none;
@@ -2708,7 +2904,8 @@ html:has(dialog[open]) {
 
 body:has(.app > .game),
 body:has(.app > .end),
-body:has(.app > .hand-end) {
+body:has(.app > .hand-end),
+body:has(.app > .setup) {
   min-height: 0;
   overflow: hidden;
   overscroll-behavior: none;
@@ -4400,23 +4597,31 @@ body:has(.app > .hand-end) {
   font-size: 24px;
 }
 
+/* I Contratti della serie in una striscia: se sono tanti scorre di lato, con il prossimo in vista. */
 .series-steps {
+  flex: none;
   margin: 0;
-  padding: 0;
+  /* Spazio per l'ombra del prossimo Contratto, che altrimenti verrebbe tagliata. */
+  padding: 0 4px 5px 0;
   list-style: none;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 10px;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
 }
 
 .series-step {
+  position: relative;
+  flex: 1 0 0;
+  min-width: 132px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
+  gap: 8px;
+  padding: 6px 10px 6px 6px;
   background: var(--panel2);
   border: 2px solid var(--line-soft);
-  border-radius: 14px;
+  border-radius: 12px;
 }
 
 .series-step.done {
@@ -4434,10 +4639,9 @@ body:has(.app > .hand-end) {
   flex: none;
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
-  font-size: 20px;
-  border-radius: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   background: var(--inset);
   border: 2px solid var(--line-soft);
   color: var(--muted);
@@ -4457,16 +4661,18 @@ body:has(.app > .hand-end) {
 .series-step-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
   min-width: 0;
 }
 
-.series-step-text > b {
-  font-size: 14px;
+.series-step-name {
+  font-size: 13px;
   font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.series-step:not(.done, .next) .series-step-text > b {
+.series-step:not(.done, .next) .series-step-name {
   color: var(--muted);
 }
 
@@ -4476,10 +4682,46 @@ body:has(.app > .hand-end) {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
+  white-space: nowrap;
 }
 
 .series-step.next .series-step-label {
   color: var(--ink);
+}
+
+.series-step-score {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* "Le tue prese" si apre e si chiude; il riassunto resta sempre in vista. Sul telefono parte chiuso. */
+.hand-tricks > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  list-style: none;
+  cursor: pointer;
+}
+
+.hand-tricks > summary::-webkit-details-marker {
+  display: none;
+}
+
+.hand-tricks > summary h3 {
+  flex: 1 1 auto;
+  margin: 0;
+}
+
+.hand-tricks[open] > summary {
+  margin-bottom: 10px;
+}
+
+.hand-tricks-sum {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
 .hand-end-grid {
@@ -4641,6 +4883,34 @@ body:has(.app > .hand-end) {
   }
   .next-contract .controls .btn {
     flex: 1 1 0;
+  }
+  /* Striscia da telefono: icona, numero e punti. Il nome resta per chi usa un lettore di schermo. */
+  .series-steps {
+    gap: 6px;
+  }
+  .series-step {
+    flex: 1 0 auto;
+    min-width: 52px;
+    flex-direction: column;
+    gap: 2px;
+    padding: 5px 4px 4px;
+  }
+  .series-step-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .series-step-text {
+    align-items: center;
+  }
+  .series-step-state {
+    display: none;
+  }
+  .series-step-name {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
   }
 }
 

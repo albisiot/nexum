@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   MAX_PLAYERS,
   MIN_PLAYERS,
@@ -40,7 +40,11 @@ export interface SetupValues {
   singleContract: ContractId;
   targetFaction: FactionId | null;
   factions: FactionId[];
+  /** Le fazioni le ha scelte chi gioca: si tengono per la prossima partita. Se no se ne pescano altre a caso. */
+  factionsPicked: boolean;
 }
+
+export const CONTRACT_FORMATS: readonly ContractFormat[] = ['randomSeries', 'chosenSeries', 'randomSingle', 'chosenSingle'];
 
 const FORMATS: { id: ContractFormat; icon: IconName; title: string; desc: string }[] = [
   {
@@ -54,7 +58,7 @@ const FORMATS: { id: ContractFormat; icon: IconName; title: string; desc: string
   { id: 'chosenSingle', icon: 'singolo-scelta', title: 'Un Contratto a scelta', desc: 'Una sola mano di 13 prese con il Contratto che preferisci.' },
 ];
 
-const SERIES_LENGTHS = [
+export const SERIES_LENGTHS = [
   { value: 3, label: '3 Contratti' },
   { value: 5, label: '5 Contratti' },
   { value: 10, label: 'Tutti' },
@@ -62,7 +66,7 @@ const SERIES_LENGTHS = [
 
 const STEPS = ['Giocatori', 'Contratti', 'Fazioni'];
 
-const randomFactions = (n: number, keep: FactionId[] = []): FactionId[] => {
+export const randomFactions = (n: number, keep: FactionId[] = []): FactionId[] => {
   const all = factionIds();
   const kept = keep.filter((f) => all.includes(f)).slice(0, n);
   const extra = shuffle(all.filter((f) => !kept.includes(f)), Math.random).slice(0, n - kept.length);
@@ -87,7 +91,7 @@ export function sanitizeSetup(v: SetupValues): SetupValues {
   };
 }
 
-const defaultBotName = (mode: GameMode, i: number) => (mode === 'online' ? `CPU ${i + 1}` : `Avversario ${i + 1}`);
+export const defaultBotName = (mode: GameMode, i: number) => (mode === 'online' ? `CPU ${i + 1}` : `Avversario ${i + 1}`);
 
 /** I nomi con cui siederà la CPU: un campo lasciato vuoto torna al nome predefinito. */
 export function resolvedBotNames(v: SetupValues): string[] {
@@ -106,6 +110,7 @@ export function defaultSetup(mode: GameMode = 'solo'): SetupValues {
     singleContract: 'more',
     targetFaction: null,
     factions: randomFactions(4),
+    factionsPicked: false,
   };
 }
 
@@ -114,6 +119,11 @@ function chosenContracts(v: SetupValues): ContractId[] {
   if (v.format === 'chosenSeries') return v.seriesContracts;
   if (v.format === 'chosenSingle') return [v.singleContract];
   return [];
+}
+
+/** Per il menu: "Contro la CPU · 4 giocatori · Serie casuale di 5 Contratti". */
+export function describeSetup(v: SetupValues): string {
+  return [v.mode === 'local' ? 'Multiplayer' : 'Contro la CPU', `${v.playerCount} giocatori`, describeFormat(v)].join(' · ');
 }
 
 export function describeFormat(v: SetupValues): string {
@@ -168,41 +178,55 @@ interface Props {
 
 export function SetupScreen({ values: v, onChange, onStart, onBack, members }: Props) {
   const [step, setStep] = useState(0);
+  const body = useRef<HTMLDivElement>(null);
   const set = (patch: Partial<SetupValues>) => onChange({ ...v, ...patch });
   const go = (next: number) => {
     setStep(next);
-    window.scrollTo(0, 0);
+    body.current?.scrollTo(0, 0);
   };
-  const canContinue = step !== 1 || v.format !== 'chosenSeries' || v.seriesContracts.length >= 2;
+  // Una serie a scelta vuole almeno 2 Contratti: finché mancano non si va avanti e non si inizia.
+  const ready = v.format !== 'chosenSeries' || v.seriesContracts.length >= 2;
+  const begin = () => onStart(toMatchSetup(v));
 
   return (
     <section className="panel setup">
-      <button type="button" className="back" onClick={() => (step === 0 ? onBack() : go(step - 1))}>
-        ← {step === 0 ? (members ? 'Torna alla stanza' : 'Menu principale') : 'Indietro'}
-      </button>
+      <div className="setup-head">
+        <button type="button" className="back" onClick={() => (step === 0 ? onBack() : go(step - 1))}>
+          ← {step === 0 ? (members ? 'Torna alla stanza' : 'Menu principale') : 'Indietro'}
+        </button>
 
-      <ol className="steps" aria-label="Passaggi">
-        {STEPS.map((label, i) => (
-          <li key={label} className={i === step ? 'current' : i < step ? 'done' : ''}>
-            <button type="button" disabled={i >= step} onClick={() => go(i)}>
-              <span className="step-no">{i + 1}</span>
-              <span className="step-label">{label}</span>
-            </button>
-          </li>
-        ))}
-      </ol>
+        <ol className="steps" aria-label="Passaggi">
+          {STEPS.map((label, i) => (
+            <li key={label} className={i === step ? 'current' : i < step ? 'done' : ''}>
+              <button type="button" disabled={i >= step} onClick={() => go(i)}>
+                <span className="step-no">{i + 1}</span>
+                <span className="step-label">{label}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      </div>
 
-      {step === 0 && <PlayersStep v={v} set={set} members={members} />}
-      {step === 1 && <ContractsStep v={v} set={set} />}
-      {step === 2 && <FactionsStep v={v} set={set} />}
+      {/* La pagina non scorre: se il passaggio non ci sta, scorre qui dentro e i pulsanti restano in fondo. */}
+      <div className="setup-body" ref={body}>
+        {step === 0 && <PlayersStep v={v} set={set} members={members} />}
+        {step === 1 && <ContractsStep v={v} set={set} />}
+        {step === 2 && <FactionsStep v={v} set={set} />}
+      </div>
 
       <div className="controls step-controls">
         {step < 2 ? (
-          <button type="button" className="btn primary" disabled={!canContinue} onClick={() => go(step + 1)}>
-            Avanti →
-          </button>
+          <>
+            {/* Si può iniziare da qualsiasi passaggio: quelli saltati restano come sono, con le fazioni a caso se non scelte. */}
+            <button type="button" className="btn" disabled={!ready} onClick={begin}>
+              Inizia
+            </button>
+            <button type="button" className="btn primary" disabled={step === 1 && !ready} onClick={() => go(step + 1)}>
+              Avanti →
+            </button>
+          </>
         ) : (
-          <button type="button" className="btn primary" onClick={() => onStart(toMatchSetup(v))}>
+          <button type="button" className="btn primary" disabled={!ready} onClick={begin}>
             Inizia la partita
           </button>
         )}
@@ -408,8 +432,8 @@ function FactionsStep({ v, set }: StepProps) {
   );
 
   const toggleFaction = (f: FactionId) => {
-    if (v.factions.includes(f)) set({ factions: v.factions.filter((x) => x !== f) });
-    else if (v.factions.length < n) set({ factions: factionIds().filter((x) => x === f || v.factions.includes(x)) });
+    if (v.factions.includes(f)) set({ factions: v.factions.filter((x) => x !== f), factionsPicked: true });
+    else if (v.factions.length < n) set({ factions: factionIds().filter((x) => x === f || v.factions.includes(x)), factionsPicked: true });
   };
 
   return (
@@ -447,7 +471,7 @@ function FactionsStep({ v, set }: StepProps) {
           : `Servono ${n} fazioni, ora ${v.factions.length}. Iniziando, le mancanti verranno scelte a caso.`}
       </p>
       <div className="controls">
-        <button type="button" className="btn" onClick={() => set({ factions: randomFactions(n) })}>
+        <button type="button" className="btn" onClick={() => set({ factions: randomFactions(n), factionsPicked: false })}>
           Fazioni casuali
         </button>
       </div>

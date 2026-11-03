@@ -13,6 +13,41 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.42.0',
+    date: '2026-11-03',
+    title: 'Menu in uno schermo e partite più veloci',
+    changes: [
+      {
+        type: 'change',
+        text: 'Il menu principale sta tutto in uno schermo, anche su un telefono piccolo. In cima c’è da dove ripartire, poi i modi di giocare (contro la CPU, multiplayer, online), tre riquadri per Tutorial, Negozio e Collezione e in fondo i link a Prossimamente, Patch notes, Regole e Impostazioni.',
+      },
+      {
+        type: 'new',
+        text: 'Partita veloce: accanto a “Contro la CPU”, un tocco e la partita parte subito, con la preparazione dell’ultima volta o, la prima volta, con quella iniziale (4 giocatori e una serie casuale di 5 Contratti).',
+      },
+      {
+        type: 'new',
+        text: 'Rigioca l’ultima: quando non c’è una partita da riprendere, in cima al menu trovi l’ultima partita che hai giocato, contro la CPU o multiplayer, pronta a ripartire con la stessa preparazione.',
+      },
+      {
+        type: 'new',
+        text: 'La preparazione si ricorda: giocatori, nomi, Contratti e fazioni scelte restano anche dopo aver chiuso la pagina. Le fazioni che non hai scelto tu si pescano di nuovo a caso a ogni partita. Se una fazione o un Contratto non c’è più, quella parte torna ai valori iniziali.',
+      },
+      {
+        type: 'change',
+        text: 'Nella preparazione puoi partire da qualsiasi passaggio con “Inizia”: quelli che salti restano come sono. I pulsanti per andare avanti e per iniziare stanno sempre in fondo; se un passaggio non ci sta, scorre dentro il riquadro.',
+      },
+      {
+        type: 'change',
+        text: 'A fine Contratto i Contratti della serie sono in una striscia compatta: sul telefono icona, numero e i tuoi punti. In una serie lunga la striscia scorre di lato e parte dal prossimo Contratto.',
+      },
+      {
+        type: 'change',
+        text: '“Le tue prese” a fine Contratto si apre e si chiude toccando il titolo, che mostra sempre quante prese hai fatto e i punti della mano. Sul telefono parte chiuso, così vedi subito la classifica. Monete vinte, Cappotto e Domino si leggono sotto la classifica.',
+      },
+    ],
+  },
+  {
     version: '0.41.3',
     date: '2026-11-03',
     title: 'Fine Contratto senza scorrere',

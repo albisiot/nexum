@@ -1,14 +1,20 @@
 import { useCatalogVersion } from '../catalog/store';
 import type { GameMode } from '../game/GameClient';
+import { useLastSetup } from '../game/lastSetup';
 import { describeSave, useSavedGame } from '../game/savedGame';
 import { PATCH_NOTES } from '../patchNotes';
 import { useProfile } from '../shop/profile';
 import { AccountPanel } from './AccountPanel';
 import { Icon } from './Icon';
+import { describeSetup } from './SetupScreen';
 
 interface Props {
   /** Riprende la partita sul dispositivo salvata (compare solo se ce n'è una). */
   onResume(): void;
+  /** Riparte subito con l'ultima preparazione (compare se non c'è una partita da riprendere). */
+  onReplayLast(): void;
+  /** Una partita contro la CPU che parte subito, con l'ultima preparazione o con quella iniziale. */
+  onQuick(): void;
   onPlay(mode: GameMode): void;
   onOnline(): void;
   onTutorial(): void;
@@ -17,14 +23,32 @@ interface Props {
   onSettings(): void;
   onRoadmap(): void;
   onPatchNotes(): void;
+  onRules(): void;
   /** Presente solo per l'account autorizzato a modificare carte e Contratti. */
   onEditor?: () => void;
 }
 
-export function MenuScreen({ onResume, onPlay, onOnline, onTutorial, onShop, onCollection, onSettings, onRoadmap, onPatchNotes, onEditor }: Props) {
+/** Sta tutto in uno schermo: in cima da dove ripartire, poi i modi di giocare, tre riquadri piccoli e i link. */
+export function MenuScreen({
+  onResume,
+  onReplayLast,
+  onQuick,
+  onPlay,
+  onOnline,
+  onTutorial,
+  onShop,
+  onCollection,
+  onSettings,
+  onRoadmap,
+  onPatchNotes,
+  onRules,
+  onEditor,
+}: Props) {
   const profile = useProfile();
   const ready = profile.status === 'ready' ? profile.profile : null;
-  const saved = useSavedGame(useCatalogVersion());
+  const catalogVersion = useCatalogVersion();
+  const saved = useSavedGame(catalogVersion);
+  const last = useLastSetup(catalogVersion);
   return (
     <section className="menu">
       <div className="menu-hero">
@@ -47,7 +71,7 @@ export function MenuScreen({ onResume, onPlay, onOnline, onTutorial, onShop, onC
       <AccountPanel />
 
       <nav className="menu-list" aria-label="Menu principale">
-        {saved && (
+        {saved ? (
           <button type="button" className="menu-item featured" onClick={onResume}>
             <span className="menu-icon">
               <Icon name="riprendi" />
@@ -57,23 +81,41 @@ export function MenuScreen({ onResume, onPlay, onOnline, onTutorial, onShop, onC
               <span className="menu-sub">{describeSave(saved)}</span>
             </span>
           </button>
+        ) : (
+          last && (
+            <button type="button" className="menu-item featured" onClick={onReplayLast}>
+              <span className="menu-icon">
+                <Icon name="rigioca" />
+              </span>
+              <span className="menu-text">
+                <span className="menu-title">Rigioca l’ultima</span>
+                <span className="menu-sub">{describeSetup(last)}</span>
+              </span>
+            </button>
+          )
         )}
-        <button type="button" className={`menu-item${saved ? '' : ' featured'}`} onClick={() => onPlay('solo')}>
-          <span className="menu-icon">
-            <Icon name="cpu" />
-          </span>
-          <span className="menu-text">
-            <span className="menu-title">Gioca contro la CPU</span>
-            <span className="menu-sub">Tu contro da 1 a 7 avversari gestiti dal computer</span>
-          </span>
-        </button>
+        <div className="menu-split">
+          <button type="button" className={`menu-item${saved || last ? '' : ' featured'}`} onClick={() => onPlay('solo')}>
+            <span className="menu-icon">
+              <Icon name="cpu" />
+            </span>
+            <span className="menu-text">
+              <span className="menu-title">Contro la CPU</span>
+              <span className="menu-sub">Da 1 a 7 avversari</span>
+            </span>
+          </button>
+          <button type="button" className="menu-item menu-quick" onClick={onQuick}>
+            <Icon name="veloce" />
+            <span className="menu-quick-label">Partita veloce</span>
+          </button>
+        </div>
         <button type="button" className="menu-item" onClick={() => onPlay('local')}>
           <span className="menu-icon">
             <Icon name="multiplayer" />
           </span>
           <span className="menu-text">
-            <span className="menu-title">Gioca multiplayer</span>
-            <span className="menu-sub">Da 2 a 8 giocatori sullo stesso dispositivo</span>
+            <span className="menu-title">Multiplayer</span>
+            <span className="menu-sub">Da 2 a 8 sullo stesso dispositivo</span>
           </span>
         </button>
         <button type="button" className="menu-item" onClick={onOnline}>
@@ -81,83 +123,52 @@ export function MenuScreen({ onResume, onPlay, onOnline, onTutorial, onShop, onC
             <Icon name="online" />
           </span>
           <span className="menu-text">
-            <span className="menu-title">Gioca online</span>
-            <span className="menu-sub">Partite con gli amici, ognuno dal proprio dispositivo</span>
+            <span className="menu-title">Online</span>
+            <span className="menu-sub">Con gli amici, ognuno dal suo dispositivo</span>
           </span>
         </button>
-        <button type="button" className="menu-item" onClick={onTutorial}>
-          <span className="menu-icon">
-            <Icon name="tutorial" />
-          </span>
-          <span className="menu-text">
-            <span className="menu-title">Tutorial</span>
-            <span className="menu-sub">Impara a giocare passo per passo, con delle prove</span>
-          </span>
-        </button>
-        <button type="button" className="menu-item" onClick={onShop}>
-          <span className="menu-icon">
-            <Icon name="negozio" />
-          </span>
-          <span className="menu-text">
-            <span className="menu-title">Negozio</span>
-            <span className="menu-sub">{ready ? `Pacchetti di carte · hai ${ready.coins} monete` : 'Compra pacchetti di carte con le monete'}</span>
-          </span>
-        </button>
-        <button type="button" className="menu-item" onClick={onCollection}>
-          <span className="menu-icon">
-            <Icon name="collezione" />
-          </span>
-          <span className="menu-text">
-            <span className="menu-title">Collezione</span>
-            <span className="menu-sub">Le carte che hai trovato e quelle che ti mancano</span>
-          </span>
-        </button>
-        <button type="button" className="menu-item" onClick={onSettings}>
-          <span className="menu-icon">
-            <Icon name="impostazioni" />
-          </span>
-          <span className="menu-text">
-            <span className="menu-title">Impostazioni</span>
-            <span className="menu-sub">Suoni, vibrazione, presa automatica e il tuo nome</span>
-          </span>
-        </button>
-        <button type="button" className="menu-item" onClick={onRoadmap}>
-          <span className="menu-icon">
-            <Icon name="novita" />
-          </span>
-          <span className="menu-text">
-            <span className="menu-title">Prossimamente</span>
-            <span className="menu-sub">Deckbuilding e le altre novità in arrivo</span>
-          </span>
-        </button>
-        <button type="button" className="menu-item" onClick={onPatchNotes}>
-          <span className="menu-icon">
-            <Icon name="patch-notes" />
-          </span>
-          <span className="menu-text">
-            <span className="menu-title">Patch notes</span>
-            <span className="menu-sub">Tutti gli aggiornamenti del gioco</span>
-          </span>
-        </button>
-        {onEditor && (
-          <button type="button" className="menu-item editor-entry" onClick={onEditor}>
-            <span className="menu-icon">
-              <Icon name="editor" />
-            </span>
-            <span className="menu-text">
-              <span className="menu-title">Editor</span>
-              <span className="menu-sub">Modifica fazioni, carte e Contratti</span>
-            </span>
-          </button>
-        )}
       </nav>
 
-      <p className="menu-footer">
-        Versione {PATCH_NOTES[0]!.version} ·{' '}
+      <nav className="menu-tiles" aria-label="Impara e colleziona">
+        <button type="button" className="menu-tile" onClick={onTutorial}>
+          <Icon name="tutorial" />
+          <span className="menu-tile-title">Tutorial</span>
+          <span className="menu-tile-sub">Impara a giocare</span>
+        </button>
+        <button type="button" className="menu-tile" onClick={onShop}>
+          <Icon name="negozio" />
+          <span className="menu-tile-title">Negozio</span>
+          <span className="menu-tile-sub">{ready ? `Hai ${ready.coins} monete` : 'Pacchetti'}</span>
+        </button>
+        <button type="button" className="menu-tile" onClick={onCollection}>
+          <Icon name="collezione" />
+          <span className="menu-tile-title">Collezione</span>
+          <span className="menu-tile-sub">Le tue carte</span>
+        </button>
+      </nav>
+
+      <nav className="menu-links" aria-label="Altro">
+        <button type="button" onClick={onRoadmap}>
+          Prossimamente
+        </button>
+        <button type="button" onClick={onPatchNotes}>
+          Patch notes <span className="menu-version">{PATCH_NOTES[0]!.version}</span>
+        </button>
+        <button type="button" aria-haspopup="dialog" onClick={onRules}>
+          Regole
+        </button>
+        <button type="button" onClick={onSettings}>
+          Impostazioni
+        </button>
+        {onEditor && (
+          <button type="button" className="editor-entry" onClick={onEditor}>
+            Editor
+          </button>
+        )}
         <a href="https://github.com/albisiot/nexum" target="_blank" rel="noreferrer">
           GitHub
         </a>
-      </p>
+      </nav>
     </section>
   );
 }

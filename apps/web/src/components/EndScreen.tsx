@@ -1,6 +1,6 @@
 import { cardMatches, getCard, getContract, getFaction, matchRanking, ruleApplies } from '@nexum/engine';
 import type { ContractDef, FactionId, HandSummary, MatchView, TrickResult } from '@nexum/engine';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import { playSound } from '../game/feedback';
 import { describeScoring, handLabel as contractLabel, plural, signed } from '../game/text';
@@ -95,6 +95,9 @@ function handNote(hand: HandSummary, contract: ContractDef, names: readonly stri
   return null;
 }
 
+/** Come `.hand-end` nel CSS: da qui in giù è un telefono. */
+const PHONE_QUERY = '(max-width: 580px)';
+
 /** Pausa tra due Contratti di una serie. */
 export function HandEndScreen({
   match,
@@ -117,7 +120,17 @@ export function HandEndScreen({
   // Punti arrivati dai poteri delle carte invece che dalle prese vinte.
   const fromContract = hand.slam === me && contract.slam !== undefined ? contract.slam : tricks.reduce((sum, t) => sum + t.contractDelta, 0);
   const domino = contract.mode === 'domino';
+  const note = handNote(hand, contract, names);
   const fromPowers = me === null || domino ? 0 : hand.scores[me]! - fromContract;
+  // Sul telefono le prese partono chiuse: prima la classifica, il dettaglio se lo si vuole.
+  const [tricksOpen, setTricksOpen] = useState(() => !matchMedia(PHONE_QUERY).matches);
+  const strip = useRef<HTMLOListElement>(null);
+  // In una serie lunga la striscia scorre di lato: si parte con il prossimo Contratto in vista.
+  useEffect(() => {
+    const list = strip.current;
+    const upcoming = list?.querySelector<HTMLElement>('[aria-current]');
+    if (list && upcoming) list.scrollLeft = upcoming.offsetLeft - (list.clientWidth - upcoming.offsetWidth) / 2;
+  }, []);
   useEndSounds(false, coins);
   const leave = () => {
     void askConfirm({
@@ -154,35 +167,39 @@ export function HandEndScreen({
 
       {/* La pagina non scorre: se Contratti della serie, classifica e prese non ci stanno, scorrono qui dentro. */}
       <div className="hand-end-body">
-        <ol className="series-steps" aria-label="Contratti della serie">
+        {/* Una striscia compatta: sul telefono icona, numero e punti; il nome c'è dove avanza spazio. */}
+        <ol className="series-steps" aria-label="Contratti della serie" ref={strip}>
           {match.hands.map((h, i) => {
             const done = i <= match.handIndex;
             const upcoming = i === match.handIndex + 1;
             const mine = done && me !== null ? match.completed[i]!.scores[me]! : null;
+            const name = getContract(h.contract).name;
             return (
               <li
                 key={i}
                 className={`series-step${done ? ' done' : upcoming ? ' next' : ''}`}
                 aria-current={upcoming ? 'step' : undefined}
+                title={name}
               >
                 <span className="series-step-icon">
-                  <ContractIcon contract={getContract(h.contract)} size={22} />
+                  <ContractIcon contract={getContract(h.contract)} size={18} />
                 </span>
                 <span className="series-step-text">
                   <span className="series-step-label">
                     {i + 1}
-                    {done ? ' · Concluso' : upcoming ? ' · Prossimo' : ''}
+                    <span className="series-step-state">{done ? ' · Concluso' : upcoming ? ' · Prossimo' : ''}</span>
                   </span>
-                  <b>{getContract(h.contract).name}</b>
-                  <span className="hint">
+                  <b className="series-step-name">{name}</b>
+                  <span className="series-step-score">
                     {mine !== null ? (
                       <>
-                        {names[me!]} <b className={tone(mine)}>{signed(mine)}</b>
+                        <span className="sr-only">{names[me!]} </span>
+                        <b className={tone(mine)}>{signed(mine)}</b>
                       </>
                     ) : done ? (
                       'Giocato'
                     ) : (
-                      'Da giocare'
+                      '–'
                     )}
                   </span>
                 </span>
@@ -231,38 +248,53 @@ export function HandEndScreen({
                 </div>
               );
             })}
+            {/* Da dove arrivano i punti e le monete: restano in vista anche con le prese chiuse. */}
+            {note && <p className="status good">{note}</p>}
+            <CoinNote coins={coins} />
           </section>
 
-          <section className="panel">
-            <h3>{domino ? 'Com’è andata' : me === null ? 'Prese della mano' : 'Le tue prese'}</h3>
-            {handNote(hand, contract, names) && <p className="status good">{handNote(hand, contract, names)}</p>}
-            <CoinNote coins={coins} />
-            {domino ? null : tricks.length === 0 ? (
-              <p className="hint">Nessuna presa vinta in questa mano.</p>
-            ) : (
-              <div className="log">
-                {tricks.map((t) => (
-                  <div key={t.trickNo} className="logitem trick-line">
-                    <div>
-                      <b>Presa {t.trickNo}</b> · {me === null && `${names[t.winner]} `}
-                      con {getCard(t.winningCardId).name} ({t.winningValue})
-                      <div className="hint">{trickDetail(t, contract, hand.targetFaction)}</div>
+          {/* Nel Domino non ci sono prese: i punti di ognuno sono già in classifica. */}
+          {!domino && (
+            <details className="panel hand-tricks" open={tricksOpen} onToggle={(e) => setTricksOpen(e.currentTarget.open)}>
+              <summary>
+                <h3>{me === null ? 'Prese della mano' : 'Le tue prese'}</h3>
+                <span className="hand-tricks-sum">
+                  {plural(tricks.length, 'presa', 'prese')}
+                  {me !== null && (
+                    <>
+                      {' · '}
+                      <b className={tone(hand.scores[me]!)}>{signed(hand.scores[me]!)}</b>
+                    </>
+                  )}
+                </span>
+              </summary>
+              {tricks.length === 0 ? (
+                <p className="hint">Nessuna presa vinta in questa mano.</p>
+              ) : (
+                <div className="log">
+                  {tricks.map((t) => (
+                    <div key={t.trickNo} className="logitem trick-line">
+                      <div>
+                        <b>Presa {t.trickNo}</b> · {me === null && `${names[t.winner]} `}
+                        con {getCard(t.winningCardId).name} ({t.winningValue})
+                        <div className="hint">{trickDetail(t, contract, hand.targetFaction)}</div>
+                      </div>
+                      <b className={tone(t.contractDelta)}>{signed(t.contractDelta)}</b>
                     </div>
-                    <b className={tone(t.contractDelta)}>{signed(t.contractDelta)}</b>
-                  </div>
-                ))}
-              </div>
-            )}
-            {me !== null && (
-              <>
-                <div className="hand-total">
-                  <span>Questa mano</span>
-                  <b className={tone(hand.scores[me]!)}>{signed(hand.scores[me]!)}</b>
+                  ))}
                 </div>
-                {fromPowers !== 0 && <p className="hint">Di cui {signed(fromPowers)} dai poteri delle carte.</p>}
-              </>
-            )}
-          </section>
+              )}
+              {me !== null && (
+                <>
+                  <div className="hand-total">
+                    <span>Questa mano</span>
+                    <b className={tone(hand.scores[me]!)}>{signed(hand.scores[me]!)}</b>
+                  </div>
+                  {fromPowers !== 0 && <p className="hint">Di cui {signed(fromPowers)} dai poteri delle carte.</p>}
+                </>
+              )}
+            </details>
+          )}
         </div>
       </div>
 

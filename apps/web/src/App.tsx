@@ -13,11 +13,12 @@ import { PatchNotesScreen } from './components/PatchNotesScreen';
 import { RoadmapScreen } from './components/RoadmapScreen';
 import { RulesDialog } from './components/RulesPanel';
 import { SettingsScreen } from './components/SettingsScreen';
-import { SetupScreen, defaultSetup, sanitizeSetup } from './components/SetupScreen';
+import { SetupScreen, defaultSetup, sanitizeSetup, toMatchSetup } from './components/SetupScreen';
 import { ShopScreen } from './components/ShopScreen';
 import { Tutorial, tutorialSeen } from './components/Tutorial';
 import type { SetupValues } from './components/SetupScreen';
 import type { GameClient, GameMode, MatchSetup } from './game/GameClient';
+import { lastSetup, saveLastSetup } from './game/lastSetup';
 import { LocalGameClient } from './game/LocalGameClient';
 import { clearSavedGame, resumableGame, saveGame } from './game/savedGame';
 import type { ResumableGame } from './game/savedGame';
@@ -33,7 +34,8 @@ const INVITE = new URLSearchParams(window.location.search).get('room');
 
 export function App() {
   const [screen, setScreen] = useState<Screen>(INVITE ? 'online' : 'menu');
-  const [setupValues, setSetupValues] = useState<SetupValues>(defaultSetup);
+  // Si legge l'ultima preparazione la prima volta che serve, così vale già il catalogo pubblicato; poi si tiene qui.
+  const [setupValues, setSetupValues] = useState<SetupValues | null>(null);
   const [client, setClient] = useState<GameClient | null>(null);
   const [showRules, setShowRules] = useState(false);
   // Si apre da solo alla prima visita; chi arriva da un invito entra prima nella stanza e lo vedrà la volta dopo.
@@ -44,7 +46,7 @@ export function App() {
   const canEdit = isEditor(auth) || DEV_EDITOR;
 
   // Un nuovo catalogo può togliere fazioni o Contratti già scelti nella preparazione.
-  useEffect(() => setSetupValues((v) => sanitizeSetup(v)), [catalogVersion]);
+  useEffect(() => setSetupValues((v) => v && sanitizeSetup(v)), [catalogVersion]);
   // Il catalogo pubblicato non si cambia a metà partita.
   useEffect(() => catalogStore.setGameRunning(client !== null), [client]);
 
@@ -57,12 +59,12 @@ export function App() {
   // Chi ha fatto l'accesso usa il nome dell'account; gli altri quello scelto nelle Impostazioni.
   const myName = auth.status === 'signedIn' ? auth.account.firstName : settings.name.trim() || null;
 
+  /** Nel multiplayer il primo posto prende il nome dell'account o delle Impostazioni. */
+  const withMyName = (v: SetupValues): SetupValues =>
+    myName && v.names[0] === 'Giocatore 1' ? { ...v, names: [myName, ...v.names.slice(1)] } : v;
+
   const choose = (mode: GameMode) => {
-    setSetupValues((v) => {
-      // Il primo posto prende il nome dell'account o delle Impostazioni.
-      const names = myName && v.names[0] === 'Giocatore 1' ? [myName, ...v.names.slice(1)] : v.names;
-      return { ...v, mode, names };
-    });
+    setSetupValues(withMyName({ ...(setupValues ?? lastSetup() ?? defaultSetup(mode)), mode }));
     go('setup');
   };
   /** Una partita sul dispositivo: si salva dopo ogni mossa, con le scelte della preparazione da cui è nata. */
@@ -70,14 +72,26 @@ export function App() {
     client?.dispose();
     const resume = saved && { state: saved.state, actions: saved.save.actions };
     setClient(new LocalGameClient(setup, { resume, onMove: (actions, state) => saveGame(setup, values, actions, state) }));
+    setSetupValues(values);
     setShowRules(false);
     window.scrollTo(0, 0);
   };
-  const start = (setup: MatchSetup) => {
+  /** Una partita nuova: la sua preparazione diventa l'ultima, da ritrovare anche dopo aver chiuso la pagina. */
+  const start = (setup: MatchSetup, values = setupValues ?? defaultSetup(setup.mode)) => {
     if (setup.mode === 'solo' && myName) {
       setup = { ...setup, seats: setup.seats.map((s, i) => (i === 0 ? { ...s, name: myName } : s)) };
     }
-    play(setup, setupValues);
+    saveLastSetup(values);
+    play(setup, values);
+  };
+  /**
+   * Dal menu, senza passare dalla preparazione: con l'ultima (o con quella iniziale). "Partita veloce" gioca sempre
+   * contro la CPU, "Rigioca l'ultima" come l'ultima volta. Le fazioni non scelte a mano si ripescano a caso.
+   */
+  const quickStart = (mode?: GameMode) => {
+    const last = lastSetup() ?? defaultSetup();
+    const values = withMyName({ ...last, mode: mode ?? last.mode });
+    start(toMatchSetup(values), values);
   };
   const resume = () => {
     const saved = resumableGame();
@@ -105,18 +119,19 @@ export function App() {
 
   return (
     <div className="app">
-      {/* Durante le prese la testata è nascosta dal CSS: "Regole" passa nel menu ☰ e in Info. */}
-      <header className={`top${onMenu ? ' top-menu' : ''}`}>
-        {!onMenu && (
+      {/* Durante le prese la testata è nascosta dal CSS: "Regole" passa nel menu ☰ e in Info. Nel menu principale
+          non c'è proprio: "Regole" sta tra i link in fondo. */}
+      {!onMenu && (
+        <header className="top">
           <div className="brand">
             <h1>NEXUM</h1>
             <p>Trick-taking a Contratti · mazzo comune · 13 carte a giocatore</p>
           </div>
-        )}
-        <button type="button" className="btn" aria-haspopup="dialog" onClick={() => setShowRules(true)}>
-          Regole
-        </button>
-      </header>
+          <button type="button" className="btn" aria-haspopup="dialog" onClick={() => setShowRules(true)}>
+            Regole
+          </button>
+        </header>
+      )}
 
       {showRules && <RulesDialog onTutorial={openTutorial} onClose={() => setShowRules(false)} />}
 
@@ -140,7 +155,7 @@ export function App() {
           onMenu={() => leave('menu')}
         />
       ) : screen === 'setup' ? (
-        <SetupScreen values={setupValues} onChange={setSetupValues} onStart={start} onBack={() => go('menu')} />
+        setupValues && <SetupScreen values={setupValues} onChange={setSetupValues} onStart={start} onBack={() => go('menu')} />
       ) : screen === 'online' ? (
         <OnlineScreen invite={INVITE} onEnter={enterOnline} onBack={() => go('menu')} />
       ) : screen === 'shop' ? (
@@ -158,6 +173,8 @@ export function App() {
       ) : (
         <MenuScreen
           onResume={resume}
+          onReplayLast={() => quickStart()}
+          onQuick={() => quickStart('solo')}
           onPlay={choose}
           onOnline={() => go('online')}
           onTutorial={() => setShowTutorial(true)}
@@ -166,6 +183,7 @@ export function App() {
           onSettings={() => go('settings')}
           onRoadmap={() => go('roadmap')}
           onPatchNotes={() => go('patchNotes')}
+          onRules={() => setShowRules(true)}
           onEditor={canEdit ? () => go('editor') : undefined}
         />
       )}

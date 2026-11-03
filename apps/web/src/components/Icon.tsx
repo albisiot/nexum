@@ -58,6 +58,13 @@ const PATHS = {
       <path d="M10 8.5v7l5.5-3.5Z" />
     </>
   ),
+  rigioca: (
+    <>
+      <path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3L4.5 9" />
+      <path d="M4.5 4.5V9H9" />
+    </>
+  ),
+  veloce: <path d="M13.5 3 5.5 13.5h6l-1 7.5 8-10.5h-6Z" />,
   impostazioni: (
     <>
       <path d="M4 7h8.5M17.5 7H20M4 17h2.5M11.5 17H20" />
