@@ -1,4 +1,4 @@
-import type { BotLevel, CardId, FactionId, HandPlan, MatchView, PlayerView } from '@nexum/engine';
+import type { BotLevel, CardId, FactionId, HandPlan, MatchConfig, MatchView, PlayerView } from '@nexum/engine';
 
 export type SeatKind = 'human' | 'cpu';
 
@@ -20,6 +20,11 @@ export interface MatchSetup {
   /** Contratti da giocare in ordine: uno solo oppure una serie. */
   hands: HandPlan[];
   seed: number;
+}
+
+/** La configurazione con cui il motore crea la partita. */
+export function matchConfig(setup: MatchSetup): MatchConfig {
+  return { playerNames: setup.seats.map((s) => s.name), factions: setup.factions, hands: setup.hands, seed: setup.seed };
 }
 
 /** Risposta a una decisione: `accept` (Reversal, recupero), `target` (bersaglio), `take` e `discard` (recupero), `faction` (Briscola). */

@@ -13,6 +13,37 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.41.0',
+    date: '2026-11-03',
+    title: 'Riprendi la partita e Impostazioni',
+    changes: [
+      {
+        type: 'new',
+        text: 'Le partite contro la CPU e quelle multiplayer sullo stesso dispositivo si salvano dopo ogni mossa. Se la pagina si ricarica o il telefono chiude il browser, nel menu compare “Riprendi la partita” con il punto raggiunto (ad esempio “Contratto 2 di 5 · Presa 7/13”) e si riparte esattamente da lì, anche a metà di una serie o dalla fine di un Contratto.',
+      },
+      {
+        type: 'change',
+        text: 'La partita salvata si cancella a fine serie e quando esci dalla partita; iniziarne una nuova prende il suo posto. Le partite online non si salvano.',
+      },
+      {
+        type: 'new',
+        text: 'Presa successiva automatica: a fine presa la partita va avanti da sola dopo 4 secondi (oppure 2, oppure mai: si sceglie nelle Impostazioni). Una barra nel riquadro della presa mostra il tempo che manca, e si ferma mentre è aperta una finestra come Info o il menu ☰.',
+      },
+      {
+        type: 'change',
+        text: 'A fine presa basta toccare il tavolo o il riquadro della presa per passare subito alla successiva.',
+      },
+      {
+        type: 'new',
+        text: 'Nuova pagina Impostazioni, dal menu principale e dal menu ☰ in partita: suoni, vibrazione, presa successiva automatica e il tuo nome. Le scelte restano anche dopo aver chiuso la pagina.',
+      },
+      {
+        type: 'new',
+        text: 'Chi gioca senza accesso può scegliere nelle Impostazioni il nome con cui siede al tavolo, al posto di “Tu”. Con l’accesso Google si usa sempre il nome dell’account.',
+      },
+    ],
+  },
+  {
     version: '0.40.1',
     date: '2026-11-03',
     title: 'Barra nitida su iPhone',

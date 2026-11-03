@@ -1,24 +1,30 @@
+import { useCatalogVersion } from '../catalog/store';
 import type { GameMode } from '../game/GameClient';
+import { describeSave, useSavedGame } from '../game/savedGame';
 import { PATCH_NOTES } from '../patchNotes';
 import { useProfile } from '../shop/profile';
 import { AccountPanel } from './AccountPanel';
 import { Icon } from './Icon';
 
 interface Props {
+  /** Riprende la partita sul dispositivo salvata (compare solo se ce n'è una). */
+  onResume(): void;
   onPlay(mode: GameMode): void;
   onOnline(): void;
   onTutorial(): void;
   onShop(): void;
   onCollection(): void;
+  onSettings(): void;
   onRoadmap(): void;
   onPatchNotes(): void;
   /** Presente solo per l'account autorizzato a modificare carte e Contratti. */
   onEditor?: () => void;
 }
 
-export function MenuScreen({ onPlay, onOnline, onTutorial, onShop,onCollection, onRoadmap, onPatchNotes, onEditor }: Props) {
+export function MenuScreen({ onResume, onPlay, onOnline, onTutorial, onShop, onCollection, onSettings, onRoadmap, onPatchNotes, onEditor }: Props) {
   const profile = useProfile();
   const ready = profile.status === 'ready' ? profile.profile : null;
+  const saved = useSavedGame(useCatalogVersion());
   return (
     <section className="menu">
       <div className="menu-hero">
@@ -41,7 +47,18 @@ export function MenuScreen({ onPlay, onOnline, onTutorial, onShop,onCollection, 
       <AccountPanel />
 
       <nav className="menu-list" aria-label="Menu principale">
-        <button type="button" className="menu-item featured" onClick={() => onPlay('solo')}>
+        {saved && (
+          <button type="button" className="menu-item featured" onClick={onResume}>
+            <span className="menu-icon">
+              <Icon name="riprendi" />
+            </span>
+            <span className="menu-text">
+              <span className="menu-title">Riprendi la partita</span>
+              <span className="menu-sub">{describeSave(saved)}</span>
+            </span>
+          </button>
+        )}
+        <button type="button" className={`menu-item${saved ? '' : ' featured'}`} onClick={() => onPlay('solo')}>
           <span className="menu-icon">
             <Icon name="cpu" />
           </span>
@@ -93,6 +110,15 @@ export function MenuScreen({ onPlay, onOnline, onTutorial, onShop,onCollection, 
           <span className="menu-text">
             <span className="menu-title">Collezione</span>
             <span className="menu-sub">Le carte che hai trovato e quelle che ti mancano</span>
+          </span>
+        </button>
+        <button type="button" className="menu-item" onClick={onSettings}>
+          <span className="menu-icon">
+            <Icon name="impostazioni" />
+          </span>
+          <span className="menu-text">
+            <span className="menu-title">Impostazioni</span>
+            <span className="menu-sub">Suoni, vibrazione, presa automatica e il tuo nome</span>
           </span>
         </button>
         <button type="button" className="menu-item" onClick={onRoadmap}>

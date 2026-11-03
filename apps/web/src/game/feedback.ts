@@ -1,52 +1,15 @@
 // Suoni e vibrazione del gioco. I suoni sono sintetizzati nel browser (Web Audio): niente file da scaricare.
-import { useSyncExternalStore } from 'react';
+// Se sono attivi lo decidono le Impostazioni (settings.ts).
+import { getSettings } from './settings';
 
 export type Sound = 'card' | 'take' | 'takeMine' | 'turn' | 'deal' | 'intro' | 'coins' | 'win';
 
-interface Prefs {
-  sound: boolean;
-  vibrate: boolean;
-}
-
-const PREFS_KEY = 'nexum-feedback';
 /** Solo i telefoni che la supportano (non iPhone): altrove il pulsante non compare. Chrome sul computer ha vibrate ma non vibra. */
 export const canVibrate =
   typeof navigator !== 'undefined' &&
   typeof navigator.vibrate === 'function' &&
   typeof matchMedia === 'function' &&
   matchMedia('(pointer: coarse)').matches;
-
-function loadPrefs(): Prefs {
-  try {
-    const saved = JSON.parse(localStorage.getItem(PREFS_KEY) ?? '{}') as Partial<Prefs>;
-    return { sound: saved.sound ?? true, vibrate: saved.vibrate ?? true };
-  } catch {
-    return { sound: true, vibrate: true };
-  }
-}
-
-let prefs = loadPrefs();
-const listeners = new Set<() => void>();
-
-export function setPrefs(change: Partial<Prefs>): void {
-  prefs = { ...prefs, ...change };
-  try {
-    localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
-  } catch {
-    // Senza localStorage la scelta vale finché la pagina resta aperta.
-  }
-  listeners.forEach((l) => l());
-}
-
-export function useFeedbackPrefs(): Prefs {
-  return useSyncExternalStore(
-    (l) => {
-      listeners.add(l);
-      return () => listeners.delete(l);
-    },
-    () => prefs,
-  );
-}
 
 let audio: AudioContext | null = null;
 
@@ -96,7 +59,7 @@ function rustle(ctx: AudioContext, start: number, length: number, volume: number
 const NOTES = { C5: 523.25, E5: 659.25, G5: 783.99, A5: 880, C6: 1046.5, E6: 1318.5, G6: 1568 };
 
 export function playSound(sound: Sound): void {
-  if (!prefs.sound) return;
+  if (!getSettings().sound) return;
   const ctx = context();
   if (!ctx) return;
   switch (sound) {
@@ -139,5 +102,5 @@ export function playSound(sound: Sound): void {
 
 /** Una vibrazione breve sul telefono, se è attiva. */
 export function vibrate(pattern: number | number[]): void {
-  if (prefs.vibrate && canVibrate) navigator.vibrate(pattern);
+  if (getSettings().vibrate && canVibrate) navigator.vibrate(pattern);
 }

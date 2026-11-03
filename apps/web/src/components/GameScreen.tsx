@@ -21,6 +21,7 @@ import { useGame } from '../game/useGame';
 import { profileStore } from '../shop/profile';
 import { playSound, vibrate } from '../game/feedback';
 import { handFresh } from '../game/intro';
+import { useSettings } from '../game/settings';
 import { askConfirm } from './ConfirmDialog';
 import { ContractIntro, useContractIntro } from './ContractIntro';
 import type { IntroPhase } from './ContractIntro';
@@ -32,8 +33,10 @@ import { ContractIcon, Icon } from './Icon';
 import { InfoPanel, SIDEBAR_QUERY, Standings, TrickLog } from './InfoPanel';
 import type { InfoTab } from './InfoPanel';
 import { Select } from './Select';
+import { SettingsDialog } from './SettingsScreen';
 import { Sheet } from './Sheet';
 import { TableView, initials } from './TableView';
+import { useDialogOpen } from './useDialogOpen';
 
 interface Props {
   client: GameClient;
@@ -56,6 +59,27 @@ function TurnClock({ deadline }: { deadline: number }) {
   const left = Math.max(0, Math.ceil((deadline - now) / 1000));
   if (left > 20) return null;
   return <p className="status warn">Ancora {plural(left, 'secondo', 'secondi')}, poi la CPU gioca al posto tuo.</p>;
+}
+
+/**
+ * Presa successiva automatica: la barra si riempie in `ms`, poi si va avanti.
+ * Con una finestra aperta (Info, menu, Impostazioni…) si ferma, e alla chiusura riparte da capo.
+ */
+function AutoNextBar({ ms, paused, onNext }: { ms: number; paused: boolean; onNext(): void }) {
+  useEffect(() => {
+    if (paused) return;
+    const timer = setTimeout(onNext, ms);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ms, paused]);
+  return (
+    <span
+      key={paused ? 'paused' : 'running'}
+      className={`next-bar${paused ? ' paused' : ''}`}
+      style={{ '--next-ms': `${ms}ms` } as CSSProperties}
+      aria-hidden="true"
+    />
+  );
 }
 
 /** Suoni e vibrazione per ciò che succede al tavolo. `bottom` è il posto disegnato in basso: le sue prese suonano diverse. */
@@ -100,6 +124,9 @@ export function GameScreen({ client, onRules, onTutorial, onReplay, onExit, onMe
   // Le finestre della barra in alto: Info (con la scheda aperta) e il menu ☰.
   const [info, setInfo] = useState<InfoTab | null>(null);
   const [menu, setMenu] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const { autoNext } = useSettings();
+  const dialogOpen = useDialogOpen();
   // In basso siede chi ha il dispositivo; tra un turno e l'altro resta l'ultimo giocatore umano.
   const lastAnchor = useRef(Math.max(0, client.setup.seats.findIndex((s) => s.kind === 'human')));
   const anchor = perspective ?? (snap.handHidden ? view.turn : lastAnchor.current);
@@ -186,6 +213,9 @@ export function GameScreen({ client, onRules, onTutorial, onReplay, onExit, onMe
   const trump = view.trump ? getFaction(view.trump) : null;
   // Sui computer grandi classifica e prese sono già accanto al tavolo: Info si apre sul Contratto.
   const openInfo = (tab?: InfoTab) => setInfo(tab ?? (matchMedia(SIDEBAR_QUERY).matches ? 'contratto' : 'classifica'));
+  // A fine presa un tocco sul tavolo o sul riquadro va avanti subito; sul dispositivo anche da sola, se si è scelto così.
+  const canNext = last !== null && !view.decision;
+  const next = () => client.nextTrick();
 
   return (
     <main className={`game${intro.phase ? ` intro-${intro.phase}` : ''}`}>
@@ -232,7 +262,7 @@ export function GameScreen({ client, onRules, onTutorial, onReplay, onExit, onMe
 
       <div className="game-body" inert={busy}>
         <div className={`board${sel ? ' picking' : ''}`}>
-          <div className="table-area">
+          <div className={`table-area${canNext ? ' tap-next' : ''}`} onClick={canNext ? next : undefined}>
             {domino ? (
               <DominoBoard domino={domino} factions={view.factions} players={view.players} names={names} turn={view.turn} />
             ) : (
@@ -271,12 +301,23 @@ export function GameScreen({ client, onRules, onTutorial, onReplay, onExit, onMe
                     ) : (
                       <p className={last.contractDelta >= 0 ? 'good' : 'bad'}>Contratto: {signed(last.contractDelta)}</p>
                     )}
-                    {!view.decision && (
-                      <button type="button" className="btn primary" onClick={() => client.nextTrick()}>
+                    {canNext && (
+                      <button
+                        type="button"
+                        className="btn primary"
+                        onClick={(e) => {
+                          // Il tocco va avanti una volta sola, anche se il tavolo sotto lo sente.
+                          e.stopPropagation();
+                          next();
+                        }}
+                      >
                         {view.trickNo >= view.tricksPerHand ? 'Vedi il risultato finale' : 'Presa successiva'}
                       </button>
                     )}
                   </div>
+                  {canNext && client.setup.mode !== 'online' && autoNext > 0 && (
+                    <AutoNextBar key={view.trickNo} ms={autoNext} paused={dialogOpen} onNext={next} />
+                  )}
                   {client.setup.mode === 'online' && !view.decision && <span className="hint">Si prosegue da soli tra pochi secondi.</span>}
                   {view.decision && decisionBox(view.decision)}
                 </div>
@@ -387,6 +428,10 @@ export function GameScreen({ client, onRules, onTutorial, onReplay, onExit, onMe
       {menu && (
         <GameMenu
           onClose={() => setMenu(false)}
+          onSettings={() => {
+            setMenu(false);
+            setSettingsOpen(true);
+          }}
           onRules={() => {
             setMenu(false);
             onRules();
@@ -397,6 +442,8 @@ export function GameScreen({ client, onRules, onTutorial, onReplay, onExit, onMe
           }}
         />
       )}
+
+      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
 
       {intro.phase === 'show' && (
         <ContractIntro

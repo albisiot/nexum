@@ -12,14 +12,18 @@ import { OnlineScreen } from './components/OnlineScreen';
 import { PatchNotesScreen } from './components/PatchNotesScreen';
 import { RoadmapScreen } from './components/RoadmapScreen';
 import { RulesDialog } from './components/RulesPanel';
+import { SettingsScreen } from './components/SettingsScreen';
 import { SetupScreen, defaultSetup, sanitizeSetup } from './components/SetupScreen';
 import { ShopScreen } from './components/ShopScreen';
 import { Tutorial, tutorialSeen } from './components/Tutorial';
 import type { SetupValues } from './components/SetupScreen';
 import type { GameClient, GameMode, MatchSetup } from './game/GameClient';
 import { LocalGameClient } from './game/LocalGameClient';
+import { clearSavedGame, resumableGame, saveGame } from './game/savedGame';
+import type { ResumableGame } from './game/savedGame';
+import { useSettings } from './game/settings';
 
-type Screen = 'menu' | 'setup' | 'online' | 'shop' | 'collection' | 'patchNotes' | 'roadmap' | 'editor';
+type Screen = 'menu' | 'setup' | 'online' | 'shop' | 'collection' | 'settings' | 'patchNotes' | 'roadmap' | 'editor';
 
 /** In sviluppo, `?editor` apre l'Editor anche senza accesso (salvare e pubblicare restano bloccati dal database). */
 const DEV_EDITOR = import.meta.env.DEV && new URLSearchParams(window.location.search).has('editor');
@@ -35,6 +39,7 @@ export function App() {
   // Si apre da solo alla prima visita; chi arriva da un invito entra prima nella stanza e lo vedrà la volta dopo.
   const [showTutorial, setShowTutorial] = useState(() => !INVITE && !tutorialSeen());
   const auth = useAuth();
+  const settings = useSettings();
   const catalogVersion = useCatalogVersion();
   const canEdit = isEditor(auth) || DEV_EDITOR;
 
@@ -49,24 +54,42 @@ export function App() {
     setScreen(next);
     window.scrollTo(0, 0);
   };
-  const myName = auth.status === 'signedIn' ? auth.account.firstName : null;
+  // Chi ha fatto l'accesso usa il nome dell'account; gli altri quello scelto nelle Impostazioni.
+  const myName = auth.status === 'signedIn' ? auth.account.firstName : settings.name.trim() || null;
 
   const choose = (mode: GameMode) => {
     setSetupValues((v) => {
-      // Chi ha fatto l'accesso occupa il primo posto con il proprio nome.
+      // Il primo posto prende il nome dell'account o delle Impostazioni.
       const names = myName && v.names[0] === 'Giocatore 1' ? [myName, ...v.names.slice(1)] : v.names;
       return { ...v, mode, names };
     });
     go('setup');
   };
-  const start = (setup: MatchSetup) => {
+  /** Una partita sul dispositivo: si salva dopo ogni mossa, con le scelte della preparazione da cui è nata. */
+  const play = (setup: MatchSetup, values: SetupValues, saved?: ResumableGame) => {
     client?.dispose();
+    const resume = saved && { state: saved.state, actions: saved.save.actions };
+    setClient(new LocalGameClient(setup, { resume, onMove: (actions, state) => saveGame(setup, values, actions, state) }));
+    setShowRules(false);
+    window.scrollTo(0, 0);
+  };
+  const start = (setup: MatchSetup) => {
     if (setup.mode === 'solo' && myName) {
       setup = { ...setup, seats: setup.seats.map((s, i) => (i === 0 ? { ...s, name: myName } : s)) };
     }
-    setClient(new LocalGameClient(setup));
-    setShowRules(false);
-    window.scrollTo(0, 0);
+    play(setup, setupValues);
+  };
+  const resume = () => {
+    const saved = resumableGame();
+    if (!saved) return;
+    const values = sanitizeSetup({ ...defaultSetup(saved.save.setup.mode), ...saved.save.values });
+    setSetupValues(values);
+    play(saved.save.setup, values, saved);
+  };
+  // Chi esce da una partita sul dispositivo la abbandona: non resta niente da riprendere.
+  const leave = (next: Screen) => {
+    if (client && client.setup.mode !== 'online') clearSavedGame();
+    go(next);
   };
 
   const enterOnline = (online: GameClient) => {
@@ -113,8 +136,8 @@ export function App() {
                     seats: client.setup.seats.map((s) => (s.kind === 'cpu' ? { ...s, level: randomBotLevel(Math.random) } : s)),
                   })
           }
-          onExit={() => go(client.setup.mode === 'online' ? 'online' : 'setup')}
-          onMenu={() => go('menu')}
+          onExit={() => leave(client.setup.mode === 'online' ? 'online' : 'setup')}
+          onMenu={() => leave('menu')}
         />
       ) : screen === 'setup' ? (
         <SetupScreen values={setupValues} onChange={setSetupValues} onStart={start} onBack={() => go('menu')} />
@@ -124,6 +147,8 @@ export function App() {
         <ShopScreen onCollection={() => go('collection')} onBack={() => go('menu')} />
       ) : screen === 'collection' ? (
         <CollectionScreen onShop={() => go('shop')} onBack={() => go('menu')} />
+      ) : screen === 'settings' ? (
+        <SettingsScreen onBack={() => go('menu')} />
       ) : screen === 'patchNotes' ? (
         <PatchNotesScreen onBack={() => go('menu')} />
       ) : screen === 'roadmap' ? (
@@ -132,11 +157,13 @@ export function App() {
         <EditorScreen onBack={() => go('menu')} />
       ) : (
         <MenuScreen
+          onResume={resume}
           onPlay={choose}
           onOnline={() => go('online')}
           onTutorial={() => setShowTutorial(true)}
           onShop={() => go('shop')}
           onCollection={() => go('collection')}
+          onSettings={() => go('settings')}
           onRoadmap={() => go('roadmap')}
           onPatchNotes={() => go('patchNotes')}
           onEditor={canEdit ? () => go('editor') : undefined}

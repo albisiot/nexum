@@ -12,13 +12,23 @@ import {
   sortHand,
 } from '@nexum/engine';
 import type { CardId, MatchAction, MatchState, Rng } from '@nexum/engine';
+import { matchConfig } from './GameClient';
 import type { ClientSnapshot, DecisionAnswer, GameClient, MatchSetup } from './GameClient';
 
 const CPU_DELAY_MS = 550;
 
+export interface LocalOptions {
+  /** Una partita salvata da riprendere: lo stato raggiunto e le mosse che ci hanno portato lì. */
+  resume?: { state: MatchState; actions: readonly MatchAction[] };
+  /** Dopo ogni mossa (e appena creata): tutte le mosse dall'inizio e lo stato raggiunto, per salvare la partita. */
+  onMove?(actions: readonly MatchAction[], state: MatchState): void;
+}
+
 /** Partita interamente nel browser: contro la CPU o pass-and-play sullo stesso dispositivo. */
 export class LocalGameClient implements GameClient {
   private state: MatchState;
+  private readonly actions: MatchAction[];
+  private readonly onMove?: LocalOptions['onMove'];
   private snapshot: ClientSnapshot;
   private revealedFor: number | null = null;
   private timer: ReturnType<typeof setTimeout> | null = null;
@@ -28,15 +38,14 @@ export class LocalGameClient implements GameClient {
   private readonly listeners = new Set<() => void>();
   private readonly cpuRng: Rng;
 
-  constructor(readonly setup: MatchSetup) {
-    this.state = createMatch({
-      playerNames: setup.seats.map((s) => s.name),
-      factions: setup.factions,
-      hands: setup.hands,
-      seed: setup.seed,
-    });
+  constructor(readonly setup: MatchSetup, options: LocalOptions = {}) {
+    // Riprendendo, la mano di chi è di turno nel pass-and-play torna coperta: il telefono potrebbe essere in altre mani.
+    this.state = options.resume?.state ?? createMatch(matchConfig(setup));
+    this.actions = [...(options.resume?.actions ?? [])];
+    this.onMove = options.onMove;
     this.cpuRng = createRng(setup.seed ^ 0x9e3779b9);
     this.snapshot = this.buildSnapshot();
+    this.onMove?.(this.actions, this.state);
     this.scheduleCpu();
   }
 
@@ -99,6 +108,8 @@ export class LocalGameClient implements GameClient {
 
   private apply(action: MatchAction): void {
     this.state = applyMatchAction(this.state, action);
+    this.actions.push(action);
+    this.onMove?.(this.actions, this.state);
     this.update();
   }
 
