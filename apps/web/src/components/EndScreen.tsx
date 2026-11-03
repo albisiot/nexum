@@ -152,115 +152,118 @@ export function HandEndScreen({
         )}
       </header>
 
-      <ol className="series-steps" aria-label="Contratti della serie">
-        {match.hands.map((h, i) => {
-          const done = i <= match.handIndex;
-          const upcoming = i === match.handIndex + 1;
-          const mine = done && me !== null ? match.completed[i]!.scores[me]! : null;
-          return (
-            <li
-              key={i}
-              className={`series-step${done ? ' done' : upcoming ? ' next' : ''}`}
-              aria-current={upcoming ? 'step' : undefined}
-            >
-              <span className="series-step-icon">
-                <ContractIcon contract={getContract(h.contract)} size={22} />
-              </span>
-              <span className="series-step-text">
-                <span className="series-step-label">
-                  {i + 1}
-                  {done ? ' · Concluso' : upcoming ? ' · Prossimo' : ''}
-                </span>
-                <b>{getContract(h.contract).name}</b>
-                <span className="hint">
-                  {mine !== null ? (
-                    <>
-                      {names[me!]} <b className={tone(mine)}>{signed(mine)}</b>
-                    </>
-                  ) : done ? (
-                    'Giocato'
-                  ) : (
-                    'Da giocare'
-                  )}
-                </span>
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-
-      <div className="hand-end-grid">
-        <section className="panel">
-          <h3>Classifica della serie</h3>
-          <div className="standings-head" aria-hidden="true">
-            <span>Giocatore</span>
-            <span>Prese</span>
-            <span>Questa mano</span>
-            <span>Totale</span>
-          </div>
-          {order.map((pi, i) => {
-            const move = before.indexOf(pi) - i;
+      {/* La pagina non scorre: se Contratti della serie, classifica e prese non ci stanno, scorrono qui dentro. */}
+      <div className="hand-end-body">
+        <ol className="series-steps" aria-label="Contratti della serie">
+          {match.hands.map((h, i) => {
+            const done = i <= match.handIndex;
+            const upcoming = i === match.handIndex + 1;
+            const mine = done && me !== null ? match.completed[i]!.scores[me]! : null;
             return (
-              <div key={pi} className={`standings-row${pi === me ? ' me' : ''}`}>
-                <span>
-                  <b>
-                    {i + 1}. {names[pi]}
-                  </b>
-                  {move !== 0 && (
-                    <>
-                      <span className={`move ${move > 0 ? 'good' : 'bad'}`} aria-hidden="true">
-                        {move > 0 ? `↑${move}` : `↓${-move}`}
-                      </span>
-                      <span className="sr-only">
-                        , {move > 0 ? 'sale' : 'scende'} di {plural(Math.abs(move), 'posto', 'posti')}
-                      </span>
-                    </>
-                  )}
+              <li
+                key={i}
+                className={`series-step${done ? ' done' : upcoming ? ' next' : ''}`}
+                aria-current={upcoming ? 'step' : undefined}
+              >
+                <span className="series-step-icon">
+                  <ContractIcon contract={getContract(h.contract)} size={22} />
                 </span>
-                <span>
-                  {domino ? '–' : hand.tricks[pi]}
-                  <span className="sr-only"> {hand.tricks[pi] === 1 ? 'presa' : 'prese'}</span>
+                <span className="series-step-text">
+                  <span className="series-step-label">
+                    {i + 1}
+                    {done ? ' · Concluso' : upcoming ? ' · Prossimo' : ''}
+                  </span>
+                  <b>{getContract(h.contract).name}</b>
+                  <span className="hint">
+                    {mine !== null ? (
+                      <>
+                        {names[me!]} <b className={tone(mine)}>{signed(mine)}</b>
+                      </>
+                    ) : done ? (
+                      'Giocato'
+                    ) : (
+                      'Da giocare'
+                    )}
+                  </span>
                 </span>
-                <b className={tone(hand.scores[pi]!)}>
-                  {signed(hand.scores[pi]!)}
-                  <span className="sr-only"> in questa mano</span>
-                </b>
-                <b>{match.totals[pi]} pt</b>
-              </div>
+              </li>
             );
           })}
-        </section>
+        </ol>
 
-        <section className="panel">
-          <h3>{domino ? 'Com’è andata' : me === null ? 'Prese della mano' : 'Le tue prese'}</h3>
-          {handNote(hand, contract, names) && <p className="status good">{handNote(hand, contract, names)}</p>}
-          <CoinNote coins={coins} />
-          {domino ? null : tricks.length === 0 ? (
-            <p className="hint">Nessuna presa vinta in questa mano.</p>
-          ) : (
-            <div className="log">
-              {tricks.map((t) => (
-                <div key={t.trickNo} className="logitem trick-line">
-                  <div>
-                    <b>Presa {t.trickNo}</b> · {me === null && `${names[t.winner]} `}
-                    con {getCard(t.winningCardId).name} ({t.winningValue})
-                    <div className="hint">{trickDetail(t, contract, hand.targetFaction)}</div>
-                  </div>
-                  <b className={tone(t.contractDelta)}>{signed(t.contractDelta)}</b>
-                </div>
-              ))}
+        <div className="hand-end-grid">
+          <section className="panel">
+            <h3>Classifica della serie</h3>
+            <div className="standings-head" aria-hidden="true">
+              <span>Giocatore</span>
+              <span>Prese</span>
+              <span>Questa mano</span>
+              <span>Totale</span>
             </div>
-          )}
-          {me !== null && (
-            <>
-              <div className="hand-total">
-                <span>Questa mano</span>
-                <b className={tone(hand.scores[me]!)}>{signed(hand.scores[me]!)}</b>
+            {order.map((pi, i) => {
+              const move = before.indexOf(pi) - i;
+              return (
+                <div key={pi} className={`standings-row${pi === me ? ' me' : ''}`}>
+                  <span>
+                    <b>
+                      {i + 1}. {names[pi]}
+                    </b>
+                    {move !== 0 && (
+                      <>
+                        <span className={`move ${move > 0 ? 'good' : 'bad'}`} aria-hidden="true">
+                          {move > 0 ? `↑${move}` : `↓${-move}`}
+                        </span>
+                        <span className="sr-only">
+                          , {move > 0 ? 'sale' : 'scende'} di {plural(Math.abs(move), 'posto', 'posti')}
+                        </span>
+                      </>
+                    )}
+                  </span>
+                  <span>
+                    {domino ? '–' : hand.tricks[pi]}
+                    <span className="sr-only"> {hand.tricks[pi] === 1 ? 'presa' : 'prese'}</span>
+                  </span>
+                  <b className={tone(hand.scores[pi]!)}>
+                    {signed(hand.scores[pi]!)}
+                    <span className="sr-only"> in questa mano</span>
+                  </b>
+                  <b>{match.totals[pi]} pt</b>
+                </div>
+              );
+            })}
+          </section>
+
+          <section className="panel">
+            <h3>{domino ? 'Com’è andata' : me === null ? 'Prese della mano' : 'Le tue prese'}</h3>
+            {handNote(hand, contract, names) && <p className="status good">{handNote(hand, contract, names)}</p>}
+            <CoinNote coins={coins} />
+            {domino ? null : tricks.length === 0 ? (
+              <p className="hint">Nessuna presa vinta in questa mano.</p>
+            ) : (
+              <div className="log">
+                {tricks.map((t) => (
+                  <div key={t.trickNo} className="logitem trick-line">
+                    <div>
+                      <b>Presa {t.trickNo}</b> · {me === null && `${names[t.winner]} `}
+                      con {getCard(t.winningCardId).name} ({t.winningValue})
+                      <div className="hint">{trickDetail(t, contract, hand.targetFaction)}</div>
+                    </div>
+                    <b className={tone(t.contractDelta)}>{signed(t.contractDelta)}</b>
+                  </div>
+                ))}
               </div>
-              {fromPowers !== 0 && <p className="hint">Di cui {signed(fromPowers)} dai poteri delle carte.</p>}
-            </>
-          )}
-        </section>
+            )}
+            {me !== null && (
+              <>
+                <div className="hand-total">
+                  <span>Questa mano</span>
+                  <b className={tone(hand.scores[me]!)}>{signed(hand.scores[me]!)}</b>
+                </div>
+                {fromPowers !== 0 && <p className="hint">Di cui {signed(fromPowers)} dai poteri delle carte.</p>}
+              </>
+            )}
+          </section>
+        </div>
       </div>
 
       <section className="panel next-contract">

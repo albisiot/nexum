@@ -13,6 +13,25 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.41.3',
+    date: '2026-11-03',
+    title: 'Fine Contratto senza scorrere',
+    changes: [
+      {
+        type: 'change',
+        text: 'Anche la schermata tra un Contratto e l’altro di una serie sta tutta nello schermo e non scorre: il Contratto appena concluso in alto, il prossimo con i pulsanti sempre in fondo. Contratti della serie, classifica e prese stanno in mezzo e, se non ci stanno, scorrono dentro.',
+      },
+      {
+        type: 'change',
+        text: 'Sul telefono il prossimo Contratto mostra solo il nome: regole e punteggio li vedi nella presentazione appena parte.',
+      },
+      {
+        type: 'fix',
+        text: 'L’icona del Contratto concluso non compare più nell’angolo in alto a sinistra dello schermo.',
+      },
+    ],
+  },
+  {
     version: '0.41.2',
     date: '2026-11-03',
     title: 'Fine partita senza scorrere',

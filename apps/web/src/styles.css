@@ -935,7 +935,6 @@ h3 {
   vertical-align: -0.2em;
 }
 
-.hand-end-head h2 .icon,
 /* Coriandoli quando vinci: cadono una volta sola, sopra a tutto ma senza bloccare i tocchi. */
 .confetti {
   position: fixed;
@@ -971,6 +970,7 @@ h3 {
   }
 }
 
+.hand-end-head h2 .icon,
 .end h2 .icon {
   color: var(--gold-text);
 }
@@ -2700,13 +2700,15 @@ input {
    la pagina sotto resta ferma. Dentro i pannelli lunghi (Info, Regole, tutorial) si scorre ancora. */
 html:has(.app > .game),
 html:has(.app > .end),
+html:has(.app > .hand-end),
 html:has(dialog[open]) {
   overflow: hidden;
   overscroll-behavior: none;
 }
 
 body:has(.app > .game),
-body:has(.app > .end) {
+body:has(.app > .end),
+body:has(.app > .hand-end) {
   min-height: 0;
   overflow: hidden;
   overscroll-behavior: none;
@@ -3276,7 +3278,6 @@ body:has(.app > .end) {
 .seat.mini.won .seat-points {
   background: var(--gold-light);
 }
-
 
 .table-stage:not(.phone) .seat-avatar {
   width: 46px;
@@ -4344,10 +4345,46 @@ body:has(.app > .end) {
 
 /* ---------- fine mano ---------- */
 
+/* Fine di un Contratto della serie: sta tutta nello schermo. Il Contratto concluso in alto, il prossimo con i
+   pulsanti in fondo; Contratti della serie, classifica e prese in mezzo, e se non ci stanno scorrono lì dentro. */
+.app:has(> .hand-end) {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app:has(> .hand-end) > .top {
+  display: none;
+}
+
 .hand-end {
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+
+.hand-end > .panel {
+  flex: none;
+}
+
+.hand-end-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  /* Spazio per l'ombra dei riquadri, che altrimenti verrebbe tagliata. */
+  margin: -4px;
+  padding: 4px 8px 8px 4px;
+}
+
+/* Un solo riquadro che scorre: l'elenco delle prese non ha più un suo scorrimento. */
+.hand-end-body .log {
+  max-height: none;
+  overflow: visible;
 }
 
 .hand-end-head {
@@ -4564,6 +4601,47 @@ body:has(.app > .end) {
 
 .next-contract .controls {
   margin-top: 0;
+}
+
+/* Telefono: intestazione su una riga e prossimo Contratto senza descrizione (la presentazione la mostra
+   appena parte), così resta più spazio a classifica e prese. */
+@media (max-width: 580px) {
+  .hand-end {
+    gap: 10px;
+  }
+  .hand-end-head {
+    flex-wrap: nowrap;
+    padding: 12px 14px;
+  }
+  .hand-end-head h2 {
+    font-size: 19px;
+  }
+  .hand-end-head .phase {
+    flex: none;
+    padding: 6px 10px;
+  }
+  .hand-end-head .phase strong {
+    margin: 2px 0 0;
+    font-size: 16px;
+  }
+  .next-contract {
+    gap: 10px;
+    padding: 12px 14px;
+  }
+  .next-contract p {
+    display: none;
+  }
+  .next-contract .icon-tile {
+    width: 40px;
+    height: 40px;
+  }
+  .next-contract .controls {
+    flex: 1 1 100%;
+    flex-wrap: nowrap;
+  }
+  .next-contract .controls .btn {
+    flex: 1 1 0;
+  }
 }
 
 /* ---------- schermi stretti ---------- */
