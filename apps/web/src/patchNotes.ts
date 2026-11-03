@@ -13,6 +13,25 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.41.1',
+    date: '2026-11-03',
+    title: 'La partita sta ferma',
+    changes: [
+      {
+        type: 'fix',
+        text: 'In partita la pagina non si può più trascinare: niente rimbalzo su iPhone e niente “tira per aggiornare” su Android. Dentro i pannelli lunghi, come Info e Regole, si scorre ancora.',
+      },
+      {
+        type: 'fix',
+        text: 'Mentre è aperta una finestra (tutorial, Regole, Impostazioni…) la pagina sotto resta ferma.',
+      },
+      {
+        type: 'fix',
+        text: 'Due tocchi veloci su una carta, per sceglierla e giocarla, non ingrandiscono più la pagina.',
+      },
+    ],
+  },
+  {
     version: '0.41.0',
     date: '2026-11-03',
     title: 'Riprendi la partita e Impostazioni',

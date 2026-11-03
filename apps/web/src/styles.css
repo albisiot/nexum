@@ -2416,6 +2416,8 @@ input {
   display: flex;
   flex-direction: column;
   padding: var(--edge-top) 16px calc(6px + var(--edge-bottom));
+  /* Due tocchi veloci su una carta (sceglierla e giocarla) non devono ingrandire la pagina. */
+  touch-action: manipulation;
 }
 
 .game-bar {
@@ -2693,9 +2695,19 @@ input {
 
 /* ---------- tavolo 3D ---------- */
 
-/* In partita la pagina è alta quanto lo schermo e non scorre. */
+/* In partita la pagina è alta quanto lo schermo e non scorre proprio: niente rimbalzo su iPhone e niente
+   "tira per aggiornare" su Android. Lo stesso mentre è aperta una finestra (tutorial, Regole, Impostazioni…):
+   la pagina sotto resta ferma. Dentro i pannelli lunghi (Info, Regole, tutorial) si scorre ancora. */
+html:has(.app > .game),
+html:has(dialog[open]) {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 body:has(.app > .game) {
   min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .app:has(> .game) {
