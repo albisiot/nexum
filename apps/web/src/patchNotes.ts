@@ -13,6 +13,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.39.0',
+    date: '2026-11-03',
+    title: 'Dai un nome alla CPU',
+    changes: [
+      {
+        type: 'new',
+        text: 'Prima della partita puoi scegliere come si chiamano gli avversari della CPU: i campi sono nel primo passaggio, sotto il numero di giocatori. Se ne lasci uno vuoto resta il nome predefinito.',
+      },
+      {
+        type: 'new',
+        text: 'Online, chi ha creato la stanza può dare un nome ai posti gestiti dalla CPU.',
+      },
+    ],
+  },
+  {
     version: '0.38.0',
     date: '2026-11-02',
     title: 'Suoni e vibrazione',

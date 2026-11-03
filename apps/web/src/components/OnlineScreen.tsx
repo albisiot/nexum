@@ -10,7 +10,7 @@ import { OnlineGuestClient, OnlineHostClient } from '../online/OnlineClients';
 import { AccountPanel } from './AccountPanel';
 import { askConfirm } from './ConfirmDialog';
 import { RoomQr } from './RoomQr';
-import { SetupScreen, defaultSetup } from './SetupScreen';
+import { SetupScreen, defaultSetup, resolvedBotNames } from './SetupScreen';
 import type { SetupValues } from './SetupScreen';
 
 const SAVED_ROOM = 'nexum.room';
@@ -51,15 +51,15 @@ function orderedMembers(room: Room) {
     .sort((a, b) => a.at - b.at);
 }
 
-/** I posti della partita: prima chi è nella stanza, con nomi tutti diversi, poi la CPU. */
-function buildSeats(room: Room, count: number): Seat[] {
+/** I posti della partita: prima chi è nella stanza, con nomi tutti diversi, poi la CPU con i nomi scelti. */
+function buildSeats(room: Room, count: number, botNames: string[]): Seat[] {
   const used = new Map<string, number>();
   const humans = orderedMembers(room).map<Seat>((m) => {
     const times = (used.get(m.name) ?? 0) + 1;
     used.set(m.name, times);
     return { name: times > 1 ? `${m.name} ${times}` : m.name, kind: 'human', uid: m.uid };
   });
-  const cpus = Array.from({ length: Math.max(0, count - humans.length) }, (_, i): Seat => ({ name: `CPU ${i + 1}`, kind: 'cpu', level: randomBotLevel(Math.random) }));
+  const cpus = Array.from({ length: Math.max(0, count - humans.length) }, (_, i): Seat => ({ name: botNames[i]!, kind: 'cpu', level: randomBotLevel(Math.random) }));
   return [...humans, ...cpus];
 }
 
@@ -82,7 +82,7 @@ export function OnlineScreen({ invite, onEnter, onBack }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   const [configuring, setConfiguring] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [values, setValues] = useState<SetupValues>(() => ({ ...defaultSetup(), mode: 'online' }));
+  const [values, setValues] = useState<SetupValues>(() => defaultSetup('online'));
   const lastStatus = useRef<Room['status'] | null>(null);
   const uid = me?.uid ?? null;
 
@@ -196,7 +196,7 @@ export function OnlineScreen({ invite, onEnter, onBack }: Props) {
 
   const start = (setup: MatchSetup) => {
     const r = room!;
-    const seats = buildSeats(r, setup.seats.length);
+    const seats = buildSeats(r, setup.seats.length, resolvedBotNames(values));
     setConfiguring(false);
     void run('Avvio della partita…', () =>
       backend!.startMatch(r.code, JSON.stringify({ ...setup, seats }), JSON.stringify(getCatalog())),

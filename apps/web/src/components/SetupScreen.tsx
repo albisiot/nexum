@@ -30,6 +30,8 @@ export interface SetupValues {
   playerCount: number;
   /** Nomi per il pass-and-play (sempre MAX_PLAYERS voci, si usano le prime playerCount). */
   names: string[];
+  /** Nomi dei posti della CPU, nell'ordine in cui si siedono (sempre MAX_PLAYERS - 1 voci). */
+  botNames: string[];
   format: ContractFormat;
   /** Numero di Contratti della serie casuale (10 = tutti). */
   seriesLength: number;
@@ -85,11 +87,19 @@ export function sanitizeSetup(v: SetupValues): SetupValues {
   };
 }
 
-export function defaultSetup(): SetupValues {
+const defaultBotName = (mode: GameMode, i: number) => (mode === 'online' ? `CPU ${i + 1}` : `Avversario ${i + 1}`);
+
+/** I nomi con cui siederà la CPU: un campo lasciato vuoto torna al nome predefinito. */
+export function resolvedBotNames(v: SetupValues): string[] {
+  return Array.from({ length: MAX_PLAYERS - 1 }, (_, i) => v.botNames[i]?.trim() || defaultBotName(v.mode, i));
+}
+
+export function defaultSetup(mode: GameMode = 'solo'): SetupValues {
   return {
-    mode: 'solo',
+    mode,
     playerCount: 4,
     names: Array.from({ length: MAX_PLAYERS }, (_, i) => `Giocatore ${i + 1}`),
+    botNames: Array.from({ length: MAX_PLAYERS - 1 }, (_, i) => defaultBotName(mode, i)),
     format: 'randomSeries',
     seriesLength: 5,
     seriesContracts: [],
@@ -125,12 +135,13 @@ export function toMatchSetup(v: SetupValues): MatchSetup {
   const seed = randomSeed();
   const rng = createRng(seed ^ 0x5bd1e995);
   const factions = v.factions.length === n ? v.factions : randomFactions(n, v.factions);
+  const bots = resolvedBotNames(v);
   const seats: Seat[] = Array.from({ length: n }, (_, i) =>
     v.mode === 'local'
       ? { name: v.names[i]?.trim() || `Giocatore ${i + 1}`, kind: 'human' }
       : i === 0
         ? { name: 'Tu', kind: 'human' }
-        : { name: `Avversario ${i}`, kind: 'cpu', level: randomBotLevel(rng) },
+        : { name: bots[i - 1]!, kind: 'cpu', level: randomBotLevel(rng) },
   );
   const plan = (contract: ContractId): HandPlan => {
     if (!contractNeedsTarget(getContract(contract))) return { contract };
@@ -208,6 +219,9 @@ interface StepProps {
 function PlayersStep({ v, set, members }: StepProps & { members?: string[] }) {
   const humans = members?.length ?? 0;
   const counts = Array.from({ length: MAX_PLAYERS - MIN_PLAYERS + 1 }, (_, i) => i + MIN_PLAYERS).filter((k) => k >= humans);
+  // Da solo la CPU occupa tutti i posti dal secondo in poi; online quelli rimasti dopo chi è nella stanza.
+  const firstBotSeat = members ? humans : 1;
+  const bots = v.mode === 'local' ? 0 : v.playerCount - firstBotSeat;
   return (
     <>
       <h2>In quanti giocate?</h2>
@@ -245,6 +259,25 @@ function PlayersStep({ v, set, members }: StepProps & { members?: string[] }) {
                   value={v.names[i] ?? ''}
                   maxLength={20}
                   onChange={(e) => set({ names: v.names.map((x, j) => (j === i ? e.target.value : x)) })}
+                />
+              </label>
+            ))}
+          </div>
+        </>
+      )}
+
+      {bots > 0 && (
+        <>
+          <h3 className="step">{members ? 'Nomi della CPU' : 'Nomi degli avversari'}</h3>
+          <div className="names">
+            {Array.from({ length: bots }, (_, i) => (
+              <label key={i} className="field">
+                <span className="label">Posto {firstBotSeat + i + 1}</span>
+                <input
+                  value={v.botNames[i] ?? ''}
+                  maxLength={20}
+                  placeholder={defaultBotName(v.mode, i)}
+                  onChange={(e) => set({ botNames: v.botNames.map((x, j) => (j === i ? e.target.value : x)) })}
                 />
               </label>
             ))}
