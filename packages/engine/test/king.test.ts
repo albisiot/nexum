@@ -235,7 +235,7 @@ describe('Domino', () => {
       expect(end.players[end.domino!.winner!]!.score).toBeGreaterThanOrEqual(0);
       expect(end.history).toEqual([]);
     }
-  });
+  }, 30_000);
 });
 
 describe('simulazioni con i Contratti nuovi', () => {
@@ -258,5 +258,7 @@ describe('simulazioni con i Contratti nuovi', () => {
         }
       }
     },
+    // Da sole durano poco più di un secondo, ma con tutti i file in parallelo su un computer carico superano i 5 s.
+    30_000,
   );
 });
