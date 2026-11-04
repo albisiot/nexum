@@ -13,6 +13,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.42.1',
+    date: '2026-11-04',
+    title: 'Il menu sta fermo',
+    changes: [
+      {
+        type: 'fix',
+        text: 'Il menu principale non si può più trascinare né far scorrere, come la partita: niente rimbalzo su iPhone e niente “tira per aggiornare” su Android.',
+      },
+      {
+        type: 'change',
+        text: 'Sui telefoni bassi, o con le barre del browser in vista, il menu si stringe per starci tutto: corona e logo più piccoli, pulsanti più bassi e, se serve, meno scritte. Con il telefono in orizzontale va su due colonne.',
+      },
+    ],
+  },
+  {
     version: '0.42.0',
     date: '2026-11-03',
     title: 'Menu in uno schermo e partite più veloci',

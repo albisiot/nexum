@@ -1004,25 +1004,38 @@ h3 {
 
 /* ---------- menu principale ---------- */
 
-/* Il menu sta in uno schermo, anche su un telefono piccolo (375×667): niente testata ("Regole" è tra i link in
-   fondo) e spazi che si stringono con l'altezza. Se proprio non ci sta (telefono in orizzontale) la pagina scorre. */
-body:has(.app > .menu) {
-  min-height: 0;
-}
-
+/* Il menu sta fermo in uno schermo, come la partita: niente testata ("Regole" è tra i link in fondo) e, più lo
+   schermo è basso, più si stringe (vedi in fondo); in orizzontale va su due colonne. Solo se non ci sta neanche
+   così scorre dentro il menu, mai la pagina. */
 .app:has(> .menu) {
-  min-height: 100dvh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .menu {
-  flex: 1 0 auto;
-  width: 100%;
-  max-width: 520px;
-  margin: 0 auto;
+  --menu-max: 532px;
+  flex: 1 1 auto;
+  min-height: 0;
+  width: calc(100% + 12px);
+  max-width: var(--menu-max);
+  /* Spazio per l'ombra dei pulsanti, che altrimenti lo scorrimento taglierebbe; i margini lo riprendono, così il
+     menu resta al centro. */
+  margin: -4px max(-8px, calc((100% - var(--menu-max)) / 2)) -8px max(-4px, calc((100% - var(--menu-max)) / 2));
+  padding: 4px 8px 8px 4px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   gap: clamp(12px, 2.6dvh, 28px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Al centro dello schermo; se non ci sta si parte dall'alto, così non si perde niente. */
+.menu > :first-child {
+  margin-top: auto;
+}
+
+.menu > :last-child {
+  margin-bottom: auto;
 }
 
 .menu-hero {
@@ -1449,6 +1462,116 @@ body:has(.app > .menu) {
   }
   .menu .google-btn {
     min-height: 36px;
+  }
+}
+
+/* Telefoni con le barre del browser in vista (iPhone, Android piccoli): corona e logo più piccoli, l'accesso su
+   una riga, pulsanti più bassi e "Partita veloce" in orizzontale. */
+@media (max-height: 640px) {
+  .app:has(> .menu) {
+    padding-top: calc(10px + var(--edge-top));
+    padding-bottom: calc(10px + var(--edge-bottom));
+  }
+  .menu {
+    gap: 8px;
+  }
+  .menu-crown {
+    width: 28px;
+    margin-bottom: 0;
+  }
+  .menu-logo {
+    font-size: clamp(32px, 7dvh, 40px);
+    text-shadow: 4px 4px 0 var(--gold);
+  }
+  .menu .account {
+    padding-block: 5px;
+  }
+  .menu .account .avatar {
+    width: 30px;
+    height: 30px;
+  }
+  .menu .account.signed-out .hint {
+    display: none;
+  }
+  .menu-item {
+    min-height: 50px;
+    padding-block: 4px;
+  }
+  .menu-icon {
+    width: 34px;
+    height: 34px;
+  }
+  .menu-item.menu-quick {
+    width: 100px;
+    flex-direction: row;
+    gap: 6px;
+    padding: 4px 8px;
+    text-align: left;
+  }
+  .menu-quick .icon {
+    flex: none;
+    width: 18px;
+    height: 18px;
+  }
+  .menu-tile-sub {
+    display: none;
+  }
+  .menu-links > button,
+  .menu-links > a {
+    min-height: 26px;
+    padding-block: 2px;
+    font-size: 12.5px;
+  }
+}
+
+/* Ancora più bassi: via la corona e il sottotitolo dei modi di giocare (resta quello di "Riprendi"). */
+@media (max-height: 540px) {
+  .menu-crown {
+    display: none;
+  }
+  .menu-item {
+    min-height: 44px;
+  }
+  .menu-item:not(.featured) .menu-sub {
+    display: none;
+  }
+}
+
+/* Telefono in orizzontale: logo, accesso, riquadri e link a sinistra, i modi di giocare a destra. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .menu {
+    --menu-max: 900px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+    grid-template-areas:
+      'hero list'
+      'account list'
+      'tiles list'
+      'links list';
+    align-content: center;
+    align-content: safe center;
+    gap: 8px 20px;
+  }
+  .menu > *,
+  .menu > :first-child,
+  .menu > :last-child {
+    margin-block: 0;
+  }
+  .menu-hero {
+    grid-area: hero;
+  }
+  .menu > .account {
+    grid-area: account;
+  }
+  .menu-list {
+    grid-area: list;
+    align-self: center;
+  }
+  .menu-tiles {
+    grid-area: tiles;
+  }
+  .menu-links {
+    grid-area: links;
   }
 }
 
@@ -2890,13 +3013,14 @@ input {
 
 /* ---------- tavolo 3D ---------- */
 
-/* In partita la pagina è alta quanto lo schermo e non scorre proprio: niente rimbalzo su iPhone e niente
-   "tira per aggiornare" su Android. Lo stesso mentre è aperta una finestra (tutorial, Regole, Impostazioni…):
+/* In partita (e nel menu, nella preparazione, a fine Contratto e a fine partita) la pagina è alta quanto lo
+   schermo e non scorre proprio: niente rimbalzo su iPhone e niente "tira per aggiornare" su Android. Lo stesso mentre è aperta una finestra (tutorial, Regole, Impostazioni…):
    la pagina sotto resta ferma. Dentro i pannelli lunghi (Info, Regole, tutorial) si scorre ancora. */
 html:has(.app > .game),
 html:has(.app > .end),
 html:has(.app > .hand-end),
 html:has(.app > .setup),
+html:has(.app > .menu),
 html:has(dialog[open]) {
   overflow: hidden;
   overscroll-behavior: none;
@@ -2905,7 +3029,8 @@ html:has(dialog[open]) {
 body:has(.app > .game),
 body:has(.app > .end),
 body:has(.app > .hand-end),
-body:has(.app > .setup) {
+body:has(.app > .setup),
+body:has(.app > .menu) {
   min-height: 0;
   overflow: hidden;
   overscroll-behavior: none;
