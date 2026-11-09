@@ -1004,12 +1004,23 @@ h3 {
 
 /* ---------- menu principale ---------- */
 
-/* Il menu sta fermo in uno schermo, come la partita: niente testata ("Regole" è tra i link in fondo) e, più lo
-   schermo è basso, più si stringe (vedi in fondo); in orizzontale va su due colonne. Solo se non ci sta neanche
-   così scorre dentro il menu, mai la pagina. */
-.app:has(> .menu) {
+/* Il menu sta fermo in uno schermo, come la partita: niente testata ("Regole" è tra i link in fondo) e, meno spazio
+   ha, più si stringe (vedi in fondo); in orizzontale va su due colonne. Solo se non ci sta neanche così scorre
+   dentro il menu, mai la pagina. */
+.app:has(> .menu-frame) {
   height: 100dvh;
   overflow: hidden;
+}
+
+/* Lo spazio che resta al menu tolti i bordi: su iPhone, con l'app aperta dalla Home, la tacca e la linea della Home
+   ne portano via quasi 150 px. Per questo il menu si stringe guardando la cornice (@container) e non l'altezza
+   dello schermo (@media). */
+.menu-frame {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  container: menu / size;
 }
 
 .menu {
@@ -1024,7 +1035,7 @@ h3 {
   padding: 4px 8px 8px 4px;
   display: flex;
   flex-direction: column;
-  gap: clamp(12px, 2.6dvh, 28px);
+  gap: clamp(12px, 2.6cqh, 28px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -1044,7 +1055,7 @@ h3 {
 
 .menu-logo {
   margin: 0;
-  font-size: clamp(38px, min(12vw, 8dvh), 72px);
+  font-size: clamp(38px, min(12vw, 8cqh), 72px);
   line-height: 1.1;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -1083,7 +1094,7 @@ h3 {
 
 .menu-crown {
   display: block;
-  width: clamp(34px, 6.5dvh, 56px);
+  width: clamp(34px, 6.5cqh, 56px);
   height: auto;
   margin: 0 auto 4px;
   overflow: visible;
@@ -1143,10 +1154,8 @@ h3 {
   box-shadow: var(--shadow-sm);
 }
 
-.account.muted {
-  justify-content: center;
+.account.loading {
   color: var(--muted);
-  font-size: 13px;
 }
 
 .account.signed-out {
@@ -1430,10 +1439,13 @@ h3 {
   padding: 6px 14px;
 }
 
-/* Schermi bassi (telefoni piccoli, portatili): via il motto sotto il logo, tutto un po' più stretto. */
-@media (max-height: 740px) {
+/* Le soglie guardano l'altezza della cornice: lo schermo meno i bordi della pagina (32 px, 20 sugli schermi fino a
+   640 px) e, su iPhone, la tacca e la linea della Home. */
+
+/* Poco spazio (telefoni piccoli, portatili, iPhone dalla Home): via il motto sotto il logo, tutto un po' più stretto. */
+@container menu (max-height: 708px) {
   .menu {
-    gap: clamp(10px, 1.8dvh, 28px);
+    gap: clamp(10px, 1.8cqh, 28px);
   }
   .menu-hero p {
     display: none;
@@ -1465,13 +1477,18 @@ h3 {
   }
 }
 
-/* Telefoni con le barre del browser in vista (iPhone, Android piccoli): corona e logo più piccoli, l'accesso su
-   una riga, pulsanti più bassi e "Partita veloce" in orizzontale. */
+/* Sugli schermi bassi anche i bordi della pagina si stringono. Questa regola guarda lo schermo: la cornice non può
+   decidere dei bordi che la contengono. */
 @media (max-height: 640px) {
-  .app:has(> .menu) {
+  .app:has(> .menu-frame) {
     padding-top: calc(10px + var(--edge-top));
     padding-bottom: calc(10px + var(--edge-bottom));
   }
+}
+
+/* Ancora meno (telefoni con le barre del browser in vista, iPhone SE dalla Home): corona e logo più piccoli,
+   l'accesso su una riga, pulsanti più bassi e "Partita veloce" in orizzontale. */
+@container menu (max-height: 620px) {
   .menu {
     gap: 8px;
   }
@@ -1480,7 +1497,7 @@ h3 {
     margin-bottom: 0;
   }
   .menu-logo {
-    font-size: clamp(32px, 7dvh, 40px);
+    font-size: clamp(32px, 7cqh, 40px);
     text-shadow: 4px 4px 0 var(--gold);
   }
   .menu .account {
@@ -1524,8 +1541,8 @@ h3 {
   }
 }
 
-/* Ancora più bassi: via la corona e il sottotitolo dei modi di giocare (resta quello di "Riprendi"). */
-@media (max-height: 540px) {
+/* Pochissimo: via la corona e il sottotitolo dei modi di giocare (resta quello di "Riprendi"). */
+@container menu (max-height: 520px) {
   .menu-crown {
     display: none;
   }
@@ -1539,15 +1556,15 @@ h3 {
 
 /* Telefoni stretti (320 px, o iPhone con lo zoom dello schermo): accanto a "Partita veloce" "Contro la CPU" va su
    due righe e i sottotitoli vanno a capo, così con "Riprendi" in cima il menu non ci starebbe. Via i sottotitoli
-   dei modi di giocare, come negli schermi più bassi. */
-@media (max-width: 359px) and (max-height: 640px) {
+   dei modi di giocare, come negli schermi più bassi. La cornice è larga 32 px meno dello schermo. */
+@container menu (max-width: 327px) and (max-height: 620px) {
   .menu-item:not(.featured) .menu-sub {
     display: none;
   }
 }
 
 /* Stretti e bassi (320 px con le barre del browser): il sottotitolo di "Riprendi" su una riga e spazi più stretti. */
-@media (max-width: 359px) and (max-height: 540px) {
+@container menu (max-width: 327px) and (max-height: 520px) {
   .menu,
   .menu-list {
     gap: 6px;
@@ -3042,7 +3059,7 @@ html:has(.app > .game),
 html:has(.app > .end),
 html:has(.app > .hand-end),
 html:has(.app > .setup),
-html:has(.app > .menu),
+html:has(.app > .menu-frame),
 html:has(dialog[open]) {
   overflow: hidden;
   overscroll-behavior: none;
@@ -3052,7 +3069,7 @@ body:has(.app > .game),
 body:has(.app > .end),
 body:has(.app > .hand-end),
 body:has(.app > .setup),
-body:has(.app > .menu) {
+body:has(.app > .menu-frame) {
   min-height: 0;
   overflow: hidden;
   overscroll-behavior: none;

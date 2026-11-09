@@ -5,7 +5,18 @@ export function AccountPanel({ required }: { required?: boolean }) {
   const auth = useAuth();
 
   if (auth.status === 'disabled') return null;
-  if (auth.status === 'loading') return <div className="account muted">Verifica dell’accesso…</div>;
+  // Stessa forma (e altezza) del riquadro di chi ha fatto l'accesso: quando arriva la risposta il menu non salta.
+  if (auth.status === 'loading') {
+    return (
+      <div className="account loading" aria-busy="true">
+        <span className="avatar" />
+        <div className="account-text">
+          <b>Verifica dell’accesso…</b>
+          <span className="hint">&nbsp;</span>
+        </div>
+      </div>
+    );
+  }
 
   if (auth.status === 'signedIn') {
     const { account } = auth;

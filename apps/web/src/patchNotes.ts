@@ -13,6 +13,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.42.3',
+    date: '2026-11-09',
+    title: 'Menu fermo su iPhone dalla Home',
+    changes: [
+      {
+        type: 'fix',
+        text: 'Con NEXUM aperto dalla Home dell’iPhone il menu principale non scorre più col dito: ora si stringe in base allo spazio che resta tra la tacca e la linea della Home, non all’altezza dello schermo intero.',
+      },
+      {
+        type: 'fix',
+        text: 'Aprendo il gioco con l’accesso Google fatto, il menu non salta più quando l’accesso viene confermato: mentre lo verifica, il riquadro dell’account ha già la sua forma.',
+      },
+    ],
+  },
+  {
     version: '0.42.2',
     date: '2026-11-09',
     title: 'Menu fermo anche sui telefoni stretti',
