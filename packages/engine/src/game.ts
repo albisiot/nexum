@@ -47,6 +47,9 @@ export function validateConfig(config: GameConfig): string[] {
       errors.push('Il Contratto richiede una fazione bersaglio presente nel mazzo.');
     }
   }
+  if (config.leader !== undefined && !(Number.isInteger(config.leader) && config.leader >= 0 && config.leader < n)) {
+    errors.push('Il primo di mano deve essere uno dei giocatori.');
+  }
   return errors;
 }
 
@@ -60,7 +63,7 @@ export function sortHand(hand: readonly CardId[]): CardId[] {
   });
 }
 
-/** Mescola il mazzo, distribuisce 13 carte a testa e sceglie a caso il primo di mano. */
+/** Mescola il mazzo, distribuisce 13 carte a testa e sceglie a caso il primo di mano (se la config non lo indica). */
 export function createGame(config: GameConfig): GameState {
   const errors = validateConfig(config);
   if (errors.length) throw new Error(errors.join(' '));
@@ -86,7 +89,9 @@ export function createGame(config: GameConfig): GameState {
     seen: [],
   }));
 
-  const leader = Math.floor(rng() * n);
+  // Si estrae comunque, così chi sceglie il primo di mano non cambia il resto della mano.
+  const drawn = Math.floor(rng() * n);
+  const leader = config.leader ?? drawn;
   const state: GameState = {
     config: structuredCopy(config),
     players,

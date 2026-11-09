@@ -9,7 +9,7 @@ import { Sheet } from './Sheet';
 interface RowProps {
   id: string;
   icon: IconName;
-  title: string;
+  title: ReactNode;
   hint: ReactNode;
   /** Un interruttore a destra del titolo. */
   toggle?: { on: boolean; onText: string; offText: string; onChange(on: boolean): void };
@@ -17,7 +17,8 @@ interface RowProps {
   children?: ReactNode;
 }
 
-function Row({ id, icon, title, hint, toggle, children }: RowProps) {
+/** Una riga delle Impostazioni; la preparazione la usa per le sue opzioni. */
+export function SettingRow({ id, icon, title, hint, toggle, children }: RowProps) {
   return (
     <div className="setting">
       <span className="icon-tile">
@@ -53,7 +54,7 @@ export function SettingsContent() {
   const auth = useAuth();
   return (
     <div className="settings-list">
-      <Row
+      <SettingRow
         id="set-sound"
         icon={settings.sound ? 'suono' : 'muto'}
         title="Suoni"
@@ -61,7 +62,7 @@ export function SettingsContent() {
         toggle={{ on: settings.sound, onText: 'Attivi', offText: 'Spenti', onChange: (sound) => setSettings({ sound }) }}
       />
       {canVibrate && (
-        <Row
+        <SettingRow
           id="set-vibrate"
           icon={settings.vibrate ? 'vibrazione' : 'senza-vibrazione'}
           title="Vibrazione"
@@ -77,7 +78,7 @@ export function SettingsContent() {
           }}
         />
       )}
-      <Row
+      <SettingRow
         id="set-auto"
         icon="presa-auto"
         title="Presa successiva automatica"
@@ -97,9 +98,9 @@ export function SettingsContent() {
             </button>
           ))}
         </div>
-      </Row>
+      </SettingRow>
       {auth.status === 'signedIn' ? (
-        <Row
+        <SettingRow
           id="set-name"
           icon="nome"
           title="Il tuo nome"
@@ -110,7 +111,7 @@ export function SettingsContent() {
           }
         />
       ) : (
-        <Row
+        <SettingRow
           id="set-name"
           icon="nome"
           title="Il tuo nome"
@@ -124,7 +125,7 @@ export function SettingsContent() {
             aria-labelledby="set-name-title"
             onChange={(e) => setSettings({ name: e.target.value })}
           />
-        </Row>
+        </SettingRow>
       )}
     </div>
   );

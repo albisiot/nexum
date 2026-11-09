@@ -14,12 +14,14 @@ import {
   randomHands,
   randomSeed,
   shuffle,
+  trumpForEach,
 } from '@nexum/engine';
 import type { ContractId, FactionId, HandPlan } from '@nexum/engine';
 import type { CSSProperties } from 'react';
 import type { GameMode, MatchSetup, Seat } from '../game/GameClient';
 import { describeScoring } from '../game/text';
 import { Select } from './Select';
+import { SettingRow } from './SettingsScreen';
 import { ContractIcon, Icon } from './Icon';
 import type { IconName } from './Icon';
 
@@ -38,6 +40,8 @@ export interface SetupValues {
   /** Contratti della serie a scelta, nell'ordine in cui verranno giocati. */
   seriesContracts: ContractId[];
   singleContract: ContractId;
+  /** Una Briscola a testa: se c'è la Briscola si gioca una volta per giocatore, e a turno ognuno la sceglie. */
+  trumpEach: boolean;
   targetFaction: FactionId | null;
   factions: FactionId[];
   /** Le fazioni le ha scelte chi gioca: si tengono per la prossima partita. Se no se ne pescano altre a caso. */
@@ -108,6 +112,7 @@ export function defaultSetup(mode: GameMode = 'solo'): SetupValues {
     seriesLength: 5,
     seriesContracts: [],
     singleContract: 'more',
+    trumpEach: true,
     targetFaction: null,
     factions: randomFactions(4),
     factionsPicked: false,
@@ -119,6 +124,12 @@ function chosenContracts(v: SetupValues): ContractId[] {
   if (v.format === 'chosenSeries') return v.seriesContracts;
   if (v.format === 'chosenSingle') return [v.singleContract];
   return [];
+}
+
+/** I Contratti con la briscola che possono capitare: quelli scelti a mano, o quelli che si possono estrarre. */
+function trumpContracts(v: SetupValues) {
+  const random = v.format === 'randomSeries' || v.format === 'randomSingle';
+  return (random ? offeredContracts() : chosenContracts(v).map(getContract)).filter((c) => c.trump);
 }
 
 /** Per il menu: "Contro la CPU · 4 giocatori · Serie casuale di 5 Contratti". */
@@ -164,7 +175,7 @@ export function toMatchSetup(v: SetupValues): MatchSetup {
       : v.format === 'randomSingle'
         ? randomHands(1, factions, rng)
         : chosenContracts(v).map(plan);
-  return { mode: v.mode, seats, factions, hands, seed };
+  return { mode: v.mode, seats, factions, hands: v.trumpEach ? trumpForEach(hands, n, rng) : hands, seed };
 }
 
 interface Props {
@@ -320,6 +331,15 @@ function ContractsStep({ v, set }: StepProps) {
         : [...v.seriesContracts, id],
     });
 
+  // Chi sceglie la briscola ha un vantaggio: giocandola una volta a testa, ognuno la sceglie una volta.
+  const trumps = trumpContracts(v);
+  const n = v.playerCount;
+  const random = v.format === 'randomSeries' || v.format === 'randomSingle';
+  const total = chosenContracts(v).length + (n - 1) * trumps.length;
+  const trumpHint = v.trumpEach
+    ? `${random ? 'Se esce la Briscola, si gioca' : 'La Briscola si gioca'} ${n} volte di fila, una per giocatore: a turno ognuno è primo di mano e sceglie la briscola.${random ? '' : ` In tutto ${total} mani.`}`
+    : 'Spento: la Briscola si gioca una volta sola e la sceglie chi è primo di mano, estratto a caso. Chi la sceglie parte avvantaggiato.';
+
   return (
     <>
       <h2>Come volete giocare i Contratti?</h2>
@@ -383,6 +403,22 @@ function ContractsStep({ v, set }: StepProps) {
           <h3 className="step">Scegli il Contratto</h3>
           <ContractGrid selected={[v.singleContract]} onToggle={(id) => set({ singleContract: id })} />
         </>
+      )}
+
+      {trumps.length > 0 && (
+        <div className="settings-list">
+          <SettingRow
+            id="setup-trump-each"
+            icon="briscola"
+            title={
+              <>
+                Una Briscola a testa <span className="pill">Consigliato</span>
+              </>
+            }
+            hint={trumpHint}
+            toggle={{ on: v.trumpEach, onText: 'Sì', offText: 'No', onChange: (trumpEach) => set({ trumpEach }) }}
+          />
+        </div>
       )}
     </>
   );
@@ -498,6 +534,7 @@ function FactionsStep({ v, set }: StepProps) {
 
       <p className="summary">
         <b>Riepilogo:</b> {n} giocatori · {describeFormat(v)}
+        {v.trumpEach && trumpContracts(v).length > 0 && ' · una Briscola a testa'}
       </p>
     </>
   );

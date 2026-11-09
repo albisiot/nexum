@@ -85,6 +85,8 @@ export interface GameConfig {
   factions: FactionId[];
   contract: ContractId;
   targetFaction?: FactionId;
+  /** Chi è primo di mano (e con la Briscola la sceglie). Se manca, si estrae a caso. */
+  leader?: number;
   /** Seme del generatore casuale: stessa config + stesso seme = stessa partita. */
   seed: number;
 }

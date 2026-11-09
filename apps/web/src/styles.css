@@ -5010,7 +5010,7 @@ body:has(.app > .menu-frame) {
 }
 
 /* Telefono: intestazione su una riga e prossimo Contratto senza descrizione (la presentazione la mostra
-   appena parte), così resta più spazio a classifica e prese. */
+   appena parte), così resta più spazio a classifica e prese. Chi sceglie la briscola resta: è una riga sola. */
 @media (max-width: 580px) {
   .hand-end {
     gap: 10px;
@@ -5034,7 +5034,7 @@ body:has(.app > .menu-frame) {
     gap: 10px;
     padding: 12px 14px;
   }
-  .next-contract p {
+  .next-contract p:not(.next-contract-chooser) {
     display: none;
   }
   .next-contract .icon-tile {

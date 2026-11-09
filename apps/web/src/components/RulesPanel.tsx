@@ -47,7 +47,9 @@ export function RulesContent({ onTutorial }: ContentProps) {
       <details>
         <summary>Briscola e Domino</summary>
         <p>
-          <strong>Briscola</strong>: chi è primo di mano sceglie una fazione che batte la fazione d’apertura.
+          <strong>Briscola</strong>: chi è primo di mano sceglie una fazione che batte la fazione d’apertura. Con “Una
+          Briscola a testa” (consigliato, si sceglie nella preparazione) la Briscola si gioca una volta per giocatore e
+          a turno ognuno è primo di mano: così tutti la scelgono una volta.
         </p>
         <p>
           <strong>Domino</strong>: niente prese, si parte dai 7 e si attaccano le carte vicine della stessa fazione; chi non

@@ -53,6 +53,7 @@ export function parseLastSetup(saved: unknown): SetupValues {
     seriesLength: SERIES_LENGTHS.find((l) => l.value === s.seriesLength)?.value ?? initial.seriesLength,
     seriesContracts,
     singleContract: singleOk ? (s.singleContract as ContractId) : initial.singleContract,
+    trumpEach: typeof s.trumpEach === 'boolean' ? s.trumpEach : initial.trumpEach,
     targetFaction: typeof s.targetFaction === 'string' && known.includes(s.targetFaction) ? (s.targetFaction as FactionId) : null,
     factions: picked.length ? picked : randomFactions(playerCount),
     factionsPicked: picked.length > 0,

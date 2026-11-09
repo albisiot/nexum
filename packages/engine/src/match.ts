@@ -10,6 +10,8 @@ import type { Action, ContractId, FactionId, GameConfig, GameState, PlayerView }
 export interface HandPlan {
   contract: ContractId;
   targetFaction?: FactionId;
+  /** Chi è primo di mano (con la Briscola, chi la sceglie). Se manca, si estrae a caso. */
+  leader?: number;
 }
 
 export interface MatchConfig {
@@ -70,6 +72,19 @@ export function randomHands(count: number, factions: readonly FactionId[], rng: 
         ? { contract, targetFaction: factions[Math.floor(rng() * factions.length)]! }
         : { contract },
     );
+}
+
+/**
+ * Una Briscola a testa: ogni mano con la briscola diventa una mano per giocatore, una dopo l'altra, e a ognuna è
+ * primo di mano (e sceglie la briscola) un giocatore diverso. Si gira in ordine di posto da uno estratto a caso, così
+ * ognuno la sceglie una volta e nessuno è avvantaggiato.
+ */
+export function trumpForEach(hands: readonly HandPlan[], players: number, rng: Rng): HandPlan[] {
+  return hands.flatMap((hand) => {
+    if (!getContract(hand.contract).trump) return [{ ...hand }];
+    const first = Math.floor(rng() * players);
+    return Array.from({ length: players }, (_, i) => ({ ...hand, leader: (first + i) % players }));
+  });
 }
 
 export function validateMatchConfig(config: MatchConfig): string[] {
@@ -138,6 +153,7 @@ function handConfig(config: MatchConfig, index: number): GameConfig {
     factions: config.factions,
     contract: plan.contract,
     targetFaction: plan.targetFaction,
+    leader: plan.leader,
     // Ogni mano ha il suo mescolamento, ricavato in modo deterministico dal seme della serie.
     seed: (config.seed ^ Math.imul(index + 1, 0x9e3779b1)) >>> 0,
   };

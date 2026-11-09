@@ -13,6 +13,21 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.43.0',
+    date: '2026-11-09',
+    title: 'Una Briscola a testa',
+    changes: [
+      {
+        type: 'new',
+        text: 'Nuova opzione “Una Briscola a testa”, consigliata e già attiva: se nella partita c’è la Briscola, si gioca una volta per giocatore, una mano dopo l’altra. A turno ognuno è primo di mano e sceglie la briscola, così nessuno parte avvantaggiato. Si trova nel passaggio Contratti della preparazione.',
+      },
+      {
+        type: 'new',
+        text: 'Tra un Contratto e l’altro, se il prossimo è la Briscola, c’è scritto chi la sceglierà.',
+      },
+    ],
+  },
+  {
     version: '0.42.3',
     date: '2026-11-09',
     title: 'Menu fermo su iPhone dalla Home',

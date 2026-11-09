@@ -311,6 +311,11 @@ export function HandEndScreen({
             <p>
               {nextContract.desc} <span className="pill">{describeScoring(nextContract)}</span>
             </p>
+            {nextContract.trump && next.leader !== undefined && (
+              <p className="next-contract-chooser">
+                <b>Sceglie la briscola:</b> {next.leader === me ? 'tu' : names[next.leader]}
+              </p>
+            )}
           </div>
         </div>
         <div className="controls">

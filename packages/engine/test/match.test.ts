@@ -12,6 +12,7 @@ import {
   matchRanking,
   playableContracts,
   randomHands,
+  trumpForEach,
 } from '../src';
 import type { MatchConfig, MatchState } from '../src';
 import { cpuAction, createRng } from './helpers';
@@ -115,5 +116,61 @@ describe('Contratti casuali', () => {
       }
     }
     expect(randomHands(19, ['Custodes', 'Auguria'], rng)).toHaveLength(17);
+  });
+});
+
+describe('Una Briscola a testa', () => {
+  it('ogni Briscola diventa una mano per giocatore, a giro da un posto a caso', () => {
+    const starts = new Set<number>();
+    const rng = createRng(5);
+    for (let i = 0; i < 30; i++) {
+      const hands = trumpForEach([{ contract: 'more' }, { contract: 'trump' }, { contract: 'less' }], 3, rng);
+      expect(hands.map((h) => h.contract)).toEqual(['more', 'trump', 'trump', 'trump', 'less']);
+      const leaders = hands.filter((h) => h.contract === 'trump').map((h) => h.leader!);
+      expect([...leaders].sort()).toEqual([0, 1, 2]);
+      expect(leaders[1]).toBe((leaders[0]! + 1) % 3);
+      expect(leaders[2]).toBe((leaders[1]! + 1) % 3);
+      starts.add(leaders[0]!);
+      expect(hands.filter((h) => h.contract !== 'trump').every((h) => h.leader === undefined)).toBe(true);
+    }
+    expect(starts.size).toBe(3);
+    // Senza Briscola la serie resta com'è.
+    expect(trumpForEach([{ contract: 'more' }, { contract: 'less' }], 4, rng)).toEqual([{ contract: 'more' }, { contract: 'less' }]);
+  });
+
+  it('il primo di mano indicato apre la mano e sceglie la briscola', () => {
+    for (const leader of [0, 1, 2]) {
+      const s = createMatch(config({ hands: [{ contract: 'trump', leader }] }));
+      expect(s.game.leader).toBe(leader);
+      expect(s.game.turn).toBe(leader);
+      expect(s.game.decision).toMatchObject({ kind: 'trump', player: leader });
+    }
+  });
+
+  it('indicare il primo di mano non cambia le carte distribuite', () => {
+    const drawn = createMatch(config({ hands: [{ contract: 'trump' }] }));
+    const chosen = createMatch(config({ hands: [{ contract: 'trump', leader: (drawn.game.leader + 1) % 3 }] }));
+    expect(chosen.game.players.map((p) => p.hand)).toEqual(drawn.game.players.map((p) => p.hand));
+  });
+
+  it('rifiuta un primo di mano che non è uno dei giocatori', () => {
+    expect(() => createMatch(config({ hands: [{ contract: 'trump', leader: 3 }] }))).toThrow(/primo di mano/);
+    expect(() => createMatch(config({ hands: [{ contract: 'more', leader: -1 }] }))).toThrow(/primo di mano/);
+    expect(() => createMatch(config({ hands: [{ contract: 'more', leader: 1.5 }] }))).toThrow(/primo di mano/);
+  });
+
+  it('in una serie ognuno sceglie la briscola una volta', () => {
+    const rng = createRng(9);
+    let s = createMatch(config({ hands: trumpForEach([{ contract: 'trump' }, { contract: 'more' }], 3, rng) }));
+    const choosers: number[] = [];
+    for (;;) {
+      const d = s.game.decision;
+      if (d?.kind === 'trump') choosers.push(d.player);
+      s = playHand(s, rng);
+      if (s.phase === 'matchEnd') break;
+      s = applyMatchAction(s, { type: 'nextHand' });
+    }
+    expect(s.completed.map((h) => h.contract)).toEqual(['trump', 'trump', 'trump', 'more']);
+    expect([...choosers].sort()).toEqual([0, 1, 2]);
   });
 });

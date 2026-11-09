@@ -74,6 +74,7 @@ export { getView } from './view';
 export {
   playableContracts,
   randomHands,
+  trumpForEach,
   validateMatchConfig,
   createMatch,
   applyMatchAction,

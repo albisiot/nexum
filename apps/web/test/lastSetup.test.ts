@@ -13,6 +13,7 @@ const chosen: SetupValues = {
   seriesLength: 3,
   seriesContracts: ['less', 'more', 'last'],
   singleContract: 'more',
+  trumpEach: false,
   targetFaction: 'Nullarii',
   factions: ['Custodes', 'Nullarii', 'Dominari'],
   factionsPicked: true,
@@ -23,7 +24,7 @@ afterEach(() => setCatalog(DEFAULT_CATALOG));
 describe('ultima preparazione', () => {
   it('senza nulla di salvato usa i valori iniziali, con fazioni a caso', () => {
     const v = parseLastSetup({});
-    expect(v).toMatchObject({ mode: 'solo', playerCount: 4, format: 'randomSeries', seriesLength: 5, factionsPicked: false });
+    expect(v).toMatchObject({ mode: 'solo', playerCount: 4, format: 'randomSeries', seriesLength: 5, trumpEach: true, factionsPicked: false });
     expect(v.factions).toHaveLength(4);
     for (const saved of [null, undefined, 'testo', 42, []]) expect(parseLastSetup(saved).playerCount).toBe(4);
     // Senza localStorage (come qui) non c'è un'ultima preparazione finché non parte una partita.
@@ -43,8 +44,8 @@ describe('ultima preparazione', () => {
   });
 
   it('le parti strane tornano ai valori iniziali, il resto resta', () => {
-    const v = parseLastSetup({ ...chosen, mode: 'online', playerCount: 99, format: 'boh', seriesLength: 7, names: ['Ana', 5], targetFaction: 'Sparita' });
-    expect(v).toMatchObject({ mode: 'solo', playerCount: 4, format: 'randomSeries', seriesLength: 5, targetFaction: null });
+    const v = parseLastSetup({ ...chosen, mode: 'online', playerCount: 99, format: 'boh', seriesLength: 7, names: ['Ana', 5], targetFaction: 'Sparita', trumpEach: 'sì' });
+    expect(v).toMatchObject({ mode: 'solo', playerCount: 4, format: 'randomSeries', seriesLength: 5, targetFaction: null, trumpEach: true });
     expect(v.names.slice(0, 3)).toEqual(['Ana', 'Giocatore 2', 'Giocatore 3']);
     expect(v.seriesContracts).toEqual(chosen.seriesContracts);
     expect(parseLastSetup({ ...chosen, names: ['x'.repeat(50)] }).names[0]).toHaveLength(20);
