@@ -1,7 +1,7 @@
 {
   "name": "nexum",
   "private": true,
-  "version": "0.42.1",
+  "version": "0.42.2",
   "description": "NEXUM — gioco di carte trick-taking a Contratti",
   "type": "module",
   "workspaces": [

@@ -13,6 +13,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.42.2',
+    date: '2026-11-09',
+    title: 'Menu fermo anche sui telefoni stretti',
+    changes: [
+      {
+        type: 'fix',
+        text: 'Sui telefoni più stretti (come iPhone SE di prima generazione, o con lo zoom dello schermo) il menu con “Riprendi la partita” o “Rigioca l’ultima” in cima sta di nuovo tutto nello schermo, senza scorrere: via i sottotitoli dei modi di giocare e, se lo schermo è anche basso, il sottotitolo in cima su una riga sola.',
+      },
+    ],
+  },
+  {
     version: '0.42.1',
     date: '2026-11-04',
     title: 'Il menu sta fermo',
