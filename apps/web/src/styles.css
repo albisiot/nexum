@@ -29,9 +29,10 @@
   --font: 'Rubik Variable', Rubik, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color-scheme: light;
   scrollbar-color: var(--line) var(--inset);
-  /* Spazio da lasciare vuoto ai bordi dello schermo: zero ovunque tranne su iPhone e iPad (vedi sotto). */
-  --edge-top: 0px;
-  --edge-bottom: 0px;
+  /* Spazio da lasciare vuoto ai bordi dello schermo: quello che chiede il telefono (zero nel browser e sul computer;
+     la barra di stato se Android, con il gioco installato, disegna fino al bordo); su iPhone e iPad di più (sotto). */
+  --edge-top: env(safe-area-inset-top, 0px);
+  --edge-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* Safari su iPhone e iPad (iOS 26) sfuma tutto ciò che sta vicino al bordo alto dello schermo, e non si può

@@ -13,6 +13,17 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.45.0',
+    date: '2026-11-10',
+    title: 'Si installa anche su Android',
+    changes: [
+      {
+        type: 'new',
+        text: 'Su Android NEXUM si installa come un’app: in Chrome tocca ⋮ e poi “Installa app” (o il banner, se compare). Si apre a tutto schermo dalla sua icona, come su iPhone dalla Home. Se prima avevi aggiunto solo il collegamento alla schermata Home, toglilo e installa di nuovo.',
+      },
+    ],
+  },
+  {
     version: '0.44.0',
     date: '2026-11-10',
     title: 'Mani lunghe',
