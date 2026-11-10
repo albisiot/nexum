@@ -37,14 +37,17 @@ function useEndSounds(party: boolean, coins: number) {
   }, []);
 }
 
-/** Che cosa conta di una presa per il Contratto: le carte che fanno punti, o la fazione d'apertura. */
-function trickDetail(t: TrickResult, contract: ContractDef, target?: FactionId): string {
-  const active = contract.rules.filter((r) => ruleApplies(r, t.trickNo));
+/**
+ * Che cosa conta di una presa per il Contratto: le carte che fanno punti, o la fazione d'apertura.
+ * `lastTrick` è l'ultima presa della mano e `size` le carte per fazione (cambiano con Oblivion e con le mani lunghe).
+ */
+function trickDetail(t: TrickResult, contract: ContractDef, lastTrick: number, size: number, target?: FactionId): string {
+  const active = contract.rules.filter((r) => ruleApplies(r, t.trickNo, lastTrick));
   const rules = active.filter((r) => r.per === 'card');
   if (!rules.length) return `Fazione d’apertura ${getFaction(t.leadFaction).name}`;
   const counted = t.plays
     .flatMap((pl) => (pl.skipped ? [] : [getCard(pl.cardId)]))
-    .filter((card) => rules.some((r) => cardMatches(r.filter ?? { kind: 'any' }, card, target)));
+    .filter((card) => rules.some((r) => cardMatches(r.filter ?? { kind: 'any' }, card, target, size)));
   if (!counted.length) {
     return active.some((r) => r.per === 'trick')
       ? 'Conta solo la presa: nessuna carta che fa punti'
@@ -277,7 +280,9 @@ export function HandEndScreen({
                       <div>
                         <b>Presa {t.trickNo}</b> · {me === null && `${names[t.winner]} `}
                         con {getCard(t.winningCardId).name} ({t.winningValue})
-                        <div className="hint">{trickDetail(t, contract, hand.targetFaction)}</div>
+                        <div className="hint">
+                          {trickDetail(t, contract, history.length, match.game.cardsPerFaction, hand.targetFaction)}
+                        </div>
                       </div>
                       <b className={tone(t.contractDelta)}>{signed(t.contractDelta)}</b>
                     </div>
@@ -309,7 +314,7 @@ export function HandEndScreen({
             </span>
             <h3>{contractLabel(next)}</h3>
             <p>
-              {nextContract.desc} <span className="pill">{describeScoring(nextContract)}</span>
+              {nextContract.desc} <span className="pill">{describeScoring(nextContract, undefined, match.game.cardsPerFaction)}</span>
             </p>
             {nextContract.trump && next.leader !== undefined && (
               <p className="next-contract-chooser">

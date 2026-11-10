@@ -31,7 +31,7 @@ const CARD_TURN = [-2, -9, 4, 8, -5, 6, -4, 3];
 const TAKE_RING = 0.45;
 /** Quanto dura il volo del mucchio verso chi ha preso (come trick-fly in styles.css). */
 const FLY_MS = 450;
-/** Distribuzione: giri di carte mostrati (non tutte e 13) e durata del volo di una carta (come deal-fly in styles.css). */
+/** Distribuzione: giri di carte mostrati (non tutte le 13 o più) e durata del volo di una carta (come deal-fly in styles.css). */
 const DEAL_ROUNDS = 5;
 const DEAL_FLY_MS = 380;
 

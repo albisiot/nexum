@@ -1,4 +1,16 @@
-import { POWERS, contractNeedsTarget, getCard, getCatalog, getContract, getFaction } from '@nexum/engine';
+import {
+  CARDS_PER_FACTION,
+  HAND_LENGTHS,
+  POWERS,
+  contractNeedsTarget,
+  dominoStartValue,
+  factionDeck,
+  getCard,
+  getCatalog,
+  getContract,
+  getFaction,
+  slamPoints,
+} from '@nexum/engine';
 import type {
   CardFilter,
   Catalog,
@@ -22,9 +34,13 @@ export function contractTitle(view: PlayerView): string {
 
 export function contractDescription(view: PlayerView): string {
   const c = getContract(view.contract);
+  const long = view.cardsPerFaction !== CARDS_PER_FACTION;
   const extra = [
     contractNeedsTarget(c) && view.targetFaction ? `Fazione bersaglio: ${getFaction(view.targetFaction).name}.` : '',
     view.trump ? `Briscola: ${getFaction(view.trump).name}.` : '',
+    c.mode === 'domino' && long && view.factions[0]
+      ? `Con ${view.cardsPerFaction} carte si parte dal ${dominoStartValue(view.factions[0], view.cardsPerFaction)}.`
+      : '',
   ];
   return [c.desc, ...extra].filter(Boolean).join(' ');
 }
@@ -39,7 +55,29 @@ const factionName = (catalog: Catalog, id: string) => catalog.factions.find((f) 
 const cardName = (catalog: Catalog, id: string) =>
   [...catalog.cards, ...(catalog.packCards ?? [])].find((c) => c.id === id)?.name ?? 'una carta eliminata';
 
-function filterText(filter: CardFilter, catalog: Catalog): string {
+/**
+ * Per chi descrive una regola: `long` per i Contratti delle mani lunghe (le prese finali diventano "le ultime"),
+ * `cardsPerFaction` quando si sa la lunghezza della mano (si scrivono i valori delle carte più alte e i punti del Cappotto).
+ */
+export interface RuleContext {
+  long?: boolean;
+  cardsPerFaction?: number;
+}
+
+/** I valori delle `count` carte più alte di una fazione nella mano: "il 25", "23–25". Vuoto se non si sa la lunghezza. */
+function topValues(count: number, ctx: RuleContext): string {
+  const size = ctx.cardsPerFaction;
+  const first = getCatalog().factions[0];
+  if (size === undefined || !first) return '';
+  const values = factionDeck(first.id, size)
+    .map((c) => c.value)
+    .sort((a, b) => b - a)
+    .slice(0, count);
+  if (!values.length) return '';
+  return values.length === 1 ? ` (il ${values[0]})` : ` (${values.at(-1)}–${values[0]})`;
+}
+
+function filterText(filter: CardFilter, catalog: Catalog, ctx: RuleContext): string {
   switch (filter.kind) {
     case 'any':
       return '';
@@ -59,12 +97,22 @@ function filterText(filter: CardFilter, catalog: Catalog): string {
       return ' con un potere';
     case 'card':
       return '';
+    case 'top':
+      return `${filter.count === 1 ? ' che è la più alta della sua fazione' : ` tra le ${filter.count} più alte della sua fazione`}${topValues(filter.count, ctx)}`;
+    case 'targetTop':
+      return `${filter.count === 1 ? ' che è la più alta della fazione bersaglio' : ` tra le ${filter.count} più alte della fazione bersaglio`}${topValues(filter.count, ctx)}`;
   }
 }
 
-function tricksText(rule: ScoringRule): string {
+/** Le prese di un intervallo. Nei Contratti per mani lunghe quelli che arrivano alla 13 sono "le ultime". */
+function tricksText(rule: ScoringRule, ctx: RuleContext): string {
   if (!rule.tricks) return '';
   const { from, to } = rule.tricks;
+  if (ctx.long && to >= CARDS_PER_FACTION) {
+    if (from <= 1) return '';
+    const count = to - from + 1;
+    return count === 1 ? ' (solo l’ultima presa)' : ` (solo le ultime ${count} prese)`;
+  }
   return from === to ? ` (solo presa ${from})` : ` (solo prese ${from}–${to})`;
 }
 
@@ -72,25 +120,47 @@ function tricksText(rule: ScoringRule): string {
  * Una regola di punteggio in parole, es. "−1 per ogni carta catturata di valore 12 o più".
  * `catalog` serve all'Editor per descrivere regole che usano fazioni o carte non ancora pubblicate.
  */
-export function describeRule(rule: ScoringRule, catalog: Catalog = getCatalog()): string {
+export function describeRule(rule: ScoringRule, catalog: Catalog = getCatalog(), ctx: RuleContext = {}): string {
   if (rule.per === 'trick') {
+    if (rule.tricks && ctx.long && rule.tricks.from === rule.tricks.to && rule.tricks.to >= CARDS_PER_FACTION) {
+      return `${points(rule.points)} a chi vince l’ultima presa`;
+    }
     if (rule.tricks && rule.tricks.from === rule.tricks.to) return `${points(rule.points)} a chi vince la presa ${rule.tricks.from}`;
-    return `${points(rule.points)} per ogni presa vinta${tricksText(rule)}`;
+    return `${points(rule.points)} per ogni presa vinta${tricksText(rule, ctx)}`;
   }
   const filter = rule.filter ?? { kind: 'any' };
-  if (filter.kind === 'card') return `${points(rule.points)} a chi cattura ${cardName(catalog, filter.cardId)}${tricksText(rule)}`;
-  if (filter.kind === 'targetValue') return `${points(rule.points)} a chi cattura il ${filter.value} della fazione bersaglio${tricksText(rule)}`;
-  return `${points(rule.points)} per ogni carta catturata${filterText(filter, catalog)}${tricksText(rule)}`;
+  if (filter.kind === 'card') return `${points(rule.points)} a chi cattura ${cardName(catalog, filter.cardId)}${tricksText(rule, ctx)}`;
+  if (filter.kind === 'targetValue') return `${points(rule.points)} a chi cattura il ${filter.value} della fazione bersaglio${tricksText(rule, ctx)}`;
+  if (filter.kind === 'targetTop' && filter.count === 1) {
+    return `${points(rule.points)} a chi cattura la più alta della fazione bersaglio${topValues(1, ctx)}${tricksText(rule, ctx)}`;
+  }
+  return `${points(rule.points)} per ogni carta catturata${filterText(filter, catalog, ctx)}${tricksText(rule, ctx)}`;
 }
 
-export function describeScoring(contract: ContractDef, catalog: Catalog = getCatalog()): string {
+/** I punti del Cappotto: con le mani lunghe crescono con le carte per fazione. */
+function slamText(contract: ContractDef, cardsPerFaction: number | undefined): string {
+  if (!contract.slam) return '';
+  if (cardsPerFaction !== undefined) return `${points(slamPoints(contract, cardsPerFaction)!)} a chi prende tutto`;
+  if (!contract.long) return `${points(contract.slam)} a chi prende tutto`;
+  const lengths = HAND_LENGTHS.filter((n) => n > CARDS_PER_FACTION);
+  const low = slamPoints(contract, lengths[0]!)!;
+  const high = slamPoints(contract, lengths.at(-1)!)!;
+  return `da ${points(low)} a ${points(high)} a chi prende tutto, secondo le carte per fazione`;
+}
+
+/**
+ * Il punteggio del Contratto in parole. Con `cardsPerFaction` (preparazione e partita) si scrivono i valori veri
+ * della mano; senza (Editor) si descrive la regola per qualsiasi lunghezza.
+ */
+export function describeScoring(contract: ContractDef, catalog: Catalog = getCatalog(), cardsPerFaction?: number): string {
   if (contract.mode === 'domino') return '−1 per ogni carta rimasta in mano · quei punti vanno a chi finisce per primo';
+  const ctx: RuleContext = { long: !!contract.long, cardsPerFaction };
   const extras = [
     contract.trump ? 'briscola scelta dal primo di mano' : '',
-    contract.slam ? `${points(contract.slam)} a chi prende tutto` : '',
+    slamText(contract, cardsPerFaction),
     contract.limits ? 'limiti del King' : '',
   ];
-  return [...contract.rules.map((r) => describeRule(r, catalog)), ...extras].filter(Boolean).join(' · ');
+  return [...contract.rules.map((r) => describeRule(r, catalog, ctx)), ...extras].filter(Boolean).join(' · ');
 }
 
 export function describeNote(note: TrickNote, names: readonly string[]): string {

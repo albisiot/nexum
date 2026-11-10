@@ -1,16 +1,16 @@
-// Contratto Domino (dal King): niente prese. Si parte dalla carta centrale di ogni fazione, il 7 nei mazzi da 1 a 13,
-// e si attaccano le carte vicine della stessa fazione. Chi non può giocare passa. Chi finisce per primo chiude la mano:
-// ogni carta rimasta in mano costa −1 a chi la tiene e quei punti vanno a chi ha finito.
-import { factionCards, getCard } from './catalog';
+// Contratto Domino (dal King): niente prese. Si parte dalla carta centrale di ogni fazione, il 7 nei mazzi da 1 a 13
+// e il 13 nelle mani lunghe da 25, e si attaccano le carte vicine della stessa fazione. Chi non può giocare passa.
+// Chi finisce per primo chiude la mano: ogni carta rimasta in mano costa −1 a chi la tiene e quei punti vanno a chi ha finito.
+import { factionDeck, getCard } from './catalog';
 import { CARDS_PER_FACTION } from './constants';
 import type { CardId, DominoState, FactionId, GameState } from './types';
 
-/** La posizione della carta di partenza nella fazione, contando dalla più bassa. */
-const START_RANK = Math.floor(CARDS_PER_FACTION / 2);
+/** La posizione della carta di partenza nella fazione, contando dalla più bassa: la centrale, (N + 1) / 2 con N carte. */
+const startRank = (cardsPerFaction: number) => Math.floor(cardsPerFaction / 2);
 
-/** Le carte di una fazione dalla più bassa alla più alta. */
-export function dominoCards(faction: FactionId): CardId[] {
-  return factionCards(faction)
+/** Le carte di una fazione dalla più bassa alla più alta, in una mano da `cardsPerFaction` carte per fazione. */
+export function dominoCards(faction: FactionId, cardsPerFaction: number = CARDS_PER_FACTION): CardId[] {
+  return factionDeck(faction, cardsPerFaction)
     .sort((a, b) => a.value - b.value)
     .map((c) => c.id);
 }
@@ -18,19 +18,20 @@ export function dominoCards(faction: FactionId): CardId[] {
 /** Le carte di una fazione già attaccate in tavola, dalla più bassa alla più alta. */
 export function dominoPlaced(domino: DominoState, faction: FactionId): CardId[] {
   const line = domino.table[faction];
-  return line ? dominoCards(faction).slice(line.low, line.high + 1) : [];
+  return line ? dominoCards(faction, domino.cards).slice(line.low, line.high + 1) : [];
 }
 
-/** Il valore della carta con cui si apre ogni fazione: 7 nei mazzi da 1 a 13. */
-export function dominoStartValue(faction: FactionId): number {
-  return getCard(dominoCards(faction)[START_RANK]!).value;
+/** Il valore della carta con cui si apre ogni fazione: 7 nei mazzi da 1 a 13, 13 nelle mani da 25. */
+export function dominoStartValue(faction: FactionId, cardsPerFaction: number = CARDS_PER_FACTION): number {
+  return getCard(dominoCards(faction, cardsPerFaction)[startRank(cardsPerFaction)]!).value;
 }
 
 export function canPlaceDomino(domino: DominoState, cardId: CardId): boolean {
   const { faction } = getCard(cardId);
-  const rank = dominoCards(faction).indexOf(cardId);
+  const size = domino.cards ?? CARDS_PER_FACTION;
+  const rank = dominoCards(faction, size).indexOf(cardId);
   const line = domino.table[faction];
-  return line ? rank === line.low - 1 || rank === line.high + 1 : rank === START_RANK;
+  return line ? rank === line.low - 1 || rank === line.high + 1 : rank === startRank(size);
 }
 
 /** Il prossimo giocatore che può attaccare una carta: chi non può, passa. */
@@ -50,6 +51,7 @@ function nextPlayable(s: GameState, domino: DominoState, from: number): void {
 
 export function startDomino(s: GameState): void {
   s.domino = { table: {}, passed: [], winner: null };
+  if (s.config.cardsPerFaction && s.config.cardsPerFaction !== CARDS_PER_FACTION) s.domino.cards = s.config.cardsPerFaction;
   nextPlayable(s, s.domino, s.leader);
 }
 
@@ -57,7 +59,7 @@ export function playDomino(s: GameState, player: number, cardId: CardId): void {
   const domino = s.domino!;
   const p = s.players[player]!;
   const { faction } = getCard(cardId);
-  const rank = dominoCards(faction).indexOf(cardId);
+  const rank = dominoCards(faction, domino.cards).indexOf(cardId);
   const line = domino.table[faction];
   domino.table[faction] = line ? { low: Math.min(line.low, rank), high: Math.max(line.high, rank) } : { low: rank, high: rank };
   p.hand = p.hand.filter((id) => id !== cardId);

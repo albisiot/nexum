@@ -92,7 +92,7 @@ describe('Contratti casuali', () => {
         'chaos', 'domino', 'last', 'last2', 'last3', 'less', 'more', 'moreDouble', 'trump',
       ].sort(),
     );
-    expect(contracts()).toHaveLength(19);
+    expect(contracts()).toHaveLength(19 + 13);
   });
 
   it('con carte adatte nei mazzi quei Contratti tornano', () => {

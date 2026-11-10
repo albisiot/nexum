@@ -16,6 +16,13 @@ export function RulesContent({ onTutorial }: ContentProps) {
           Le fazioni sono i <strong>semi</strong> di Nexum: ognuna ha 13 carte con valori da 1 a 13. Si mettono nel
           mazzo tante fazioni quanti sono i giocatori (con 4 giocatori, 52 carte), si mescolano e ognuno riceve 13 carte.
         </p>
+        <p>
+          <strong>Mani lunghe</strong>: da 5 giocatori in su si può scegliere di giocare con 15, 17, 19, 21, 23 o 25 carte
+          per fazione. Ogni fazione riceve anche le carte dal 14 in su, e ognuno ha in mano tante carte quante sono quelle
+          di una fazione: con più carte quasi tutti possono rispondere alla fazione d’apertura. Nelle mani lunghe si
+          giocano i <strong>Contratti per mani lunghe</strong>, che parlano delle carte più alte e delle ultime prese
+          invece di numeri precisi.
+        </p>
       </details>
       <details>
         <summary>Come si gioca una presa</summary>
@@ -28,7 +35,7 @@ export function RulesContent({ onTutorial }: ContentProps) {
       <details>
         <summary>Contratti e serie</summary>
         <p>
-          Una <strong>mano</strong> dura 13 prese con lo stesso <strong>Contratto</strong>, che stabilisce cosa conviene
+          Una <strong>mano</strong> dura 13 prese (o di più nelle mani lunghe) con lo stesso <strong>Contratto</strong>, che stabilisce cosa conviene
           fare: prendere più prese, meno prese, evitare una fazione, le ultime prese e così via. Si può giocare un
           solo Contratto oppure una <strong>serie</strong>: a ogni Contratto le carte si rimescolano e si ridistribuiscono,
           e i punti si sommano. Vince chi chiude con il punteggio più alto.
@@ -41,7 +48,8 @@ export function RulesContent({ onTutorial }: ContentProps) {
           carte che fanno penalità, se ne ha altre; e non si apre con la fazione bersaglio finché qualcuno non l’ha giocata.
         </p>
         <p>
-          <strong>Cappotto</strong>: chi prende tutto ciò che il Contratto penalizza riceve +13 invece delle penalità.
+          <strong>Cappotto</strong>: chi prende tutto ciò che il Contratto penalizza riceve +13 invece delle penalità. Nelle
+          mani lunghe i punti crescono con le carte: +21 con 21 carte per fazione, +25 con 25.
         </p>
       </details>
       <details>
@@ -52,7 +60,8 @@ export function RulesContent({ onTutorial }: ContentProps) {
           a turno ognuno è primo di mano: così tutti la scelgono una volta.
         </p>
         <p>
-          <strong>Domino</strong>: niente prese, si parte dai 7 e si attaccano le carte vicine della stessa fazione; chi non
+          <strong>Domino</strong>: niente prese, si parte dai 7 (nelle mani lunghe dalla carta centrale, il 13 con 25 carte)
+          e si attaccano le carte vicine della stessa fazione; chi non
           può giocare passa, e chi finisce per primo prende 1 punto per ogni carta rimasta agli altri, che li perdono.
         </p>
       </details>

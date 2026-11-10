@@ -1,8 +1,8 @@
-import { cardMatches, factionCards, getCard, getContract } from './catalog';
+import { cardMatches, factionDeck, getCard, getContract } from './catalog';
 import { dominoCards } from './domino';
 import { discardableCards, isCardPlay, leadingAmong, playChoice } from './powers';
 import type { Rng } from './rng';
-import { ruleApplies } from './scoring';
+import { ruleApplies, ruleTricks } from './scoring';
 import type { Action, CardId, PlayerView } from './types';
 
 export type BotLevel = 'easy' | 'normal' | 'hard';
@@ -40,7 +40,7 @@ function roughCard(view: PlayerView, rng: Rng): CardId {
   const trickPoints = rules.filter((r) => r.per === 'trick').reduce((t, r) => t + r.points, 0);
   const cardRules = rules.filter((r) => r.per === 'card');
   // I ragionamenti sono su una scala da 0 a 100, qualunque sia il valore massimo delle carte in gioco.
-  const top = Math.max(...view.factions.flatMap((f) => factionCards(f).map((c) => c.value)));
+  const top = Math.max(...view.factions.flatMap((f) => factionDeck(f, view.cardsPerFaction).map((c) => c.value)));
 
   const scored = view.legal.map((id) => {
     const card = getCard(id);
@@ -54,7 +54,7 @@ function roughCard(view: PlayerView, rng: Rng): CardId {
 
     // Non buttare sul tavolo carte che costano punti a chi le cattura.
     const cardPoints = cardRules
-      .filter((r) => cardMatches(r.filter ?? { kind: 'any' }, card, view.targetFaction))
+      .filter((r) => cardMatches(r.filter ?? { kind: 'any' }, card, view.targetFaction, view.cardsPerFaction))
       .reduce((t, r) => t + r.points, 0);
     if (cardPoints < 0) s += 30 * cardPoints;
     else if (cardRules.length) s += 10;
@@ -79,7 +79,7 @@ function reasonedCard(view: PlayerView, rng: Rng, hard: boolean): CardId {
   const table = view.plays.filter(isCardPlay);
   const past = hard ? [...view.history.flatMap((t) => t.plays.filter(isCardPlay).map((pl) => pl.cardId)), ...view.discards] : [];
   const gone = new Set<CardId>([...past, ...table.map((pl) => pl.cardId), ...view.hand]);
-  const deck = view.factions.flatMap((f) => factionCards(f));
+  const deck = view.factions.flatMap((f) => factionDeck(f, view.cardsPerFaction));
   const unseen = deck.filter((c) => !gone.has(c.id));
   const later = view.players.length - view.plays.length - 1;
   const seatsAfter = Array.from({ length: later }, (_, i) => view.players[(view.turn + 1 + i) % view.players.length]!);
@@ -89,10 +89,14 @@ function reasonedCard(view: PlayerView, rng: Rng, hard: boolean): CardId {
   const rules = activeRules(view);
   const cardRules = rules.filter((r) => r.per === 'card');
   // Le regole delle prese che devono ancora venire: conviene prepararsi (es. tenere le carte basse per le ultime prese).
-  const future = getContract(view.contract).rules.filter((r) => r.per === 'trick' && r.tricks && r.tricks.from > view.trickNo);
+  const future = getContract(view.contract).rules.filter(
+    (r) => r.per === 'trick' && (ruleTricks(r, view.tricksPerHand)?.from ?? 0) > view.trickNo,
+  );
   const futureTrick = future.reduce((t, r) => t + r.points, 0);
   const pointsOf = (id: CardId) =>
-    cardRules.filter((r) => cardMatches(r.filter ?? { kind: 'any' }, getCard(id), view.targetFaction)).reduce((t, r) => t + r.points, 0);
+    cardRules
+      .filter((r) => cardMatches(r.filter ?? { kind: 'any' }, getCard(id), view.targetFaction, view.cardsPerFaction))
+      .reduce((t, r) => t + r.points, 0);
   // In media, quanto vale ogni carta che i giocatori dopo di me aggiungeranno alla presa.
   const unseenPoints = unseen.length ? unseen.reduce((t, c) => t + pointsOf(c.id), 0) / unseen.length : 0;
 
@@ -138,7 +142,7 @@ function chooseDomino(view: PlayerView, rng: Rng, level: BotLevel): CardId {
   if (level === 'easy') return view.legal[Math.floor(rng() * view.legal.length)]!;
   const scored = view.legal.map((id) => {
     const { faction } = getCard(id);
-    const line = dominoCards(faction);
+    const line = dominoCards(faction, view.cardsPerFaction);
     const rank = line.indexOf(id);
     const open = view.domino!.table[faction];
     const mine = view.hand.filter((other) => getCard(other).faction === faction).map((other) => line.indexOf(other));
@@ -161,7 +165,7 @@ function winGain(view: PlayerView, extra: CardId[]): number {
   const cards = [...view.plays.filter(isCardPlay).map((pl) => pl.cardId), ...extra];
   return activeRules(view).reduce((t, r) => {
     if (r.per === 'trick') return t + r.points;
-    const matching = cards.filter((id) => cardMatches(r.filter ?? { kind: 'any' }, getCard(id), view.targetFaction));
+    const matching = cards.filter((id) => cardMatches(r.filter ?? { kind: 'any' }, getCard(id), view.targetFaction, view.cardsPerFaction));
     return t + r.points * matching.length;
   }, 0);
 }

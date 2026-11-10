@@ -13,6 +13,37 @@ export interface PatchNote {
 
 export const PATCH_NOTES: PatchNote[] = [
   {
+    version: '0.44.0',
+    date: '2026-11-10',
+    title: 'Mani lunghe',
+    changes: [
+      {
+        type: 'new',
+        text: 'Da 5 giocatori in su si sceglie quante carte per fazione: 13 come prima, oppure 15, 17, 19, 21, 23 o 25. Si hanno in mano tutte quelle carte e la mano dura altrettante prese. Con più carte quasi tutti possono rispondere alla fazione d’apertura. La scelta sta nel passaggio Giocatori della preparazione, con il valore consigliato e quante mani partono senza una fazione.',
+      },
+      {
+        type: 'new',
+        text: 'Ogni fazione riceve anche le carte dal 14 al 25, senza poteri, con i nomi delle altre (ad esempio “Axiomata 14”).',
+      },
+      {
+        type: 'new',
+        text: 'Nuova sezione “Contratti per mani lunghe”: 13 Contratti pensati per qualsiasi numero di carte. Parlano delle carte più alte di ogni fazione e delle ultime prese invece di numeri precisi. Con le mani lunghe si giocano solo questi.',
+      },
+      {
+        type: 'change',
+        text: 'Nelle mani lunghe il Cappotto cresce con le carte (+21 con 21 carte, +25 con 25) e il Domino parte dalla carta centrale di ogni fazione (il 13 con 25 carte).',
+      },
+      {
+        type: 'change',
+        text: 'Con tante carte in mano, sul telefono la mano si dispone su due file, così ogni carta si legge e si tocca senza scorrere.',
+      },
+      {
+        type: 'change',
+        text: 'Le carte per fazione si ricordano per “Rigioca l’ultima” e valgono anche in “Riprendi la partita” e nelle stanze online.',
+      },
+    ],
+  },
+  {
     version: '0.43.0',
     date: '2026-11-09',
     title: 'Una Briscola a testa',

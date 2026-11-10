@@ -11,10 +11,14 @@ interface Props {
   turn: number;
 }
 
-/** Il tavolo del Contratto Domino: una fila per fazione, con le carte già attaccate. */
+/**
+ * Il tavolo del Contratto Domino: una fila per fazione, con le carte già attaccate. Nelle mani lunghe le file hanno
+ * fino a 25 caselle, più strette, e se lo spazio non basta si abbassano invece di uscire dal tavolo.
+ */
 export function DominoBoard({ domino, factions, players, names, turn }: Props) {
+  const long = (domino.cards ?? 13) > 13;
   return (
-    <div className="domino">
+    <div className={`domino${long ? ' long' : ''}`}>
       <div className="domino-seats">
         {players.map((p, i) => (
           <span key={i} className={`domino-seat${i === turn ? ' turn' : ''}`} aria-current={i === turn}>
@@ -26,10 +30,17 @@ export function DominoBoard({ domino, factions, players, names, turn }: Props) {
         {factions.map((id) => {
           const faction = getFaction(id);
           const line = domino.table[id];
+          const cards = dominoCards(id, domino.cards);
           return (
-            <div key={id} className="domino-row" role="group" aria-label={faction.name} style={{ '--faction': faction.color } as CSSProperties}>
+            <div
+              key={id}
+              className="domino-row"
+              role="group"
+              aria-label={faction.name}
+              style={{ '--faction': faction.color, '--slots': cards.length } as CSSProperties}
+            >
               <span className="dot" />
-              {dominoCards(id).map((cardId, rank) => {
+              {cards.map((cardId, rank) => {
                 const placed = !!line && rank >= line.low && rank <= line.high;
                 return (
                   <span key={cardId} className={`domino-slot${placed ? ` placed${cardInk(faction.color) === 'dark' ? ' ink-dark' : ''}` : ''}`}>

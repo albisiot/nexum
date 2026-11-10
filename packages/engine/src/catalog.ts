@@ -3,10 +3,12 @@
 import {
   CARDS_PER_FACTION,
   MAX_CARD_VALUE,
+  MAX_CARDS_PER_FACTION,
   MAX_PLAYERS,
   MIN_CARD_VALUE,
   TRICKS_PER_HAND,
 } from './constants';
+import { LONG_HANDS_UPDATE } from './data/catalogUpdates';
 import { DEFAULT_CATALOG } from './data/defaultCatalog';
 import { POWERS } from './powerList';
 import type {
@@ -24,13 +26,49 @@ let active: Catalog;
 let factionIndex = new Map<FactionId, FactionDef>();
 let cardIndex = new Map<string, CardDef>();
 let contractIndex = new Map<ContractId, ContractDef>();
+/** Per fazione: le carte del catalogo e dopo le carte base aggiunte per le mani lunghe, fino a MAX_CARDS_PER_FACTION. */
+let longDecks = new Map<FactionId, CardDef[]>();
 
 function activate(catalog: Catalog): void {
-  active = JSON.parse(JSON.stringify(catalog)) as Catalog;
+  active = withLongContracts(JSON.parse(JSON.stringify(catalog)) as Catalog);
   factionIndex = new Map(active.factions.map((f) => [f.id, f]));
-  // Anche le carte dei pacchetti si possono cercare per codice, ma non finiscono nei mazzi (factionCards).
-  cardIndex = new Map([...active.cards, ...(active.packCards ?? [])].map((c) => [c.id, c]));
+  longDecks = new Map(active.factions.map((f) => [f.id, longDeck(f)]));
+  // Anche le carte dei pacchetti e quelle delle mani lunghe si possono cercare per codice,
+  // ma nei mazzi finiscono solo le carte delle fazioni (factionDeck).
+  cardIndex = new Map(
+    [...active.cards, ...(active.packCards ?? []), ...[...longDecks.values()].flat()].map((c) => [c.id, c]),
+  );
   contractIndex = new Map(active.contracts.map((c) => [c.id, c]));
+}
+
+/**
+ * I Contratti per le mani lunghe arrivano anche con un catalogo pubblicato prima che esistessero, senza ripubblicarlo.
+ * Quando l'autore applica l'aggiornamento nell'Editor (appliedUpdates), vale quello che ha pubblicato lui.
+ */
+function withLongContracts(catalog: Catalog): Catalog {
+  if (catalog.appliedUpdates?.includes(LONG_HANDS_UPDATE.id)) return catalog;
+  const missing = (LONG_HANDS_UPDATE.contracts ?? []).filter((k) => !catalog.contracts.some((c) => c.id === k.id));
+  if (!missing.length) return catalog;
+  return { ...catalog, contracts: [...catalog.contracts, ...(JSON.parse(JSON.stringify(missing)) as ContractDef[])] };
+}
+
+/**
+ * Le carte della fazione per le mani lunghe: quelle del catalogo, poi carte base senza poteri con i valori che
+ * mancano, dal più basso. Con i mazzi da 1 a 13 sono le carte dal 14 al 25, chiamate come le altre ("Axiomata 14").
+ * Non stanno nel catalogo: così funzionano anche con un catalogo pubblicato prima delle mani lunghe.
+ */
+function longDeck(faction: FactionDef): CardDef[] {
+  const own = active.cards.filter((c) => c.faction === faction.id);
+  const values = new Set(own.map((c) => c.value));
+  const ids = new Set([...active.cards, ...(active.packCards ?? [])].map((c) => c.id));
+  const extra: CardDef[] = [];
+  for (let value = MIN_CARD_VALUE; own.length + extra.length < MAX_CARDS_PER_FACTION && value <= MAX_CARD_VALUE; value++) {
+    if (values.has(value)) continue;
+    let id = `${faction.id}-n${value}`;
+    while (ids.has(id)) id += '+';
+    extra.push({ id, faction: faction.id, name: `${faction.name} ${value}`, value, effect: '' });
+  }
+  return [...own, ...extra];
 }
 
 activate(DEFAULT_CATALOG);
@@ -60,8 +98,33 @@ export function getFaction(id: FactionId): FactionDef {
   return faction;
 }
 
+/** Le 13 carte della fazione nel catalogo. */
 export function factionCards(faction: FactionId): CardDef[] {
   return active.cards.filter((c) => c.faction === faction);
+}
+
+/** Le carte della fazione in una mano da `cardsPerFaction` carte: le 13 del catalogo e, nelle mani lunghe, quelle dal 14 in su. */
+export function factionDeck(faction: FactionId, cardsPerFaction: number = CARDS_PER_FACTION): CardDef[] {
+  if (cardsPerFaction <= CARDS_PER_FACTION) return factionCards(faction);
+  const deck = longDecks.get(faction);
+  if (!deck) throw new Error(`Fazione sconosciuta: ${faction}`);
+  return deck.slice(0, cardsPerFaction);
+}
+
+/** Quante carte della fazione, nella mano da `cardsPerFaction` carte, sono più alte di questa (0 = la più alta). */
+function rankFromTop(card: CardDef, cardsPerFaction: number): number {
+  return factionDeck(card.faction, cardsPerFaction).filter((c) => c.value > card.value).length;
+}
+
+/** Il Contratto è della sezione giusta: i normali con 13 carte per fazione, quelli delle mani lunghe con di più. */
+export function contractFitsHand(contract: ContractDef, cardsPerFaction: number = CARDS_PER_FACTION): boolean {
+  return !!contract.long === cardsPerFaction > CARDS_PER_FACTION;
+}
+
+/** I punti del Cappotto crescono con le carte: +13 con 13 carte diventa +25 con 25. */
+export function slamPoints(contract: ContractDef, cardsPerFaction: number = CARDS_PER_FACTION): number | undefined {
+  if (contract.slam === undefined) return undefined;
+  return Math.round((contract.slam * cardsPerFaction) / CARDS_PER_FACTION);
 }
 
 /** Le carte fuori dai mazzi, che si troveranno nei pacchetti. */
@@ -91,7 +154,12 @@ export function hasPowerText(card: CardDef): boolean {
 
 /** Il Contratto conta le carte della fazione bersaglio, che va scelta a inizio mano. */
 export function contractNeedsTarget(contract: ContractDef): boolean {
-  return contract.rules.some((r) => (r.filter?.kind === 'faction' && r.filter.faction === 'target') || r.filter?.kind === 'targetValue');
+  return contract.rules.some(
+    (r) =>
+      (r.filter?.kind === 'faction' && r.filter.faction === 'target') ||
+      r.filter?.kind === 'targetValue' ||
+      r.filter?.kind === 'targetTop',
+  );
 }
 
 /** Fazione senza la quale la regola non assegna mai punti (null se funziona con qualsiasi mazzo). */
@@ -115,13 +183,21 @@ export function contractPlayableWith(contract: ContractDef, factions: readonly F
   return contract.rules.some((r) => {
     if (r.per === 'trick') return true;
     const filter = r.filter ?? { kind: 'any' };
-    if (filter.kind === 'faction' && filter.faction === 'target') return factions.length > 0;
+    if ((filter.kind === 'faction' && filter.faction === 'target') || filter.kind === 'top' || filter.kind === 'targetTop') {
+      return factions.length > 0;
+    }
     if (filter.kind === 'targetValue') return active.cards.some((c) => factions.includes(c.faction) && c.value === filter.value);
     return active.cards.some((c) => factions.includes(c.faction) && cardMatches(filter, c));
   });
 }
 
-export function cardMatches(filter: CardFilter, card: CardDef, targetFaction?: FactionId): boolean {
+/** La carta rispetta il filtro? `cardsPerFaction` serve ai filtri sulle carte più alte, che dipendono dalla lunghezza della mano. */
+export function cardMatches(
+  filter: CardFilter,
+  card: CardDef,
+  targetFaction?: FactionId,
+  cardsPerFaction: number = CARDS_PER_FACTION,
+): boolean {
   switch (filter.kind) {
     case 'any':
       return true;
@@ -139,6 +215,10 @@ export function cardMatches(filter: CardFilter, card: CardDef, targetFaction?: F
       return hasPowerText(card);
     case 'card':
       return card.id === filter.cardId;
+    case 'top':
+      return rankFromTop(card, cardsPerFaction) < filter.count;
+    case 'targetTop':
+      return card.faction === targetFaction && rankFromTop(card, cardsPerFaction) < filter.count;
   }
 }
 
@@ -211,6 +291,8 @@ export function validateCatalog(catalog: Catalog): string[] {
           errors.push(`Nel Contratto “${label}” una regola usa una carta che non esiste.`);
         } else if ((f.kind === 'minValue' || f.kind === 'maxValue' || f.kind === 'exactValue' || f.kind === 'targetValue') && !Number.isInteger(f.value)) {
           errors.push(`Nel Contratto “${label}” una regola ha un valore non valido.`);
+        } else if ((f.kind === 'top' || f.kind === 'targetTop') && (!Number.isInteger(f.count) || f.count < 1 || f.count > CARDS_PER_FACTION)) {
+          errors.push(`Nel Contratto “${label}” le carte più alte da contare devono essere da 1 a ${CARDS_PER_FACTION}.`);
         }
       }
       if (r.tricks) {

@@ -1,7 +1,12 @@
 import { useRef, useState } from 'react';
 import {
+  CARDS_PER_FACTION,
+  HAND_LENGTHS,
+  LONG_HAND_MIN_PLAYERS,
+  MAX_CARDS_PER_FACTION,
   MAX_PLAYERS,
   MIN_PLAYERS,
+  contractFitsHand,
   contractNeedsTarget,
   contractPlayableWith,
   contractRequiredFactions,
@@ -19,6 +24,7 @@ import {
 import type { ContractId, FactionId, HandPlan } from '@nexum/engine';
 import type { CSSProperties } from 'react';
 import type { GameMode, MatchSetup, Seat } from '../game/GameClient';
+import { missingFactionChance } from '../game/handOdds';
 import { describeScoring } from '../game/text';
 import { Select } from './Select';
 import { SettingRow } from './SettingsScreen';
@@ -46,21 +52,42 @@ export interface SetupValues {
   factions: FactionId[];
   /** Le fazioni le ha scelte chi gioca: si tengono per la prossima partita. Se no se ne pescano altre a caso. */
   factionsPicked: boolean;
+  /**
+   * Carte per fazione scelte per le mani lunghe (13 = mano normale). Contano solo da 5 giocatori in su:
+   * con meno si gioca con 13, ma la scelta resta per quando si torna a 5 o più (vedi handSize).
+   */
+  cardsPerFaction: number;
 }
 
 export const CONTRACT_FORMATS: readonly ContractFormat[] = ['randomSeries', 'chosenSeries', 'randomSingle', 'chosenSingle'];
 
-const FORMATS: { id: ContractFormat; icon: IconName; title: string; desc: string }[] = [
+const FORMATS: { id: ContractFormat; icon: IconName; title: string; desc(size: number): string }[] = [
   {
     id: 'randomSeries',
     icon: 'serie-casuale',
     title: 'Serie casuale',
-    desc: 'Più Contratti estratti a caso, uno dopo l’altro. Vince chi ha più punti in totale.',
+    desc: () => 'Più Contratti estratti a caso, uno dopo l’altro. Vince chi ha più punti in totale.',
   },
-  { id: 'chosenSeries', icon: 'serie-scelta', title: 'Serie a scelta', desc: 'Scegli tu quali Contratti giocare e in che ordine.' },
-  { id: 'randomSingle', icon: 'singolo-casuale', title: 'Un Contratto casuale', desc: 'Una sola mano di 13 prese con un Contratto a sorpresa.' },
-  { id: 'chosenSingle', icon: 'singolo-scelta', title: 'Un Contratto a scelta', desc: 'Una sola mano di 13 prese con il Contratto che preferisci.' },
+  { id: 'chosenSeries', icon: 'serie-scelta', title: 'Serie a scelta', desc: () => 'Scegli tu quali Contratti giocare e in che ordine.' },
+  {
+    id: 'randomSingle',
+    icon: 'singolo-casuale',
+    title: 'Un Contratto casuale',
+    desc: (size) => `Una sola mano di ${size} prese con un Contratto a sorpresa.`,
+  },
+  {
+    id: 'chosenSingle',
+    icon: 'singolo-scelta',
+    title: 'Un Contratto a scelta',
+    desc: (size) => `Una sola mano di ${size} prese con il Contratto che preferisci.`,
+  },
 ];
+
+/**
+ * Le carte per fazione consigliate: in mano la stessa media di carte per fazione di 4 giocatori × 13 (3,25),
+ * arrotondata ai valori che si possono scegliere (docs/simulazione-fazioni.md).
+ */
+export const RECOMMENDED_CARDS: Readonly<Record<number, number>> = { 5: 17, 6: 21, 7: 23, 8: 25 };
 
 export const SERIES_LENGTHS = [
   { value: 3, label: '3 Contratti' },
@@ -77,21 +104,47 @@ export const randomFactions = (n: number, keep: FactionId[] = []): FactionId[] =
   return all.filter((f) => kept.includes(f) || extra.includes(f));
 };
 
-/** Toglie dalle scelte fazioni e Contratti che non esistono più nel catalogo (dopo una pubblicazione). */
-/** I Contratti che con i mazzi attuali possono assegnare punti: gli altri restano nel catalogo ma non si propongono. */
-export function offeredContracts() {
+/**
+ * I Contratti che con i mazzi attuali possono assegnare punti, della sezione giusta per le carte per fazione:
+ * i normali con 13, quelli per mani lunghe con di più. Gli altri restano nel catalogo ma non si propongono.
+ */
+export function offeredContracts(cardsPerFaction: number = CARDS_PER_FACTION) {
+  return contracts().filter((c) => contractPlayableWith(c, factionIds()) && contractFitsHand(c, cardsPerFaction));
+}
+
+/** Tutti i Contratti che si possono proporre, di entrambe le sezioni: le scelte ricordate possono essere dell'una o dell'altra. */
+export function allOfferedContracts() {
   return contracts().filter((c) => contractPlayableWith(c, factionIds()));
 }
 
+/** Le mani lunghe si possono scegliere: da 5 giocatori, e se il catalogo ha Contratti per mani lunghe. */
+export function longHandsAvailable(playerCount: number): boolean {
+  return playerCount >= LONG_HAND_MIN_PLAYERS && offeredContracts(MAX_CARDS_PER_FACTION).length > 0;
+}
+
+/** Le carte per fazione della partita: quelle scelte da 5 giocatori in su, altrimenti 13. */
+export function handSize(v: Pick<SetupValues, 'playerCount' | 'cardsPerFaction'>): number {
+  return longHandsAvailable(v.playerCount) ? v.cardsPerFaction : CARDS_PER_FACTION;
+}
+
+/** Il Contratto scelto per la mano singola, se è della sezione giusta; se no il primo che si può proporre. */
+export function singleContractOf(v: SetupValues): ContractId {
+  const offered = offeredContracts(handSize(v));
+  return offered.some((c) => c.id === v.singleContract) ? v.singleContract : offered[0]!.id;
+}
+
+/** Toglie dalle scelte fazioni e Contratti che non esistono più nel catalogo (dopo una pubblicazione). */
 export function sanitizeSetup(v: SetupValues): SetupValues {
   const knownFactions = factionIds();
-  const knownContracts = offeredContracts().map((c) => c.id);
+  const knownContracts = allOfferedContracts().map((c) => c.id);
+  const normal = offeredContracts().map((c) => c.id);
   return {
     ...v,
     factions: v.factions.filter((f) => knownFactions.includes(f)),
     targetFaction: v.targetFaction && knownFactions.includes(v.targetFaction) ? v.targetFaction : null,
     seriesContracts: v.seriesContracts.filter((c) => knownContracts.includes(c)),
-    singleContract: knownContracts.includes(v.singleContract) ? v.singleContract : knownContracts[0]!,
+    singleContract: knownContracts.includes(v.singleContract) ? v.singleContract : normal[0]!,
+    cardsPerFaction: (HAND_LENGTHS as readonly number[]).includes(v.cardsPerFaction) ? v.cardsPerFaction : CARDS_PER_FACTION,
   };
 }
 
@@ -116,25 +169,40 @@ export function defaultSetup(mode: GameMode = 'solo'): SetupValues {
     targetFaction: null,
     factions: randomFactions(4),
     factionsPicked: false,
+    cardsPerFaction: CARDS_PER_FACTION,
   };
 }
 
-/** Contratti scelti a mano (vuoto per i formati casuali). */
-function chosenContracts(v: SetupValues): ContractId[] {
-  if (v.format === 'chosenSeries') return v.seriesContracts;
-  if (v.format === 'chosenSingle') return [v.singleContract];
+/**
+ * Contratti scelti a mano (vuoto per i formati casuali), della sezione che si gioca: la serie a scelta ricorda
+ * i Contratti di entrambe le sezioni, così passando da 13 carte alle mani lunghe e ritorno non si perde niente.
+ */
+export function chosenContracts(v: SetupValues): ContractId[] {
+  if (v.format === 'chosenSeries') {
+    const offered = offeredContracts(handSize(v)).map((c) => c.id);
+    return v.seriesContracts.filter((id) => offered.includes(id));
+  }
+  if (v.format === 'chosenSingle') return [singleContractOf(v)];
   return [];
 }
 
 /** I Contratti con la briscola che possono capitare: quelli scelti a mano, o quelli che si possono estrarre. */
 function trumpContracts(v: SetupValues) {
   const random = v.format === 'randomSeries' || v.format === 'randomSingle';
-  return (random ? offeredContracts() : chosenContracts(v).map(getContract)).filter((c) => c.trump);
+  return (random ? offeredContracts(handSize(v)) : chosenContracts(v).map(getContract)).filter((c) => c.trump);
 }
 
-/** Per il menu: "Contro la CPU · 4 giocatori · Serie casuale di 5 Contratti". */
+/** Per il menu: "Contro la CPU · 4 giocatori · Serie casuale di 5 Contratti" (con "21 carte" nelle mani lunghe). */
 export function describeSetup(v: SetupValues): string {
-  return [v.mode === 'local' ? 'Multiplayer' : 'Contro la CPU', `${v.playerCount} giocatori`, describeFormat(v)].join(' · ');
+  const size = handSize(v);
+  return [
+    v.mode === 'local' ? 'Multiplayer' : 'Contro la CPU',
+    `${v.playerCount} giocatori`,
+    size > CARDS_PER_FACTION ? `${size} carte` : '',
+    describeFormat(v),
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }
 
 export function describeFormat(v: SetupValues): string {
@@ -142,17 +210,18 @@ export function describeFormat(v: SetupValues): string {
     case 'randomSeries':
       return v.seriesLength >= 10 ? 'Serie casuale con tutti i Contratti' : `Serie casuale di ${v.seriesLength} Contratti`;
     case 'chosenSeries':
-      return `Serie a scelta di ${v.seriesContracts.length} Contratti`;
+      return `Serie a scelta di ${chosenContracts(v).length} Contratti`;
     case 'randomSingle':
       return 'Un Contratto casuale';
     case 'chosenSingle':
-      return `Un Contratto: ${getContract(v.singleContract).name}`;
+      return `Un Contratto: ${getContract(singleContractOf(v)).name}`;
   }
 }
 
 /** Completa la selezione delle fazioni, estrae i Contratti casuali e costruisce la partita. */
 export function toMatchSetup(v: SetupValues): MatchSetup {
   const n = v.playerCount;
+  const size = handSize(v);
   const seed = randomSeed();
   const rng = createRng(seed ^ 0x5bd1e995);
   const factions = v.factions.length === n ? v.factions : randomFactions(n, v.factions);
@@ -171,11 +240,14 @@ export function toMatchSetup(v: SetupValues): MatchSetup {
   };
   const hands =
     v.format === 'randomSeries'
-      ? randomHands(v.seriesLength, factions, rng)
+      ? randomHands(v.seriesLength, factions, rng, size)
       : v.format === 'randomSingle'
-        ? randomHands(1, factions, rng)
+        ? randomHands(1, factions, rng, size)
         : chosenContracts(v).map(plan);
-  return { mode: v.mode, seats, factions, hands: v.trumpEach ? trumpForEach(hands, n, rng) : hands, seed };
+  const setup: MatchSetup = { mode: v.mode, seats, factions, hands: v.trumpEach ? trumpForEach(hands, n, rng) : hands, seed };
+  // Con 13 carte la partita resta com'era: il campo c'è solo nelle mani lunghe.
+  if (size !== CARDS_PER_FACTION) setup.cardsPerFaction = size;
+  return setup;
 }
 
 interface Props {
@@ -196,7 +268,7 @@ export function SetupScreen({ values: v, onChange, onStart, onBack, members }: P
     body.current?.scrollTo(0, 0);
   };
   // Una serie a scelta vuole almeno 2 Contratti: finché mancano non si va avanti e non si inizia.
-  const ready = v.format !== 'chosenSeries' || v.seriesContracts.length >= 2;
+  const ready = v.format !== 'chosenSeries' || chosenContracts(v).length >= 2;
   const begin = () => onStart(toMatchSetup(v));
 
   return (
@@ -283,6 +355,8 @@ function PlayersStep({ v, set, members }: StepProps & { members?: string[] }) {
         ))}
       </div>
 
+      {longHandsAvailable(v.playerCount) && <HandLengthPicker v={v} set={set} />}
+
       {v.mode === 'local' && (
         <>
           <h3 className="step">Nomi dei giocatori</h3>
@@ -323,6 +397,43 @@ function PlayersStep({ v, set, members }: StepProps & { members?: string[] }) {
   );
 }
 
+const percent = (x: number) => `${Math.round(x * 100)}%`;
+
+/** Da 5 giocatori: le carte per fazione, e quindi carte in mano e prese. Con più carte quasi tutti rispondono alla fazione. */
+function HandLengthPicker({ v, set }: StepProps) {
+  const n = v.playerCount;
+  const size = handSize(v);
+  const recommended = RECOMMENDED_CARDS[n];
+  const chance = missingFactionChance(n, size);
+  const compare = recommended !== undefined && recommended !== size ? recommended : size !== CARDS_PER_FACTION ? CARDS_PER_FACTION : null;
+  return (
+    <>
+      <h3 className="step">Carte per fazione</h3>
+      <div className="count-picker hand-length-picker" role="radiogroup" aria-label="Carte per fazione">
+        {HAND_LENGTHS.map((k) => (
+          <button
+            key={k}
+            type="button"
+            role="radio"
+            aria-checked={size === k}
+            className={`count-option${size === k ? ' selected' : ''}`}
+            onClick={() => set({ cardsPerFaction: k })}
+          >
+            <b>{k}</b>
+            <span>{k === recommended ? 'consigliato' : k === CARDS_PER_FACTION ? 'normale' : 'carte'}</span>
+          </button>
+        ))}
+      </div>
+      <p className="hint">
+        {size} carte a testa, {size} prese a mano
+        {size > CARDS_PER_FACTION ? ', con i Contratti per mani lunghe' : ''}. Mani senza almeno una fazione:{' '}
+        {percent(chance)}
+        {compare !== null && ` (con ${compare} carte: ${percent(missingFactionChance(n, compare))})`}.
+      </p>
+    </>
+  );
+}
+
 function ContractsStep({ v, set }: StepProps) {
   const toggleSeries = (id: ContractId) =>
     set({
@@ -334,6 +445,7 @@ function ContractsStep({ v, set }: StepProps) {
   // Chi sceglie la briscola ha un vantaggio: giocandola una volta a testa, ognuno la sceglie una volta.
   const trumps = trumpContracts(v);
   const n = v.playerCount;
+  const size = handSize(v);
   const random = v.format === 'randomSeries' || v.format === 'randomSingle';
   const total = chosenContracts(v).length + (n - 1) * trumps.length;
   const trumpHint = v.trumpEach
@@ -343,7 +455,10 @@ function ContractsStep({ v, set }: StepProps) {
   return (
     <>
       <h2>Come volete giocare i Contratti?</h2>
-      <p className="hint">Ogni Contratto dura una mano da 13 prese. In una serie i punti si sommano.</p>
+      <p className="hint">
+        Ogni Contratto dura una mano da {size} prese. In una serie i punti si sommano.
+        {size > CARDS_PER_FACTION && ` Con ${size} carte per fazione si giocano i Contratti per mani lunghe.`}
+      </p>
       <div className="format-picker" role="radiogroup" aria-label="Formato">
         {FORMATS.map((f) => (
           <button
@@ -358,7 +473,7 @@ function ContractsStep({ v, set }: StepProps) {
               <Icon name={f.icon} size={26} />
             </span>
             <span className="contract-title">{f.title}</span>
-            <span className="contract-desc">{f.desc}</span>
+            <span className="contract-desc">{f.desc(size)}</span>
           </button>
         ))}
       </div>
@@ -392,16 +507,16 @@ function ContractsStep({ v, set }: StepProps) {
         <>
           <h3 className="step">Scegli i Contratti</h3>
           <p className="hint">
-            Tocca i Contratti nell’ordine in cui volete giocarli (almeno 2). Selezionati: {v.seriesContracts.length}.
+            Tocca i Contratti nell’ordine in cui volete giocarli (almeno 2). Selezionati: {chosenContracts(v).length}.
           </p>
-          <ContractGrid selected={v.seriesContracts} ordered onToggle={toggleSeries} />
+          <ContractGrid size={size} selected={chosenContracts(v)} ordered onToggle={toggleSeries} />
         </>
       )}
 
       {v.format === 'chosenSingle' && (
         <>
           <h3 className="step">Scegli il Contratto</h3>
-          <ContractGrid selected={[v.singleContract]} onToggle={(id) => set({ singleContract: id })} />
+          <ContractGrid size={size} selected={[singleContractOf(v)]} onToggle={(id) => set({ singleContract: id })} />
         </>
       )}
 
@@ -425,17 +540,20 @@ function ContractsStep({ v, set }: StepProps) {
 }
 
 function ContractGrid({
+  size,
   selected,
   ordered,
   onToggle,
 }: {
+  /** Carte per fazione: decide la sezione dei Contratti proposti. */
+  size: number;
   selected: ContractId[];
   ordered?: boolean;
   onToggle(id: ContractId): void;
 }) {
   return (
     <div className="contract-picker">
-      {offeredContracts().map((c) => {
+      {offeredContracts(size).map((c) => {
         const index = selected.indexOf(c.id);
         return (
           <button
@@ -451,7 +569,7 @@ function ContractGrid({
               <ContractIcon contract={c} size={20} /> {c.name}
             </span>
             <span className="contract-desc">{c.desc}</span>
-            <span className="contract-score">{describeScoring(c)}</span>
+            <span className="contract-score">{describeScoring(c, undefined, size)}</span>
           </button>
         );
       })}
@@ -461,6 +579,7 @@ function ContractGrid({
 
 function FactionsStep({ v, set }: StepProps) {
   const n = v.playerCount;
+  const size = handSize(v);
   const chosen = chosenContracts(v);
   const needsTarget = chosen.some((c) => contractNeedsTarget(getContract(c)));
   const missing = [...new Set(chosen.flatMap((c) => contractRequiredFactions(getContract(c))))].filter(
@@ -503,7 +622,7 @@ function FactionsStep({ v, set }: StepProps) {
       </div>
       <p className={`status${v.factions.length === n ? ' good' : ''}`}>
         {v.factions.length === n
-          ? `${n}/${n} fazioni selezionate · mazzo di ${n * 13} carte, 13 a giocatore.`
+          ? `${n}/${n} fazioni selezionate · mazzo di ${n * size} carte, ${size} a giocatore.`
           : `Servono ${n} fazioni, ora ${v.factions.length}. Iniziando, le mancanti verranno scelte a caso.`}
       </p>
       <div className="controls">
@@ -533,7 +652,8 @@ function FactionsStep({ v, set }: StepProps) {
       )}
 
       <p className="summary">
-        <b>Riepilogo:</b> {n} giocatori · {describeFormat(v)}
+        <b>Riepilogo:</b> {n} giocatori · {size > CARDS_PER_FACTION && `${size} carte per fazione · `}
+        {describeFormat(v)}
         {v.trumpEach && trumpContracts(v).length > 0 && ' · una Briscola a testa'}
       </p>
     </>

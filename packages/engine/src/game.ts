@@ -1,5 +1,15 @@
-import { cardMatches, contractNeedsTarget, contracts, factionCards, factionIds, getCard, getContract } from './catalog';
-import { MAX_PLAYERS, MIN_PLAYERS, TRICKS_PER_HAND } from './constants';
+import {
+  cardMatches,
+  contractFitsHand,
+  contractNeedsTarget,
+  contracts,
+  factionDeck,
+  factionIds,
+  getCard,
+  getContract,
+  slamPoints,
+} from './catalog';
+import { CARDS_PER_FACTION, HAND_LENGTHS, LONG_HAND_MIN_PLAYERS, MAX_PLAYERS, MIN_PLAYERS, TRICKS_PER_HAND } from './constants';
 import { canPlaceDomino, playDomino, startDomino } from './domino';
 import {
   applyAfterTrickPowers,
@@ -19,7 +29,7 @@ import {
   valueOnPlay,
 } from './powers';
 import { createRng, shuffle } from './rng';
-import { contractDelta } from './scoring';
+import { cardsPerFactionOf, contractDelta } from './scoring';
 import type { Action, CardId, CardPlay, FactionId, GameConfig, GameState, PlayerState, TrickNote, TrickResult } from './types';
 
 export { MAX_PLAYERS, MIN_PLAYERS, TRICKS_PER_HAND };
@@ -39,12 +49,26 @@ export function validateConfig(config: GameConfig): string[] {
   for (const f of config.factions) {
     if (!known.includes(f)) errors.push(`Fazione sconosciuta: ${f}.`);
   }
+  const size = cardsPerFactionOf(config);
+  const long = size > CARDS_PER_FACTION;
+  if (!(HAND_LENGTHS as readonly number[]).includes(size)) {
+    errors.push(`Le carte per fazione possono essere ${HAND_LENGTHS.join(', ')}.`);
+  } else if (long && n < LONG_HAND_MIN_PLAYERS) {
+    errors.push(`Più di ${CARDS_PER_FACTION} carte per fazione solo da ${LONG_HAND_MIN_PLAYERS} giocatori in su.`);
+  }
   const contract = contracts().find((c) => c.id === config.contract);
   if (!contract) {
     errors.push(`Contratto sconosciuto: ${config.contract}.`);
-  } else if (contractNeedsTarget(contract)) {
-    if (!config.targetFaction || !config.factions.includes(config.targetFaction)) {
+  } else {
+    if (contractNeedsTarget(contract) && (!config.targetFaction || !config.factions.includes(config.targetFaction))) {
       errors.push('Il Contratto richiede una fazione bersaglio presente nel mazzo.');
+    }
+    if (!contractFitsHand(contract, size)) {
+      errors.push(
+        long
+          ? `Con ${size} carte per fazione si giocano solo i Contratti per mani lunghe.`
+          : `I Contratti per mani lunghe si giocano solo con più di ${CARDS_PER_FACTION} carte per fazione.`,
+      );
     }
   }
   if (config.leader !== undefined && !(Number.isInteger(config.leader) && config.leader >= 0 && config.leader < n)) {
@@ -63,18 +87,22 @@ export function sortHand(hand: readonly CardId[]): CardId[] {
   });
 }
 
-/** Mescola il mazzo, distribuisce 13 carte a testa e sceglie a caso il primo di mano (se la config non lo indica). */
+/**
+ * Mescola il mazzo, distribuisce tutte le carte (13 a testa, o di più con le mani lunghe) e sceglie a caso
+ * il primo di mano (se la config non lo indica).
+ */
 export function createGame(config: GameConfig): GameState {
   const errors = validateConfig(config);
   if (errors.length) throw new Error(errors.join(' '));
 
   const n = config.playerNames.length;
+  const size = cardsPerFactionOf(config);
   const rng = createRng(config.seed);
-  const deck = shuffle(config.factions.flatMap((f) => factionCards(f).map((c) => c.id)), rng);
+  const deck = shuffle(config.factions.flatMap((f) => factionDeck(f, size).map((c) => c.id)), rng);
 
   const players: PlayerState[] = config.playerNames.map((name, p) => ({
     name,
-    hand: sortHand(Array.from({ length: TRICKS_PER_HAND }, (_, r) => deck[r * n + p]!)),
+    hand: sortHand(Array.from({ length: size }, (_, r) => deck[r * n + p]!)),
     played: [],
     captured: [],
     tricks: 0,
@@ -102,7 +130,7 @@ export function createGame(config: GameConfig): GameState {
     plays: [],
     phase: 'playing',
     history: [],
-    tricksInHand: TRICKS_PER_HAND,
+    tricksInHand: size,
     discards: [],
     decision: null,
     resolution: null,
@@ -142,7 +170,10 @@ function cuttingCards(s: GameState, hand: readonly CardId[]): CardId[] {
   if (!contract.limits || s.trickNo > 1) return [...hand];
   const penalties = contract.rules.filter((r) => r.per === 'card' && r.points < 0);
   const safe = hand.filter(
-    (id) => !penalties.some((r) => cardMatches(r.filter ?? { kind: 'any' }, getCard(id), s.config.targetFaction)),
+    (id) =>
+      !penalties.some((r) =>
+        cardMatches(r.filter ?? { kind: 'any' }, getCard(id), s.config.targetFaction, cardsPerFactionOf(s.config)),
+      ),
   );
   return safe.length ? safe : [...hand];
 }
@@ -295,21 +326,26 @@ function illegalReason(s: GameState): string {
   return following ? 'Devi seguire la fazione d’apertura.' : 'Alla prima presa non puoi scartare una carta che fa penalità.';
 }
 
-/** Cappotto: chi ha preso tutto ciò che il Contratto penalizza riceve i punti del cappotto al posto delle penalità. */
+/**
+ * Cappotto: chi ha preso tutto ciò che il Contratto penalizza riceve i punti del cappotto al posto delle penalità.
+ * Con le mani lunghe i punti crescono con le carte (slamPoints).
+ */
 function settleSlam(s: GameState): void {
   const contract = getContract(s.config.contract);
-  if (contract.slam === undefined) return;
-  const deck = s.config.factions.flatMap((f) => factionCards(f));
+  const size = cardsPerFactionOf(s.config);
+  const points = slamPoints(contract, size);
+  if (points === undefined) return;
+  const deck = s.config.factions.flatMap((f) => factionDeck(f, size));
   const seat = s.players.findIndex((p) =>
     contract.rules.every((r) => {
       if (r.per === 'trick') return p.tricks === s.history.length;
-      const counted = deck.filter((c) => cardMatches(r.filter ?? { kind: 'any' }, c, s.config.targetFaction));
+      const counted = deck.filter((c) => cardMatches(r.filter ?? { kind: 'any' }, c, s.config.targetFaction, size));
       return counted.length > 0 && counted.every((c) => p.captured.includes(c.id));
     }),
   );
   if (seat < 0) return;
   const earned = s.history.filter((t) => t.winner === seat).reduce((sum, t) => sum + t.contractDelta, 0);
-  s.players[seat]!.score += contract.slam - earned;
+  s.players[seat]!.score += points - earned;
   s.slam = seat;
 }
 

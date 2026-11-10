@@ -674,29 +674,36 @@ h3 {
   background: var(--gold-light);
 }
 
+/* Se lo spazio non basta (8 fazioni, mani lunghe) le file si abbassano invece di uscire dal tavolo. */
 .domino-rows {
   display: flex;
+  flex: 0 1 auto;
   flex-direction: column;
   gap: 5px;
   min-height: 0;
   padding: 0 8px 8px;
 }
 
+/* Una casella per carta della fazione: 13, o fino a 25 nelle mani lunghe (--slots). */
 .domino-row {
   display: grid;
-  grid-template-columns: auto repeat(13, minmax(0, 1fr));
-  align-items: center;
+  flex: 0 1 clamp(20px, min(6vw, 4.4dvh), 38px);
+  min-height: 12px;
+  grid-template-columns: auto repeat(var(--slots, 13), minmax(0, 1fr));
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
   gap: 3px;
 }
 
 .domino-row .dot {
+  align-self: center;
   margin-right: 3px;
 }
 
 .domino-slot {
   display: grid;
   place-items: center;
-  height: clamp(20px, min(6vw, 4.4dvh), 38px);
+  min-height: 0;
   border: 1.5px dashed rgba(255, 255, 255, 0.28);
   border-radius: 6px;
   color: rgba(255, 255, 255, 0.45);
@@ -714,6 +721,42 @@ h3 {
 
 .domino-slot.placed.ink-dark {
   color: var(--ink);
+}
+
+/* Mani lunghe: fino a 25 caselle per fila, più strette e con i numeri più piccoli. */
+.domino.long {
+  padding: 10px;
+}
+
+.domino.long .domino-seats {
+  gap: 4px;
+  padding: 2px 2px 0;
+}
+
+.domino.long .domino-seat {
+  padding: 2px 7px;
+  font-size: 11px;
+}
+
+.domino.long .domino-rows {
+  padding: 0 4px 6px;
+  gap: 4px;
+}
+
+.domino.long .domino-row {
+  gap: 2px;
+}
+
+.domino.long .domino-slot {
+  border-width: 1px;
+  border-radius: 4px;
+  font-size: clamp(7px, 1.9vw, 12px);
+}
+
+.domino.long .domino-slot.placed {
+  border-width: 1.5px;
+  font-size: clamp(8px, 2.3vw, 14px);
+  letter-spacing: -0.03em;
 }
 
 /* Scelte aggiuntive di un Contratto nell'Editor. */
@@ -1746,6 +1789,34 @@ textarea {
 .editor-item.add {
   border-style: dashed;
   color: var(--muted);
+}
+
+/* Titolo della sezione «Mani lunghe» nell'elenco dei Contratti. */
+.editor-group {
+  margin-top: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+/* Carte per fazione nella preparazione: 7 valori, più stretti del numero di giocatori. */
+.count-picker.hand-length-picker {
+  grid-template-columns: repeat(auto-fill, minmax(min(74px, 100%), 1fr));
+  gap: 8px;
+}
+
+.count-picker.hand-length-picker .count-option {
+  padding: 8px 4px;
+}
+
+.count-picker.hand-length-picker .count-option b {
+  font-size: 22px;
+}
+
+.count-picker.hand-length-picker .count-option span {
+  font-size: 11px;
 }
 
 .editor-form {

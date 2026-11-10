@@ -17,6 +17,8 @@ export interface MatchSetup {
   mode: GameMode;
   seats: Seat[];
   factions: FactionId[];
+  /** Carte per fazione, e quindi carte in mano e prese: 13 se manca. Di più nelle mani lunghe (da 5 giocatori). */
+  cardsPerFaction?: number;
   /** Contratti da giocare in ordine: uno solo oppure una serie. */
   hands: HandPlan[];
   seed: number;
@@ -24,7 +26,9 @@ export interface MatchSetup {
 
 /** La configurazione con cui il motore crea la partita. */
 export function matchConfig(setup: MatchSetup): MatchConfig {
-  return { playerNames: setup.seats.map((s) => s.name), factions: setup.factions, hands: setup.hands, seed: setup.seed };
+  const config: MatchConfig = { playerNames: setup.seats.map((s) => s.name), factions: setup.factions, hands: setup.hands, seed: setup.seed };
+  if (setup.cardsPerFaction !== undefined) config.cardsPerFaction = setup.cardsPerFaction;
+  return config;
 }
 
 /** Risposta a una decisione: `accept` (Reversal, recupero), `target` (bersaglio), `take` e `discard` (recupero), `faction` (Briscola). */

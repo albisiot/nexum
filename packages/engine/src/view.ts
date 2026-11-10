@@ -1,4 +1,5 @@
 import { discardableNow, legalCards } from './game';
+import { cardsPerFactionOf } from './scoring';
 import type { GameState, PlayerView } from './types';
 
 /**
@@ -13,6 +14,7 @@ export function getView(state: GameState, seat: number | null): PlayerView {
     contract: state.config.contract,
     targetFaction: state.config.targetFaction,
     factions: [...state.config.factions],
+    cardsPerFaction: cardsPerFactionOf(state.config),
     trickNo: state.trickNo,
     tricksPerHand: state.tricksInHand,
     leader: state.leader,

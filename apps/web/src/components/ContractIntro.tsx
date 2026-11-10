@@ -72,7 +72,7 @@ export function ContractIntro({ view, label, online, onSkip }: Props) {
         <ContractIcon contract={contract} size={40} />
       </span>
       <h2 id="contract-intro-title">{contractTitle(view)}</h2>
-      <span className="pill">{describeScoring(contract)}</span>
+      <span className="pill">{describeScoring(contract, undefined, view.cardsPerFaction)}</span>
       <p>{contractDescription(view)}</p>
       <span className="contract-intro-bar" style={{ '--intro-ms': `${INTRO_SHOW_MS}ms` } as CSSProperties} aria-hidden="true" />
       {online ? (

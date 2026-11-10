@@ -148,8 +148,10 @@ describe('aggiornamenti delle carte', () => {
     const next = applyCatalogUpdates(ORIGINAL_CATALOG, CATALOG_UPDATES);
     const ids = next.contracts.map((k) => k.id);
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids).toHaveLength(ORIGINAL_CATALOG.contracts.length + 9);
-    expect(next.contracts.map((k) => k.name).join(' ')).not.toMatch(/alte|basse/);
+    // 9 Contratti nuovi tra numeri e King, 13 nella sezione delle mani lunghe.
+    expect(ids).toHaveLength(ORIGINAL_CATALOG.contracts.length + 9 + 13);
+    expect(next.contracts.filter((k) => k.long)).toHaveLength(13);
+    expect(next.contracts.filter((k) => !k.long).map((k) => k.name).join(' ')).not.toMatch(/alte|basse/);
     expect(JSON.stringify(next.contracts)).not.toContain('"value":80');
     expect(getContract('avoidNine').rules[0]!.filter).toEqual({ kind: 'exactValue', value: 9 });
     expect(ORIGINAL_CATALOG.contracts.find((k) => k.id === 'avoidHigh')!.name).toBe('Non prendere carte alte');

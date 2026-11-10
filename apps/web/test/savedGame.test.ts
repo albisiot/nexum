@@ -85,6 +85,28 @@ describe('partita salvata', () => {
     );
   });
 
+  it('riprende una mano lunga: 6 giocatori, 21 carte', () => {
+    const long: MatchSetup = {
+      mode: 'solo',
+      seats: [{ name: 'Tu', kind: 'human' }, ...Array.from({ length: 5 }, (_, i) => ({ name: `Avversario ${i + 1}`, kind: 'cpu' as const, level: 'normal' as const }))],
+      factions: ['Custodes', 'Nullarii', 'Auguria', 'Reliquiae', 'Dominari', 'Concordia'],
+      cardsPerFaction: 21,
+      hands: [{ contract: 'longLast3' }, { contract: 'longDomino' }],
+      seed: 77,
+    };
+    const mid = playUntil((s) => s.game.trickNo === 17 && s.game.phase === 'playing', long);
+    expect(mid.state.game.players.every((p) => p.hand.length === 5)).toBe(true);
+    expect(roundTrip(mid.state, mid.actions, long)).toEqual(mid.state);
+    expect(describeSave({ save: parseSave(encodeSave(long, values, mid.actions, mid.state))!, state: mid.state })).toBe(
+      'Contro la CPU · Contratto 1 di 2 · Presa 17/21',
+    );
+    const domino = playUntil((s) => s.handIndex === 1 && s.game.players[0]!.played.length === 2, long);
+    expect(roundTrip(domino.state, domino.actions, long)).toEqual(domino.state);
+    expect(describeSave({ save: parseSave(encodeSave(long, values, domino.actions, domino.state))!, state: domino.state })).toMatch(
+      /In tavola \d+\/126$/,
+    );
+  });
+
   it('scarta in silenzio i salvataggi illeggibili o di un altro formato', () => {
     const { state, actions } = playUntil((_, moves) => moves === 10);
     const good = JSON.parse(encodeSave(setup, values, actions, state)) as Record<string, unknown>;

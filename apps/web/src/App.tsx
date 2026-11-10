@@ -125,7 +125,7 @@ export function App() {
         <header className="top">
           <div className="brand">
             <h1>NEXUM</h1>
-            <p>Trick-taking a Contratti · mazzo comune · 13 carte a giocatore</p>
+            <p>Trick-taking a Contratti · mazzo comune · 13–25 carte a giocatore</p>
           </div>
           <button type="button" className="btn" aria-haspopup="dialog" onClick={() => setShowRules(true)}>
             Regole

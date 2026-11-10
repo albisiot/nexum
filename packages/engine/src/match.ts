@@ -1,6 +1,6 @@
-// Una partita è una serie di mani: ogni mano ha il suo Contratto e si gioca per 13 prese.
+// Una partita è una serie di mani: ogni mano ha il suo Contratto e si gioca per 13 prese (o di più con le mani lunghe).
 // Con un solo Contratto la serie ha una mano sola. Vince chi ha più punti in totale.
-import { contractNeedsTarget, contractPlayableWith, contracts, getContract } from './catalog';
+import { contractFitsHand, contractNeedsTarget, contractPlayableWith, contracts, getContract } from './catalog';
 import { IllegalActionError, applyAction, createGame, ranking, validateConfig } from './game';
 import { shuffle } from './rng';
 import type { Rng } from './rng';
@@ -18,6 +18,8 @@ export interface MatchConfig {
   playerNames: string[];
   /** Fazioni del mazzo, uguali per tutte le mani (ogni mano si rimescola e si ridistribuisce). */
   factions: FactionId[];
+  /** Carte per fazione, uguali per tutte le mani: 13 se manca (vedi GameConfig). */
+  cardsPerFaction?: number;
   hands: HandPlan[];
   seed: number;
 }
@@ -56,16 +58,19 @@ export interface MatchView {
   phase: MatchPhase;
 }
 
-/** Contratti giocabili con queste fazioni (esclude quelli che riguardano fazioni assenti). */
-export function playableContracts(factions: readonly FactionId[]): ContractId[] {
+/**
+ * Contratti giocabili con queste fazioni (esclude quelli che riguardano fazioni assenti), della sezione giusta per la
+ * lunghezza della mano: i normali con 13 carte per fazione, quelli delle mani lunghe con di più.
+ */
+export function playableContracts(factions: readonly FactionId[], cardsPerFaction?: number): ContractId[] {
   return contracts()
-    .filter((c) => contractPlayableWith(c, factions))
+    .filter((c) => contractPlayableWith(c, factions) && contractFitsHand(c, cardsPerFaction))
     .map((c) => c.id);
 }
 
 /** Estrae `count` Contratti diversi a caso; la fazione bersaglio, se serve, è estratta tra quelle del mazzo. */
-export function randomHands(count: number, factions: readonly FactionId[], rng: Rng): HandPlan[] {
-  return shuffle(playableContracts(factions), rng)
+export function randomHands(count: number, factions: readonly FactionId[], rng: Rng, cardsPerFaction?: number): HandPlan[] {
+  return shuffle(playableContracts(factions, cardsPerFaction), rng)
     .slice(0, count)
     .map((contract) =>
       contractNeedsTarget(getContract(contract))
@@ -151,6 +156,7 @@ function handConfig(config: MatchConfig, index: number): GameConfig {
   return {
     playerNames: config.playerNames,
     factions: config.factions,
+    ...(config.cardsPerFaction === undefined ? {} : { cardsPerFaction: config.cardsPerFaction }),
     contract: plan.contract,
     targetFaction: plan.targetFaction,
     leader: plan.leader,

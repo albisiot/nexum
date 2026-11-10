@@ -373,6 +373,20 @@ const CONTRACT_ICONS: Partial<Record<string, IconName>> = {
   last3: 'ultime-tre',
   special: 'con-potere',
   chaos: 'tutto-negativo',
+  // Sezione «Mani lunghe»
+  longMore: 'piu-prese',
+  longLess: 'meno-prese',
+  longAvoidFaction: 'fazione',
+  longTopThree: 'carte-alte',
+  longAvoidLow: 'carte-basse',
+  longTop: 'carte-alte',
+  longTargetTop: 'fazione',
+  longLast: 'ultima',
+  longLast3: 'ultime-tre',
+  longMoreDouble: 'piu-prese',
+  longTrump: 'briscola',
+  longDomino: 'domino',
+  longChaos: 'tutto-negativo',
 };
 
 export const drawnContractIcon = (id: string): IconName | undefined => CONTRACT_ICONS[id];

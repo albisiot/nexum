@@ -58,8 +58,10 @@ export function encodeSave(setup: MatchSetup, values: SetupValues, actions: read
 /** Contro la CPU c'è un solo posto umano, nel multiplayer sullo stesso dispositivo lo sono tutti. */
 function validSetup(setup: unknown): setup is MatchSetup {
   if (!setup || typeof setup !== 'object') return false;
-  const { mode, seats, factions, hands, seed } = setup as Partial<MatchSetup>;
+  const { mode, seats, factions, hands, seed, cardsPerFaction } = setup as Partial<MatchSetup>;
   if (mode !== 'solo' && mode !== 'local') return false;
+  // I salvataggi di prima delle mani lunghe non hanno le carte per fazione: valgono 13.
+  if (cardsPerFaction !== undefined && !Number.isInteger(cardsPerFaction)) return false;
   if (!Number.isInteger(seed) || !Array.isArray(factions) || !Array.isArray(hands) || !Array.isArray(seats)) return false;
   const seatsOk = seats.every(
     (seat) =>
@@ -98,7 +100,7 @@ export function replaySave(save: SavedGame): MatchState | null {
   }
 }
 
-/** Il punto raggiunto, per il menu: "Contro la CPU · Contratto 2 di 5 · Presa 7/13". */
+/** Il punto raggiunto, per il menu: "Contro la CPU · Contratto 2 di 5 · Presa 7/13" (o "Presa 7/21" nelle mani lunghe). */
 export function describeSave({ save, state }: ResumableGame): string {
   const parts = [save.setup.mode === 'solo' ? 'Contro la CPU' : 'Multiplayer'];
   const hands = state.config.hands;
@@ -108,7 +110,7 @@ export function describeSave({ save, state }: ResumableGame): string {
   const g = state.game;
   if (g.domino) {
     const placed = Object.values(g.domino.table).reduce((t, line) => t + line.high - line.low + 1, 0);
-    parts.push(`In tavola ${placed}/${g.config.factions.length * CARDS_PER_FACTION}`);
+    parts.push(`In tavola ${placed}/${g.config.factions.length * (g.config.cardsPerFaction ?? CARDS_PER_FACTION)}`);
   } else {
     parts.push(`Presa ${g.trickNo}/${g.tricksInHand}`);
   }

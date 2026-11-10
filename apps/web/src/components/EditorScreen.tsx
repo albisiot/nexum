@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import {
   CARDS_PER_FACTION,
   DEFAULT_CATALOG,
@@ -32,7 +32,7 @@ const time = () => new Date().toLocaleTimeString('it-IT', { hour: '2-digit', min
 /** Valori proposti per le 13 carte di una fazione nuova. */
 const NEW_FACTION_VALUES = [97, 89, 81, 73, 65, 57, 50, 42, 34, 26, 18, 10, 2];
 
-function setFlag(contract: ContractDef, flag: 'trump' | 'limits', on: boolean) {
+function setFlag(contract: ContractDef, flag: 'trump' | 'limits' | 'long', on: boolean) {
   if (on) contract[flag] = true;
   else delete contract[flag];
 }
@@ -536,16 +536,25 @@ function ContractsTab({ draft, update, selected, select }: TabProps) {
   return (
     <div className="editor-body">
       <nav className="editor-list" aria-label="Contratti">
-        {draft.contracts.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            className={`editor-item${c.id === contract?.id ? ' selected' : ''}`}
-            onClick={() => select(c.id)}
-          >
-            <ContractIcon contract={c} size={18} /> {c.name || '(senza nome)'}
-          </button>
-        ))}
+        {[false, true].map((long) => {
+          const group = draft.contracts.filter((c) => !!c.long === long);
+          if (!group.length) return null;
+          return (
+            <Fragment key={String(long)}>
+              {long && <span className="editor-group">Mani lunghe · 15–25 carte</span>}
+              {group.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`editor-item${c.id === contract?.id ? ' selected' : ''}`}
+                  onClick={() => select(c.id)}
+                >
+                  <ContractIcon contract={c} size={18} /> {c.name || '(senza nome)'}
+                </button>
+              ))}
+            </Fragment>
+          );
+        })}
         <button type="button" className="editor-item add" onClick={addContract}>
           + Nuovo Contratto
         </button>
@@ -624,11 +633,19 @@ function ContractForm({
               key={i}
               draft={draft}
               rule={rule}
+              long={!!contract.long}
               onChange={(change) => edit((c) => change(c.rules[i]!))}
               onRemove={() => edit((c) => c.rules.splice(i, 1))}
             />
           ))}
           <div className="contract-flags">
+            <label className="check">
+              <input type="checkbox" checked={!!contract.long} onChange={(e) => edit((c) => setFlag(c, 'long', e.target.checked))} />
+              <span>
+                <b>Mani lunghe</b>: si gioca solo con 15–25 carte per fazione (da 5 giocatori), e con le mani lunghe solo i
+                Contratti di questa sezione
+              </span>
+            </label>
             <label className="check">
               <input type="checkbox" checked={!!contract.trump} onChange={(e) => edit((c) => setFlag(c, 'trump', e.target.checked))} />
               <span>
@@ -654,6 +671,7 @@ function ContractForm({
               />
               <span>
                 <b>Cappotto</b>: chi prende tutto ciò che il Contratto penalizza riceve questi punti invece delle penalità
+                {contract.long && ' (sono i punti con 13 carte: crescono con le carte, +13 diventa +25 con 25)'}
               </span>
               {contract.slam !== undefined && (
                 <input
@@ -682,7 +700,18 @@ function ContractForm({
   );
 }
 
-type FilterKey = 'any' | 'target' | 'faction' | 'minValue' | 'maxValue' | 'exactValue' | 'targetValue' | 'hasPower' | 'card';
+type FilterKey =
+  | 'any'
+  | 'target'
+  | 'faction'
+  | 'minValue'
+  | 'maxValue'
+  | 'exactValue'
+  | 'targetValue'
+  | 'top'
+  | 'targetTop'
+  | 'hasPower'
+  | 'card';
 
 const FILTER_LABELS: Record<FilterKey, string> = {
   any: 'qualsiasi carta',
@@ -692,6 +721,8 @@ const FILTER_LABELS: Record<FilterKey, string> = {
   maxValue: 'di valore … o meno',
   exactValue: 'di valore esattamente…',
   targetValue: 'di valore esattamente… nella fazione bersaglio',
+  top: 'tra le … più alte di ogni fazione',
+  targetTop: 'tra le … più alte della fazione bersaglio',
   hasPower: 'con un potere scritto',
   card: 'una carta precisa',
 };
@@ -705,11 +736,14 @@ function filterKey(filter: CardFilter | undefined): FilterKey {
 function RuleEditor({
   draft,
   rule,
+  long,
   onChange,
   onRemove,
 }: {
   draft: Catalog;
   rule: ScoringRule;
+  /** Contratto delle mani lunghe: gli intervalli che arrivano alla presa 13 sono le ultime prese. */
+  long: boolean;
   onChange(change: (r: ScoringRule) => void): void;
   onRemove(): void;
 }) {
@@ -725,6 +759,8 @@ function RuleEditor({
         maxValue: { kind: 'maxValue', value: 3 },
         exactValue: { kind: 'exactValue', value: 9 },
         targetValue: { kind: 'targetValue', value: 13 },
+        top: { kind: 'top', count: 3 },
+        targetTop: { kind: 'targetTop', count: 1 },
         hasPower: { kind: 'hasPower' },
         card: { kind: 'card', cardId: draft.cards[0]?.id ?? '' },
       };
@@ -797,6 +833,22 @@ function RuleEditor({
               />
             </label>
           )}
+          {(rule.filter?.kind === 'top' || rule.filter?.kind === 'targetTop') && (
+            <label className="field points">
+              <span className="label">Quante</span>
+              <input
+                type="number"
+                min={1}
+                max={CARDS_PER_FACTION}
+                value={numValue(rule.filter.count)}
+                onChange={(e) =>
+                  onChange((r) => {
+                    if (r.filter?.kind === 'top' || r.filter?.kind === 'targetTop') r.filter.count = parseInt(e.target.value, 10);
+                  })
+                }
+              />
+            </label>
+          )}
           {rule.filter?.kind === 'card' && (
             <label className="field grow">
               <span className="label">Carta</span>
@@ -857,8 +909,14 @@ function RuleEditor({
         )}
       </div>
 
+      {long && rule.tricks && (
+        <p className="hint">
+          Le prese si contano su {TRICKS_PER_HAND}: un intervallo che arriva alla {TRICKS_PER_HAND} vale per le ultime prese della
+          mano, qualunque sia la sua lunghezza (11–13 = le ultime 3).
+        </p>
+      )}
       <div className="rule-foot">
-        <span className="rule-text">{describeRule(rule, draft)}</span>
+        <span className="rule-text">{describeRule(rule, draft, { long })}</span>
         <button type="button" className="btn small danger" onClick={onRemove}>
           Togli regola
         </button>

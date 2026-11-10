@@ -123,7 +123,7 @@ function ContractInfo({ match, view }: { match: MatchView; view: PlayerView }) {
       <p>{contractDescription(view)}</p>
       <h4>Punteggio</h4>
       <ul>
-        {describeScoring(contract)
+        {describeScoring(contract, undefined, view.cardsPerFaction)
           .split(' · ')
           .map((rule) => (
             <li key={rule}>{rule}</li>

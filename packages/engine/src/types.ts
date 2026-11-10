@@ -34,12 +34,20 @@ export type CardFilter =
   /** Una sola carta: quella di questo valore nella fazione bersaglio. */
   | { kind: 'targetValue'; value: number }
   | { kind: 'hasPower' }
-  | { kind: 'card'; cardId: CardId };
+  | { kind: 'card'; cardId: CardId }
+  /**
+   * Le `count` carte più alte di ogni fazione, contate nel mazzo della mano: con 13 carte la più alta è il 13,
+   * con 25 è il 25. Serve ai Contratti che valgono con qualsiasi lunghezza della mano.
+   */
+  | { kind: 'top'; count: number }
+  /** Le `count` carte più alte della fazione bersaglio (1 = solo la più alta). */
+  | { kind: 'targetTop'; count: number };
 
 /**
  * Un "mattoncino" di punteggio, assegnato a chi vince la presa:
  * `points` per la presa stessa, oppure per ogni carta catturata che rispetta `filter`.
- * Con `tricks` vale solo per le prese in quell'intervallo (es. 11–13).
+ * Con `tricks` vale solo per le prese in quell'intervallo (es. 11–13). Gli intervalli si scrivono su 13 prese:
+ * quelli che arrivano alla 13 valgono per le ultime prese della mano, qualunque sia la sua lunghezza (vedi scoring.ts).
  */
 export interface ScoringRule {
   points: number;
@@ -63,6 +71,8 @@ export interface ContractDef {
   trump?: boolean;
   /** Domino: niente prese, si attaccano le carte in tavola (vedi domino.ts). */
   mode?: 'domino';
+  /** Sezione «Mani lunghe»: si gioca solo con più di 13 carte per fazione, e con le mani lunghe solo questi. */
+  long?: boolean;
 }
 
 /** Tutte le fazioni, carte e Contratti del gioco: i dati che l'Editor modifica. */
@@ -70,7 +80,7 @@ export interface Catalog {
   /** Numero della versione pubblicata (0 = dati predefiniti del gioco). */
   version: number;
   factions: FactionDef[];
-  /** Le carte dei mazzi: 13 per ogni fazione. */
+  /** Le carte dei mazzi: 13 per ogni fazione. Quelle dal 14 in su delle mani lunghe le aggiunge il motore. */
   cards: CardDef[];
   /** Carte fuori dai mazzi delle fazioni: si troveranno nei pacchetti. Conservano la fazione d'origine. */
   packCards?: CardDef[];
@@ -79,10 +89,15 @@ export interface Catalog {
   appliedUpdates?: string[];
 }
 
-/** Configurazione di una mano (= un Contratto giocato per 13 prese). */
+/** Configurazione di una mano (= un Contratto giocato per 13 prese, o di più con le mani lunghe). */
 export interface GameConfig {
   playerNames: string[];
   factions: FactionId[];
+  /**
+   * Carte per fazione, e quindi carte in mano e prese: 13 se manca. Le mani lunghe (15–25, da 5 giocatori)
+   * aggiungono a ogni fazione le carte base dal 14 in su.
+   */
+  cardsPerFaction?: number;
   contract: ContractId;
   targetFaction?: FactionId;
   /** Chi è primo di mano (e con la Briscola la sceglie). Se manca, si estrae a caso. */
@@ -202,6 +217,8 @@ export interface DominoState {
   passed: number[];
   /** Chi ha finito le carte per primo. */
   winner: number | null;
+  /** Carte per fazione della mano, se non sono 13 (mani lunghe): decide la carta centrale da cui si parte. */
+  cards?: number;
 }
 
 /** Fine presa a tappe: recuperi, poi punti e poteri, poi Reversal. */
@@ -220,7 +237,7 @@ export interface Resolution {
 export interface GameState {
   config: GameConfig;
   players: PlayerState[];
-  /** Numero della presa corrente (1–13). */
+  /** Numero della presa corrente (da 1 alle prese della mano). */
   trickNo: number;
   leader: number;
   turn: number;
@@ -228,7 +245,7 @@ export interface GameState {
   plays: Play[];
   phase: Phase;
   history: TrickResult[];
-  /** Prese di questa mano: 13, una in meno per ogni Oblivion. */
+  /** Prese di questa mano: le carte per fazione (13 o più), una in meno per ogni Oblivion. */
   tricksInHand: number;
   /** Carte uscite dal gioco per un potere (scambi dei recuperi, Oblivion), in ordine. */
   discards: CardId[];
@@ -267,6 +284,8 @@ export interface PlayerView {
   contract: ContractId;
   targetFaction?: FactionId;
   factions: FactionId[];
+  /** Carte per fazione della mano: 13, o di più con le mani lunghe. */
+  cardsPerFaction: number;
   trickNo: number;
   tricksPerHand: number;
   leader: number;

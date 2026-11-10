@@ -2,6 +2,9 @@ export * from './types';
 export {
   TRICKS_PER_HAND,
   CARDS_PER_FACTION,
+  HAND_LENGTHS,
+  MAX_CARDS_PER_FACTION,
+  LONG_HAND_MIN_PLAYERS,
   MIN_PLAYERS,
   MAX_PLAYERS,
   MIN_CARD_VALUE,
@@ -10,6 +13,7 @@ export {
 export { DEFAULT_CATALOG, ORIGINAL_CATALOG } from './data/defaultCatalog';
 export {
   CATALOG_UPDATES,
+  LONG_HANDS_UPDATE,
   applyCatalogUpdates,
   pendingCatalogUpdates,
   type CardUpdate,
@@ -23,12 +27,15 @@ export {
   factionIds,
   getFaction,
   factionCards,
+  factionDeck,
   packCards,
   getCard,
   contracts,
   getContract,
   hasPowerText,
   contractNeedsTarget,
+  contractFitsHand,
+  slamPoints,
   contractRequiredFactions,
   contractPlayableWith,
   ruleRequiredFaction,
@@ -69,7 +76,7 @@ export {
   PAID_POWERS,
   type PlayChoice,
 } from './powers';
-export { contractDelta, ruleApplies } from './scoring';
+export { cardsPerFactionOf, contractDelta, ruleApplies, ruleTricks } from './scoring';
 export { getView } from './view';
 export {
   playableContracts,

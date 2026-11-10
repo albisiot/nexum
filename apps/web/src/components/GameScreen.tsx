@@ -249,7 +249,7 @@ export function GameScreen({ client, onRules, onTutorial, onReplay, onExit, onMe
         </button>
         <span className="bar-count">
           <span>{domino ? 'In tavola' : 'Presa'}</span>
-          <b>{domino ? `${placed}/${view.factions.length * 13}` : `${view.trickNo}/${view.tricksPerHand}`}</b>
+          <b>{domino ? `${placed}/${view.factions.length * view.cardsPerFaction}` : `${view.trickNo}/${view.tricksPerHand}`}</b>
         </span>
         <button type="button" className="btn small bar-info" aria-haspopup="dialog" onClick={() => openInfo()}>
           <Icon name="info" size={18} />
@@ -478,7 +478,7 @@ export function GameScreen({ client, onRules, onTutorial, onReplay, onExit, onMe
     if (snap.canDiscard) return 'Oblivion: scegli la carta da scartare, poi giochi. Faded One non si scarta.';
     if (domino) {
       const passed = domino.passed.map((p) => names[p]).join(', ');
-      const start = dominoStartValue(view.factions[0]!);
+      const start = dominoStartValue(view.factions[0]!, view.cardsPerFaction);
       return `${passed ? `Passa: ${passed}. ` : ''}Si gioca un ${start} o una carta vicina a quelle in tavola della stessa fazione.`;
     }
     if (!snap.canPlay) {

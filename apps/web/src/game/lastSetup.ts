@@ -1,13 +1,16 @@
 // L'ultima preparazione con cui è partita una partita sul dispositivo (contro la CPU o multiplayer): la preparazione
 // riparte da lì e dal menu si rigioca con un tocco. Sta in localStorage come le Impostazioni (settings.ts); senza
 // (navigazione privata, spazio pieno) vale finché la pagina resta aperta.
-import { MAX_PLAYERS, MIN_PLAYERS, factionIds } from '@nexum/engine';
+import { CARDS_PER_FACTION, HAND_LENGTHS, MAX_PLAYERS, MIN_PLAYERS, factionIds } from '@nexum/engine';
 import type { ContractId, FactionId } from '@nexum/engine';
 import { useMemo, useSyncExternalStore } from 'react';
 import {
   CONTRACT_FORMATS,
   SERIES_LENGTHS,
+  allOfferedContracts,
+  chosenContracts,
   defaultSetup,
+  handSize,
   offeredContracts,
   randomFactions,
   sanitizeSetup,
@@ -33,7 +36,12 @@ export function parseLastSetup(saved: unknown): SetupValues {
       return typeof entry === 'string' ? entry.slice(0, NAME_MAX) : name;
     });
 
-  const offered: string[] = offeredContracts().map((c) => c.id);
+  // Le configurazioni di prima delle mani lunghe non hanno le carte per fazione: valgono 13.
+  const cards = s.cardsPerFaction;
+  const cardsPerFaction = (HAND_LENGTHS as readonly unknown[]).includes(cards) ? Number(cards) : CARDS_PER_FACTION;
+  // I Contratti della serie a scelta possono essere di entrambe le sezioni (normali e mani lunghe).
+  const offered: string[] = allOfferedContracts().map((c) => c.id);
+  const inSection: string[] = offeredContracts(handSize({ playerCount, cardsPerFaction })).map((c) => c.id);
   const known: string[] = factionIds();
   const ids = <T extends string>(list: unknown, valid: string[]) =>
     Array.isArray(list) ? [...new Set(list.filter((x): x is T => typeof x === 'string' && valid.includes(x)))] : [];
@@ -41,7 +49,9 @@ export function parseLastSetup(saved: unknown): SetupValues {
   const singleOk = typeof s.singleContract === 'string' && offered.includes(s.singleContract);
   let format = CONTRACT_FORMATS.find((f) => f === s.format) ?? initial.format;
   // Una serie a scelta rimasta con meno di 2 Contratti, o un Contratto scelto che non c'è più: formato iniziale.
-  if ((format === 'chosenSeries' && seriesContracts.length < 2) || (format === 'chosenSingle' && !singleOk)) format = initial.format;
+  const seriesOk = chosenContracts({ ...initial, format: 'chosenSeries', playerCount, cardsPerFaction, seriesContracts }).length >= 2;
+  const singleInSection = singleOk && inSection.includes(s.singleContract as string);
+  if ((format === 'chosenSeries' && !seriesOk) || (format === 'chosenSingle' && !singleInSection)) format = initial.format;
   const picked = s.factionsPicked === true ? ids<FactionId>(s.factions, known).slice(0, playerCount) : [];
 
   return sanitizeSetup({
@@ -57,6 +67,7 @@ export function parseLastSetup(saved: unknown): SetupValues {
     targetFaction: typeof s.targetFaction === 'string' && known.includes(s.targetFaction) ? (s.targetFaction as FactionId) : null,
     factions: picked.length ? picked : randomFactions(playerCount),
     factionsPicked: picked.length > 0,
+    cardsPerFaction,
   });
 }
 

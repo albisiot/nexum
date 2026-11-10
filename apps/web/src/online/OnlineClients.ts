@@ -13,6 +13,7 @@ import {
 } from '@nexum/engine';
 import type { CardId, MatchAction, MatchState, Rng } from '@nexum/engine';
 import type { ClientSnapshot, DecisionAnswer, GameClient, MatchSetup } from '../game/GameClient';
+import { matchConfig } from '../game/GameClient';
 import { INTRO_MS, handFresh } from '../game/intro';
 import { fakeIdentity, roomErrorText } from './backend';
 import type { RemoteAction, RoomBackend } from './backend';
@@ -84,9 +85,7 @@ export class OnlineHostClient implements GameClient {
   ) {
     this.seat = setup.seats.findIndex((s) => s.uid === uid);
     this.rng = createRng(setup.seed ^ Date.now());
-    this.state =
-      resumed ??
-      createMatch({ playerNames: setup.seats.map((s) => s.name), factions: setup.factions, hands: setup.hands, seed: setup.seed });
+    this.state = resumed ?? createMatch(matchConfig(setup));
     this.schedule();
     this.snapshot = this.buildSnapshot();
     this.publish();

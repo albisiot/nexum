@@ -27,6 +27,129 @@ export interface CatalogUpdate {
   cards: Record<CardId, CardUpdate & { name: string }>;
 }
 
+/** I Contratti della sezione «Mani lunghe»: valgono con qualsiasi lunghezza, perché non nominano valori né prese precise. */
+const LONG_CONTRACT_LIST: ContractDef[] = [
+  {
+    id: 'longMore',
+    icon: '🏆',
+    name: 'Più prese',
+    desc: 'Cerca di vincere più prese possibile.',
+    rules: [{ points: 1, per: 'trick' }],
+  },
+  {
+    id: 'longLess',
+    icon: '🪶',
+    name: 'Meno prese',
+    desc: 'Ogni presa vinta è una penalità. Liberati delle carte senza vincere.',
+    slam: 13,
+    rules: [{ points: -1, per: 'trick' }],
+  },
+  {
+    id: 'longAvoidFaction',
+    icon: '🎨',
+    name: 'Non prendere una fazione',
+    desc: 'Le carte della fazione bersaglio raccolte nelle tue prese valgono penalità.',
+    slam: 13,
+    limits: true,
+    rules: [{ points: -1, per: 'card', filter: { kind: 'faction', faction: 'target' } }],
+  },
+  {
+    id: 'longTopThree',
+    icon: '⬆️',
+    name: 'Non prendere le tre più alte',
+    desc: 'Evita di catturare le 3 carte più alte di ogni fazione.',
+    limits: true,
+    rules: [{ points: -1, per: 'card', filter: { kind: 'top', count: 3 } }],
+  },
+  {
+    id: 'longAvoidLow',
+    icon: '⬇️',
+    name: 'Non prendere 3 o meno',
+    desc: 'Evita di catturare carte di valore 3 o meno.',
+    limits: true,
+    rules: [{ points: -1, per: 'card', filter: { kind: 'maxValue', value: 3 } }],
+  },
+  {
+    id: 'longTop',
+    icon: '👑',
+    name: 'Non prendere la più alta',
+    desc: 'Evita di catturare la carta più alta di ogni fazione.',
+    limits: true,
+    rules: [{ points: -3, per: 'card', filter: { kind: 'top', count: 1 } }],
+  },
+  {
+    id: 'longTargetTop',
+    icon: '🎯',
+    name: 'Non prendere la più alta della fazione',
+    desc: 'Evita di catturare la carta più alta della fazione bersaglio.',
+    limits: true,
+    rules: [{ points: -8, per: 'card', filter: { kind: 'targetTop', count: 1 } }],
+  },
+  {
+    id: 'longLast',
+    icon: '🏁',
+    name: 'Non prendere l’ultima',
+    desc: 'Le altre prese sono neutre. Conta soltanto l’ultima.',
+    rules: [{ points: -5, per: 'trick', tricks: { from: 13, to: 13 } }],
+  },
+  {
+    id: 'longLast3',
+    icon: '3️⃣',
+    name: 'Evita le ultime tre',
+    desc: 'Le ultime 3 prese della mano sono tutte penalità.',
+    rules: [{ points: -2, per: 'trick', tricks: { from: 11, to: 13 } }],
+  },
+  {
+    id: 'longMoreDouble',
+    icon: '🏆',
+    name: 'Più prese doppie',
+    desc: 'Vinci più prese che puoi: ognuna vale il doppio.',
+    rules: [{ points: 2, per: 'trick' }],
+  },
+  {
+    id: 'longTrump',
+    icon: '⭐',
+    name: 'Briscola',
+    desc: 'Chi è primo di mano sceglie la briscola: batte la fazione d’apertura. Non si apre con la briscola finché qualcuno non l’ha giocata.',
+    trump: true,
+    rules: [{ points: 1, per: 'trick' }],
+  },
+  {
+    id: 'longDomino',
+    icon: '🀱',
+    name: 'Domino',
+    desc: 'Niente prese: si parte dalla carta centrale di ogni fazione e si attaccano le carte vicine della stessa fazione. Chi non può giocare passa. Chi finisce per primo chiude la mano.',
+    mode: 'domino',
+    rules: [],
+  },
+  {
+    id: 'longChaos',
+    icon: '🔥',
+    name: 'Tutto negativo',
+    desc: 'Prese, Nullarii, le 3 carte più alte di ogni fazione e l’ultima presa accumulano penalità.',
+    rules: [
+      { points: -1, per: 'trick' },
+      { points: -1, per: 'card', filter: { kind: 'faction', faction: 'Nullarii' } },
+      { points: -1, per: 'card', filter: { kind: 'top', count: 3 } },
+      { points: -3, per: 'trick', tricks: { from: 13, to: 13 } },
+    ],
+  },
+];
+const LONG_CONTRACTS = LONG_CONTRACT_LIST.map((c): ContractDef => ({ ...c, long: true }));
+
+/**
+ * Le mani lunghe (da 15 a 25 carte per fazione, da 5 giocatori in su). Il gioco usa questi Contratti anche con un
+ * catalogo pubblicato prima, finché l'autore non applica l'aggiornamento (vedi withLongContracts in catalog.ts).
+ */
+export const LONG_HANDS_UPDATE: CatalogUpdate = {
+  id: 'mani-lunghe-2026-11-10',
+  date: '2026-11-10',
+  title: 'Contratti per mani lunghe',
+  note: 'Tredici Contratti nella sezione «Mani lunghe»: con più di 13 carte per fazione (da 5 giocatori in su) si giocano solo questi, con 13 carte mai. «Le più alte» sono le carte in cima a ogni fazione (con 25 carte la più alta è il 25) e gli intervalli che arrivano alla presa 13 valgono per le ultime prese della mano. Il Cappotto cresce con le carte. Il gioco li usa già anche senza applicarli: applicali per modificarli.',
+  contracts: LONG_CONTRACTS,
+  cards: {},
+};
+
 export const CATALOG_UPDATES: readonly CatalogUpdate[] = [
   {
     id: 'poteri-2026-10-28',
@@ -226,6 +349,7 @@ export const CATALOG_UPDATES: readonly CatalogUpdate[] = [
     ],
     cards: {},
   },
+  LONG_HANDS_UPDATE,
 ];
 
 /** Le 13 carte di base di una fazione: valori da 1 a 13, senza effetti. */

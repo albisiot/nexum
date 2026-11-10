@@ -1,6 +1,7 @@
-import { DEFAULT_CATALOG, MAX_PLAYERS, factionIds, getCatalog, setCatalog } from '@nexum/engine';
+import { DEFAULT_CATALOG, MAX_PLAYERS, factionIds, getCatalog, getContract, setCatalog } from '@nexum/engine';
 import type { Catalog } from '@nexum/engine';
 import { afterEach, describe, expect, it } from 'vitest';
+import { chosenContracts, describeSetup, handSize, toMatchSetup } from '../src/components/SetupScreen';
 import type { SetupValues } from '../src/components/SetupScreen';
 import { lastSetup, parseLastSetup, saveLastSetup } from '../src/game/lastSetup';
 
@@ -17,6 +18,7 @@ const chosen: SetupValues = {
   targetFaction: 'Nullarii',
   factions: ['Custodes', 'Nullarii', 'Dominari'],
   factionsPicked: true,
+  cardsPerFaction: 13,
 };
 
 afterEach(() => setCatalog(DEFAULT_CATALOG));
@@ -76,6 +78,37 @@ describe('ultima preparazione', () => {
     catalog.version = 99;
     setCatalog(catalog);
     expect(parseLastSetup(single).format).toBe('randomSeries');
+  });
+
+  it('le carte per fazione: le configurazioni vecchie valgono 13, quelle strane pure', () => {
+    const { cardsPerFaction: _, ...old } = chosen;
+    expect(parseLastSetup(old).cardsPerFaction).toBe(13);
+    for (const cards of [14, 27, '21', null]) expect(parseLastSetup({ ...chosen, cardsPerFaction: cards }).cardsPerFaction).toBe(13);
+  });
+
+  it('le mani lunghe: la scelta resta anche sotto i 5 giocatori, ma si gioca con 13', () => {
+    const long = { ...chosen, playerCount: 6, factionsPicked: false, cardsPerFaction: 21 };
+    const v = parseLastSetup(long);
+    expect(v.cardsPerFaction).toBe(21);
+    expect(handSize(v)).toBe(21);
+    expect(handSize({ ...v, playerCount: 4 })).toBe(13);
+    // Con 21 carte la serie a scelta di Contratti normali non vale: formato iniziale.
+    expect(v.format).toBe('randomSeries');
+    const series = parseLastSetup({ ...long, format: 'chosenSeries', seriesContracts: ['more', 'longMore', 'longLast3', 'less'] });
+    expect(series.format).toBe('chosenSeries');
+    expect(series.seriesContracts).toEqual(['more', 'longMore', 'longLast3', 'less']);
+    expect(chosenContracts(series)).toEqual(['longMore', 'longLast3']);
+    expect(chosenContracts({ ...series, playerCount: 4 })).toEqual(['more', 'less']);
+    expect(describeSetup(series)).toBe('Multiplayer · 6 giocatori · 21 carte · Serie a scelta di 2 Contratti');
+  });
+
+  it('Partita veloce e Rigioca l’ultima con le mani lunghe: la partita ha le carte scelte e solo Contratti per mani lunghe', () => {
+    const v = parseLastSetup({ ...chosen, mode: 'solo', playerCount: 8, factionsPicked: false, format: 'randomSeries', seriesLength: 10, cardsPerFaction: 25 });
+    const setup = toMatchSetup(v);
+    expect(setup.cardsPerFaction).toBe(25);
+    expect(setup.hands.every((h) => getContract(h.contract).long)).toBe(true);
+    expect(toMatchSetup({ ...v, playerCount: 4, factions: [] }).cardsPerFaction).toBeUndefined();
+    expect(toMatchSetup({ ...v, cardsPerFaction: 13 }).hands.some((h) => getContract(h.contract).long)).toBe(false);
   });
 
   it('si ricorda dopo una partita sul dispositivo, non dopo una online', () => {
